@@ -1,4 +1,4 @@
-package com.android.nextai
+package com.android.nextai.activity
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
