@@ -15,6 +15,8 @@
         <activity
             android:name=".activity.MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.NextAI">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
