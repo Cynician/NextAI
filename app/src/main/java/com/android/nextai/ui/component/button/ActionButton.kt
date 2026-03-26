@@ -1,4 +1,4 @@
-package com.android.nextai.ui.component
+package com.android.nextai.ui.component.button
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.padding
@@ -46,3 +46,6 @@ fun ActionButton(
         )
     }
 }
+
+
+
