@@ -28,12 +28,15 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.Standard
-import com.android.nextai.ui.component.ActionButton
+import com.android.nextai.ui.component.button.ActionButton
 import com.android.nextai.ui.icon.AppIcon
+import com.android.nextai.viewmodel.chat.ChatViewModel
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-internal fun HomeBottomBar() {
+internal fun HomeBottomBar(
+    chatViewModel: ChatViewModel
+) {
     val context = LocalContext.current
     var value by remember { mutableStateOf("") }
 
@@ -77,7 +80,10 @@ internal fun HomeBottomBar() {
                     )
                 )
                 ActionButton(
-                    onClickListener = { null },
+                    onClickListener = {
+                        if(value.isNotEmpty())chatViewModel.sendUserMessage(value)
+                        value = ""
+                    },
                     icon = AppIcon.Send,
                     shape = MaterialShapes.Ghostish.toShape(),
                     modifier = Modifier

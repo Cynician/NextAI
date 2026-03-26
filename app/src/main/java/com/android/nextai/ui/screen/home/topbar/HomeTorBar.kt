@@ -9,7 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.android.nextai.ui.component.ActionButton
+import com.android.nextai.ui.component.button.ActionButton
 import com.android.nextai.ui.icon.AppIcon
 import com.android.nextai.ui.screen.home.topbar.title.HomeTorBarTitle
 

@@ -11,15 +11,19 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.android.nextai.ui.screen.home.body.HomeBody
 import com.android.nextai.ui.screen.home.bottombar.HomeBottomBar
 import com.android.nextai.ui.screen.home.drawer.HomeDrawerScreen
 import com.android.nextai.ui.screen.home.topbar.HomeTopBar
+import com.android.nextai.viewmodel.chat.ChatViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    chatViewModel: ChatViewModel = hiltViewModel()
+) {
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     ModalNavigationDrawer(
@@ -41,10 +45,13 @@ fun HomeScreen() {
                 )
             },
             bottomBar = {
-                HomeBottomBar()
+                HomeBottomBar(chatViewModel = chatViewModel)
             }
         ) { paddingValues ->
-            HomeBody(paddingValues)
+            HomeBody(
+                paddingValues = paddingValues,
+                chatViewModel = chatViewModel
+            )
         }
     }
 }

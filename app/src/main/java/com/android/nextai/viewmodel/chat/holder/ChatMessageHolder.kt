@@ -1,4 +1,4 @@
-package com.android.nextai.viewmodel.chat
+package com.android.nextai.viewmodel.chat.holder
 
 import android.content.Context
 import androidx.compose.runtime.mutableStateListOf

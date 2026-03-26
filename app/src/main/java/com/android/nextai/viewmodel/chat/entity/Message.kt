@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 @Immutable
 data class Message(
     val msgId: Long,
-    val role: Role?,
+    val role: Role,
     val content: String
 ) {
     val markdownElements: List<MarkdownElement> by lazy {

@@ -43,7 +43,7 @@ fun TitleRow(
 ) {
     Box(modifier = modifier) {
         Surface(
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.primaryContainer,
             shape = RoundedCornerShape(26.dp),
             modifier = Modifier.height(Standard.ActionIconSize)
         ) {
