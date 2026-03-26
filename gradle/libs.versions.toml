@@ -35,6 +35,8 @@ androidx-junit = "1.3.0"
 junit = "4.13.2"
 core-ktx = "1.18.0"
 
+openai = "2.0.0"
+
 [libraries]
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidx-activity-compose" }
@@ -82,6 +84,7 @@ androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "a
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
 
+openai = {group = "com.openai", name = "openai-java", version.ref = "openai"}
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
