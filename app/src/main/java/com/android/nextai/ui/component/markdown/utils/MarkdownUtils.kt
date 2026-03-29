@@ -26,7 +26,7 @@ object MarkdownUtils {
     private val LATEX_NORM_FIX = Regex("""\\begin\s+\{""")
     private val LATEX_ENV_REGEX = Regex("""\\begin\{(equation|align|gather|multline|displaymath|math)(\*?)\}""")
 
-    internal fun parseMarkdown(text: String): List<MarkdownElement> {
+    fun parseMarkdown(text: String): List<MarkdownElement> {
         val elements = mutableListOf<MarkdownElement>()
         val lines = text.lines()
         var i = 0

@@ -31,27 +31,99 @@ fun MarkdownElement.bottomSpacing(): Dp = when (this) {
 // ── Sealed element model ──
 @Serializable
 sealed class MarkdownElement {
-    data class Heading1(val text: String) : MarkdownElement()
-    data class Heading2(val text: String) : MarkdownElement()
-    data class Heading3(val text: String) : MarkdownElement()
-    data class Heading4(val text: String) : MarkdownElement()
-    data class Heading5(val text: String) : MarkdownElement()
-    data class Heading6(val text: String) : MarkdownElement()
-    data class Body(val text: String) : MarkdownElement()
-    data class BulletPoint(val text: String, val level: Int = 0) : MarkdownElement()
-    data class NumberedPoint(val text: String, val number: String) : MarkdownElement()
-    data class Quote(val text: String, val level: Int = 1) : MarkdownElement()
-    data class CodeBlock(val code: String, val language: String) : MarkdownElement()
-    data class InlineCode(val text: String) : MarkdownElement()
+    open fun getContent():String{
+        return ""
+    }
+    data class Heading1(val text: String) : MarkdownElement(){
+        override fun getContent():String{
+            return this.text
+        }
+    }
+    data class Heading2(val text: String) : MarkdownElement(){
+        override fun getContent():String{
+            return this.text
+        }
+    }
+    data class Heading3(val text: String) : MarkdownElement(){
+        override fun getContent():String{
+            return this.text
+        }
+    }
+    data class Heading4(val text: String) : MarkdownElement(){
+        override fun getContent():String{
+            return this.text
+        }
+    }
+    data class Heading5(val text: String) : MarkdownElement(){
+        override fun getContent():String{
+            return this.text
+        }
+    }
+    data class Heading6(val text: String) : MarkdownElement(){
+        override fun getContent():String{
+            return this.text
+        }
+    }
+    data class Body(val text: String) : MarkdownElement(){
+        override fun getContent():String{
+            return this.text
+        }
+    }
+    data class BulletPoint(val text: String, val level: Int = 0) : MarkdownElement(){
+        override fun getContent():String{
+            return this.text
+        }
+    }
+    data class NumberedPoint(val text: String, val number: String) : MarkdownElement(){
+        override fun getContent():String{
+            return this.text
+        }
+    }
+    data class Quote(val text: String, val level: Int = 1) : MarkdownElement(){
+        override fun getContent():String{
+            return this.text
+        }
+    }
+    data class CodeBlock(val code: String, val language: String) : MarkdownElement(){
+        override fun getContent():String{
+            return "${this.language}:${this.code}"
+        }
+    }
+    data class InlineCode(val text: String) : MarkdownElement() {
+        override fun getContent(): String {
+            return this.text
+        }
+    }
+
     data class Table(
         val headers: List<String>,
         val rows: List<List<String>>,
         val alignments: List<Alignment>,
     ) : MarkdownElement() {
         enum class Alignment { LEFT, CENTER, RIGHT }
+
+        override fun getContent():String{
+            val sb = StringBuilder()
+            headers.forEach { sb.append(it) }
+            rows.forEach { sb.append(it) }
+            return sb.toString()
+        }
     }
 
-    data class MathBlock(val expression: String, val isTypst: Boolean = false) : MarkdownElement()
-    data class InlineMath(val expression: String, val isTypst: Boolean = false) : MarkdownElement()
-    data object Divider : MarkdownElement()
+    data class MathBlock(val expression: String, val isTypst: Boolean = false) : MarkdownElement(){
+        override fun getContent(): String {
+            return this.expression
+        }
+    }
+    data class InlineMath(val expression: String, val isTypst: Boolean = false) : MarkdownElement(){
+        override fun getContent(): String {
+            return this.expression
+        }
+    }
+
+    data object Divider : MarkdownElement(){
+        override fun getContent(): String {
+            return ""
+        }
+    }
 }

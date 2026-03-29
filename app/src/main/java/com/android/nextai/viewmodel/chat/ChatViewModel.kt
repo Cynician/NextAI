@@ -1,11 +1,15 @@
 package com.android.nextai.viewmodel.chat
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.nextai.domain.remote.Model
 import com.android.nextai.domain.remote.entity.GenerationEvent
 import com.android.nextai.domain.repository.ChatRepository
+import com.android.nextai.ui.component.markdown.entity.MarkdownElement
+import com.android.nextai.ui.component.markdown.utils.MarkdownUtils
 import com.android.nextai.viewmodel.chat.entity.EmptyMessage
 import com.android.nextai.viewmodel.chat.entity.Message
 import com.android.nextai.viewmodel.chat.entity.Role
@@ -17,6 +21,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collect
@@ -37,60 +44,95 @@ class ChatViewModel @Inject constructor(
     private var generationJob: Job? = null
 
 
+    private val _curMarkdown = MutableStateFlow<MarkdownElement?>(null)
+    val curMarkdown: StateFlow<MarkdownElement?> = _curMarkdown.asStateFlow()
+
+    private val _curMsgId = MutableStateFlow(0)
+    val curMsgId: StateFlow<Int> = _curMsgId.asStateFlow()
+
+    private val _isTextStreaming = MutableStateFlow(true)
+    val isTextStreaming: StateFlow<Boolean> = _isTextStreaming.asStateFlow()
+
+    private val _curContent = MutableStateFlow("")
+    val curContent: StateFlow<String> = _curContent.asStateFlow()
+
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     fun sendUserMessage(currentPrompt: String) {
         currentPrompt.trim()
         messageHolder.updateCurPrompt(currentPrompt)
-
         val userMessage = Message(
-            msgId = System.currentTimeMillis(),
+            msgId = messageHolder.totalMarkdownElementCnt.value + 1,
             role = Role.User,
-            content = currentPrompt
+            markdown = MarkdownElement.Body(currentPrompt)
         )
         val messageList = messageHolder.messageList
         messageList.add(userMessage)
-
-        messageHolder.updateLastUserMarkdownElementCnt(
-            messageHolder.totalMarkdownElementCnt.value +
-                    userMessage.markdownElements.size
-        )
-        messageList.add(EmptyMessage)
+        messageHolder.updateLastUserMarkdownElementCnt(messageHolder.totalMarkdownElementCnt.value + 1)
+        messageHolder.updateTotalMarkdownElementCnt(1)
 
         messageHolder.updateIsGenerating(true)
         val isSportStreamingGen = true
         generationJob = viewModelScope.launch {
             if (isSportStreamingGen) {
-                val msgId = System.currentTimeMillis()
-                var tmpContent = ""
+                _curMsgId.value =  messageHolder.totalMarkdownElementCnt.value + 1
+                _isTextStreaming.value = true
+                messageList.add(Message(
+                    msgId = _curMsgId.value,
+                    role = Role.Assistant,
+                    markdown = MarkdownElement.Body("")
+                ))
+                var fullTextBuffer = ""
                 streamingGen(messageList = messageList).collect { event ->
                     when (event) {
                         is GenerationEvent.Word -> {
-                            tmpContent += event.content
-                            Log.d(TAG, tmpContent)
+                            _curContent.value += event.content
+                            Log.d(TAG, _curContent.value)
+                            fullTextBuffer += event.content
+                            val elements = MarkdownUtils.parseMarkdown(fullTextBuffer)
+                            if(elements.size == 1){
+                                val element = elements.first()
+                                messageList.removeLast()
+                                messageList.add(Message(
+                                    msgId = _curMsgId.value,
+                                    role = Role.Assistant,
+                                    markdown = element
+                                ))
+                            }else if(elements.size>1){
+                                messageHolder.updateTotalMarkdownElementCnt(1)
+                                _curMsgId.value =  messageHolder.totalMarkdownElementCnt.value + 1
+                                fullTextBuffer = event.content
+                                messageList.add(Message(
+                                    msgId = _curMsgId.value,
+                                    role = Role.Assistant,
+                                    markdown = elements.last()
+                                ))
+                            }
+                            Log.d(TAG, fullTextBuffer +"element type : ${elements.last()}")
                         }
-
-                        is GenerationEvent.Done -> {
+                        is GenerationEvent.Error,
+                        GenerationEvent.Done -> {
+//                            _isTextStreaming.value = false
                             generationJob?.cancel()
                         }
-
-                        else -> {}
                     }
 
                 }
-            } else {
+            }
+            // 非流式输出
+            else {
                 val assistantAnswer = chatRepository.getAIAnswer(Model.DOUBAO, messageList)
-                val assistantMessage = Message(
-                    msgId = System.currentTimeMillis(),
-                    role = Role.Assistant,
-                    content = assistantAnswer
-                )
-                messageList.add(assistantMessage)
                 messageList.add(EmptyMessage)
+                MarkdownUtils.parseMarkdown(assistantAnswer).forEachIndexed { index, element ->
+                    val assistantMessage = Message(
+                        msgId = messageHolder.totalMarkdownElementCnt.value + 1,
+                        role = Role.Assistant,
+                        markdown = element
+                    )
+                    messageList.add(assistantMessage)
+                    messageHolder.updateTotalMarkdownElementCnt(1)
+                }
                 messageHolder.updateIsGenerating(false)
 
-                messageHolder.updateTotalMarkdownElementCnt(
-                    userMessage.markdownElements.size +
-                            assistantMessage.markdownElements.size + 2
-                )
                 Log.d(TAG, "bubbleList size : ${messageList.size}")
             }
         }

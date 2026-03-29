@@ -51,6 +51,8 @@ fun HomeBody(
     val messageList = chatViewModel.messageHolder.messageList
     val listState = rememberLazyListState()
 
+    val isTextStreaming by chatViewModel.isTextStreaming.collectAsState()
+
     // body roll logic
     val lastUserMarkdownElementCnt by chatViewModel.messageHolder.lastUserMarkdownElementCnt.collectAsState()
     val curPrompt by chatViewModel.messageHolder.curPrompt.collectAsStateWithLifecycle()
@@ -77,28 +79,29 @@ fun HomeBody(
                 contentPadding = PaddingValues(vertical = Standard.SpacingSm),
                 verticalArrangement = Arrangement.spacedBy(Standard.SpacingXs)
             ) {
-                messageList.forEachIndexed { index, message ->
-                    when (message.role) {
-                        Role.User -> {
-                            item(key = "${message.msgId}-$index-user") {
-                                UserMessageBubble(message.markdownElements.first())
-                            }
-                        }
+                if(isTextStreaming){
+                    messageList.forEachIndexed { index, message ->
+                        when (message.role) {
+                            Role.User -> {
 
-                        Role.Assistant -> {
-                            message.markdownElements.forEachIndexed { index, element ->
-                                item(key = "${message.msgId}-$index-assistant") {
-                                    AssistantMessageBubble(element)
+                                item(key = "${message.msgId}-user") {
+                                    UserMessageBubble(message.markdown)
                                 }
                             }
-                        }
+                            Role.Assistant -> {
+                                item(key = "${message.msgId}-assistant") {
+                                    AssistantMessageBubble(message.markdown)
+                                }
 
-                        else -> {
-                            item { Spacer(modifier = Modifier.height(Standard.SpacingLg)) }
+                            }
+                            else -> {}
                         }
                     }
+
                 }
+                else{}
             }
+
         }
         MaskView()
     }

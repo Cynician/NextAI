@@ -8,17 +8,15 @@ import kotlinx.serialization.Serializable
 @Serializable
 @Immutable
 data class Message(
-    val msgId: Long,
+    val msgId: Int,
     val role: Role,
-    val content: String
-) {
-    val markdownElements: List<MarkdownElement> by lazy {
-        parseMarkdown(content)
-    }
-}
+    val content: String = "",
+    var markdown : MarkdownElement
+)
 
 val EmptyMessage = Message(
-    msgId = System.currentTimeMillis(),
+    msgId = 0,
     role = Role.None,
-    content = ""
+    content = "",
+    markdown = MarkdownElement.Body("")
 )
