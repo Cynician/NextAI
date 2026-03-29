@@ -2,6 +2,7 @@ package com.android.nextai.domain.remote.qianwen
 
 import android.util.Log
 import com.android.nextai.domain.remote.AIModelDataSource
+import com.android.nextai.domain.remote.entity.GenerationEvent
 import com.android.nextai.viewmodel.chat.ChatViewModel
 import com.android.nextai.viewmodel.chat.entity.Message
 import com.android.nextai.viewmodel.chat.entity.Role
@@ -9,7 +10,6 @@ import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import com.openai.models.chat.completions.ChatCompletionSystemMessageParam
-import com.openai.models.chat.completions.ChatCompletionToolMessageParam
 import com.openai.models.chat.completions.ChatCompletionUserMessageParam
 
 import javax.inject.Inject
@@ -67,6 +67,13 @@ object QianwenRemoteDataSource : AIModelDataSource {
             Log.e(TAG, "getAIAnswer# error:${e}")
         }
         return ""
+    }
+
+    override suspend fun getAIStreamingAnswer(
+        messageList: List<Message>,
+        callback: (GenerationEvent) -> Unit,
+    ) {
+        TODO("Not yet implemented")
     }
 
 }
