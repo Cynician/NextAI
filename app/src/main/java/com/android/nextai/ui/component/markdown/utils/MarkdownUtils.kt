@@ -26,6 +26,38 @@ object MarkdownUtils {
     private val LATEX_NORM_FIX = Regex("""\\begin\s+\{""")
     private val LATEX_ENV_REGEX = Regex("""\\begin\{(equation|align|gather|multline|displaymath|math)(\*?)\}""")
 
+    fun parseText2Markdown(text: String):MarkdownElement{
+        if(text.startsWith("######") && text.length>6){
+            return MarkdownElement.Heading6(text.substring(6))
+        }else if(text.startsWith("#####")&& text.length>5){
+            return MarkdownElement.Heading5(text.substring(5))
+        }else if(text.startsWith("####")&& text.length>4){
+            return MarkdownElement.Heading4(text.substring(4))
+        }else if(text.startsWith("###") && text.length>3){
+            return MarkdownElement.Heading3(text.substring(3))
+        }else if(text.startsWith("##")&& text.length>2){
+            return MarkdownElement.Heading2(text.substring(2))
+        }else if(text.startsWith("#")&& text.length>1){
+            return MarkdownElement.Heading1(text.substring(1))
+        }else if(text.matches(NUMBERED_REGEX)){
+            return MarkdownElement.NumberedPoint(text.substringAfter(". "), text.substringBefore("."))
+        }else if(text.matches(BULLET_REGEX)){
+                val level = text.takeWhile { it == ' ' }.length
+                return MarkdownElement.BulletPoint(text.trimStart().substring(1), level)
+        } else if(text.startsWith(">")){
+            val level = text.takeWhile { it == '>' }.length
+            return MarkdownElement.Quote(text.substring(level).trim(), level)
+        }
+        else if(text.startsWith("```")){
+            val lang = if (text.length > 3) text.substring(3) else ""
+            val code = text.substring(3 + lang.length)
+            return MarkdownElement.CodeBlock(code, lang)
+        }else if(text.trim() == "---" || text.trim()=="___" || text.trim() == "***"){
+            return MarkdownElement.Divider
+        }
+        return MarkdownElement.Body(text)
+    }
+
     fun parseMarkdown(text: String): List<MarkdownElement> {
         val elements = mutableListOf<MarkdownElement>()
         val lines = text.lines()
@@ -199,7 +231,6 @@ object MarkdownUtils {
         line.trim().removePrefix("|").removeSuffix("|").split("|").map { it.trim() }
 
 // ── Inline formatting ──
-
     /**
      * Find closing ** for bold, accounting for *** (italic close + bold close).
      * When a run of 3+ stars is found, the last 2 close bold, any preceding ones close italic.

@@ -44,8 +44,8 @@ private fun Color.luminance(): Float = 0.299f * red + 0.587f * green + 0.114f * 
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun CodeBlockView(code: String, language: String) {
-    var isExpanded by remember { mutableStateOf(false) }
+fun CodeBlockView(code: String, language: String, enableHighlightCode:Boolean = false) {
+    var isExpanded by remember { mutableStateOf(true) }
     val context = LocalContext.current
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val headerBg = remember(isDark) { if (isDark) Color(0xFF282C34) else Color(0xFFF5F5F5) }
@@ -118,7 +118,8 @@ fun CodeBlockView(code: String, language: String) {
         if (isExpanded) {
             val syntaxTheme = resolveSyntaxTheme()
             val highlighted = remember(code, language) {
-                if (language.isNotBlank()) highlightCode(code, language, syntaxTheme) else null
+                if (language.isNotBlank() && enableHighlightCode) highlightCode(code, language, syntaxTheme)
+                else null
             }
             HorizontalDivider(color = headerFg.copy(alpha = 0.1f))
             Box(

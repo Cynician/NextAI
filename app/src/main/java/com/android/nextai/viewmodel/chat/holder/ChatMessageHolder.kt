@@ -17,35 +17,30 @@ class ChatMessageHolder @Inject constructor(
     @ApplicationContext context: Context,
     private val chatRepository: ChatRepository
 ) {
-
+    // to record the generating state, no whether it is text/image/voice generating
     private var _isGenerating = MutableStateFlow(false)
     val isGenerating: StateFlow<Boolean> = _isGenerating
     fun updateIsGenerating(state: Boolean){
         _isGenerating.value = state
     }
 
-
+    // to record current user's prompt
     private val _curPrompt = MutableStateFlow("")
     val curPrompt: StateFlow<String> = _curPrompt.asStateFlow()
     fun updateCurPrompt(prompt:String){
         _curPrompt.value = prompt
     }
 
-
+    // record messages in a session
     private val _messageList = mutableStateListOf<Message>()
     val messageList: SnapshotStateList<Message> = _messageList
 
-    private val _totalMarkdownElementCnt = MutableStateFlow(0)
-    val totalMarkdownElementCnt: MutableStateFlow<Int> = _totalMarkdownElementCnt
-    fun updateTotalMarkdownElementCnt(num:Int){
-        _totalMarkdownElementCnt.value += num
-    }
 
-    private val _lastUserMarkdownElementCnt = MutableStateFlow(0)
-    val lastUserMarkdownElementCnt: MutableStateFlow<Int> = _lastUserMarkdownElementCnt
-    fun updateLastUserMarkdownElementCnt(num:Int){
-        _lastUserMarkdownElementCnt.value = num
+    // record text streaming state
+    private val _isTextStreaming = MutableStateFlow(true)
+    val isTextStreaming: StateFlow<Boolean> = _isTextStreaming.asStateFlow()
+    fun updateIsTextStreaming(state:Boolean){
+        _isTextStreaming.value = state
     }
-
 
 }

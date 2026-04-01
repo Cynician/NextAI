@@ -1,6 +1,5 @@
 package com.android.nextai.ui.screen.home.body
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.fadeIn
@@ -34,12 +33,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.nextai.ui.Standard
 import com.android.nextai.ui.icon.AppIcon
-import com.android.nextai.ui.screen.home.utils.UiUtils.scrollToTargetBubble
 import com.android.nextai.ui.theme.Animation
 import com.android.nextai.viewmodel.chat.ChatViewModel
 import com.android.nextai.viewmodel.chat.entity.Role
-
-private const val TAG = "HomeBody"
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -51,17 +47,11 @@ fun HomeBody(
     val messageList = chatViewModel.messageHolder.messageList
     val listState = rememberLazyListState()
 
-    val isTextStreaming by chatViewModel.isTextStreaming.collectAsState()
+    val isTextStreaming by chatViewModel.messageHolder.isTextStreaming.collectAsState()
 
     // body roll logic
-    val lastUserMarkdownElementCnt by chatViewModel.messageHolder.lastUserMarkdownElementCnt.collectAsState()
-    val curPrompt by chatViewModel.messageHolder.curPrompt.collectAsStateWithLifecycle()
     LaunchedEffect(messageList.size) {
-        if (messageList.isEmpty() || isGenerating) return@LaunchedEffect
-        val elementIndex = lastUserMarkdownElementCnt - 1
-        if (elementIndex < 0) return@LaunchedEffect
-        Log.d(TAG, "elementIndex: $elementIndex")
-        listState.scrollToTargetBubble(bubbleIndex = elementIndex, promptLength = curPrompt.length)
+        listState.animateScrollToItem(index = messageList.size-1)
     }
 
     Box(
@@ -83,18 +73,18 @@ fun HomeBody(
                     messageList.forEachIndexed { index, message ->
                         when (message.role) {
                             Role.User -> {
-
                                 item(key = "${message.msgId}-user") {
+                                    Spacer(modifier = Modifier.height(Standard.SpacingLg))
                                     UserMessageBubble(message.markdown)
+                                    Spacer(modifier = Modifier.height(Standard.SpacingLg))
                                 }
                             }
                             Role.Assistant -> {
                                 item(key = "${message.msgId}-assistant") {
                                     AssistantMessageBubble(message.markdown)
                                 }
-
                             }
-                            else -> {}
+                            Role.None -> {}
                         }
                     }
 

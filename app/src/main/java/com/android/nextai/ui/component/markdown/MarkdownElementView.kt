@@ -82,10 +82,10 @@ fun MarkdownElementView(element: MarkdownElement?, colors: InlineColors) {
         )
 
         is MarkdownElement.Body -> BodyTextView(element.text, colors)
-        is MarkdownElement.BulletPoint -> BulletPointView(element.text, element.level, colors)
+        is MarkdownElement.BulletPoint -> BulletPointView(element.text, element._level, colors)
         is MarkdownElement.NumberedPoint -> NumberedPointView(element.text, element.number, colors)
-        is MarkdownElement.Quote -> BlockQuoteView(element.text, element.level, colors)
-        is MarkdownElement.CodeBlock -> CodeBlockView(element.code, element.language)
+        is MarkdownElement.Quote -> BlockQuoteView(element.text, element._level, colors)
+        is MarkdownElement.CodeBlock -> CodeBlockView(element.code, element.language, element.enableHighlightCode)
         is MarkdownElement.InlineCode -> InlineCodeView(element.text)
         is MarkdownElement.Table -> TableView(
             element.headers,
