@@ -51,8 +51,8 @@ fun FencedCodeBlockView(node: MarkdownNode.FencedCodeBlock, isHighlightCode:Bool
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val headerBg = remember(isDark) { if (isDark) Color(0xFF282C34) else Color(0xFFF5F5F5) }
     val headerFg = remember(isDark) { if (isDark) Color(0xFFABB2BF) else Color(0xFF383A42) }
-    val lang = remember { node.lang }
-    val code = remember { node.code }
+    val lang = node.lang
+    val code = node.code
     Column(
         modifier = Modifier
             .fillMaxWidth()

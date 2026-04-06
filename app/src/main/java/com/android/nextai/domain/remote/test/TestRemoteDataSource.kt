@@ -1,6 +1,5 @@
 package com.android.nextai.domain.remote.test
 
-
 import android.util.Log
 import com.android.nextai.domain.remote.AIModelDataSource
 import com.android.nextai.domain.remote.entity.GenerationEvent
@@ -53,9 +52,9 @@ object TestRemoteDataSource : AIModelDataSource {
             var currentIndex = 0
 
             while (currentIndex < testData.length) {
-                // 生成1-20之间的随机大小，但不超过剩余字符数
+                // generate streaming chunk
                 val remainingLength = testData.length - currentIndex
-                val chunkSize = Random.nextInt(1, minOf(21, remainingLength + 1))
+                val chunkSize = Random.nextInt(1, minOf(51, remainingLength + 1))
 
                 val chunk = testData.substring(currentIndex, currentIndex + chunkSize)
                 chunks.add(chunk)
@@ -156,9 +155,6 @@ object TestRemoteDataSource : AIModelDataSource {
 
                                 }
                             }
-//                            sentLength += 1
-//                            delay(20)
-//                            callback(GenerationEvent.Word(char.toString()))
                         }
                         holdBuffer.clear()
                     }
