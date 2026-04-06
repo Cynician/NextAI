@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,21 +32,26 @@ fun HomeTorBarTitle(
     TitleRow(
         text = "欢迎使用NextAI",
         icon = AppIcon.Sparkles,
-        modifier = modifier.clickable {
-            onShowDynamicWindow()
-        })
+        modifier = modifier,
+        onClick = onShowDynamicWindow
+    )
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TitleRow(
-    modifier: Modifier = Modifier, text: String, icon: ImageVector
+    modifier: Modifier = Modifier,
+    text: String, icon: ImageVector,
+    onClick: () -> Unit = {}
 ) {
+    val shape = RoundedCornerShape(26.dp)
     Box(modifier = modifier) {
         Surface(
             color = MaterialTheme.colorScheme.primaryContainer,
             shape = RoundedCornerShape(26.dp),
             modifier = Modifier.height(Standard.ActionIconSize)
+                .clip(shape = shape)
+                .clickable(onClick = onClick),
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
