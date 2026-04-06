@@ -16,7 +16,7 @@ import com.openai.models.chat.completions.ChatCompletionUserMessageParam
 object QianwenRemoteDataSource : AIModelDataSource {
     private const val TAG = "QianwenRemoteDataSource"
     private const val BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    private const val API_KEY = "sk-434e2e9bf2a0432c8dced58f3146bcd2"
+    private const val API_KEY = "sk-xxxxxxxxxxxxxxxxxx"
     private const val MODEL = "qwen3-max-2026-01-23"
 
     val openAIClient by lazy {
@@ -108,7 +108,7 @@ object QianwenRemoteDataSource : AIModelDataSource {
         while (i < messageList.size) {
             val message = messageList[i]
             if (message.role == Role.Assistant) {
-                content += message.markdown?.getContent()
+                content += message.content
                 i += 1
                 continue
             }
@@ -121,7 +121,7 @@ object QianwenRemoteDataSource : AIModelDataSource {
             }
             if (message.role == Role.User) {
                 val userMessage = ChatCompletionUserMessageParam.builder()
-                    .content(message.markdown!!.getContent())
+                    .content(message.content)
                     .build()
                 paramsBuilder.addMessage(userMessage)
             }

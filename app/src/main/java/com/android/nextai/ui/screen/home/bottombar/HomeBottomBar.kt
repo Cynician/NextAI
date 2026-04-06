@@ -1,5 +1,7 @@
 package com.android.nextai.ui.screen.home.bottombar
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,12 +34,12 @@ import com.android.nextai.ui.component.button.ActionButton
 import com.android.nextai.ui.icon.AppIcon
 import com.android.nextai.viewmodel.chat.ChatViewModel
 
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun HomeBottomBar(
     chatViewModel: ChatViewModel
 ) {
-    val context = LocalContext.current
     var value by remember { mutableStateOf("") }
 
     Box(

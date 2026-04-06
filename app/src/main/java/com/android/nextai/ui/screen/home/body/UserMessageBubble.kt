@@ -13,11 +13,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.Standard
-import com.android.nextai.ui.component.markdown.category.MarkdownTextView
-import com.android.nextai.ui.component.markdown.entity.MarkdownElement
+import com.android.nextai.ui.component.markdown.MarkdownNodeView
+import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 
 @Composable
-internal fun UserMessageBubble(element: MarkdownElement) {
+internal fun UserMessageBubble(element: MarkdownNode) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.End
@@ -31,13 +31,7 @@ internal fun UserMessageBubble(element: MarkdownElement) {
                 .widthIn(max = 280.dp)
         ) {
             SelectionContainer {
-                MarkdownTextView(
-                    element = element,
-                    modifier = Modifier.padding(
-                        horizontal = 12.dp,
-                        vertical = 6.dp
-                    )
-                )
+                MarkdownNodeView(element)
             }
         }
     }

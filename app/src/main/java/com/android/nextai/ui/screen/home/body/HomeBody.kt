@@ -1,5 +1,6 @@
 package com.android.nextai.ui.screen.home.body
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.fadeIn
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +33,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.android.nextai.domain.remote.test.TestData
 import com.android.nextai.ui.Standard
+import com.android.nextai.ui.component.markdown.MarkdownNodeView
+import com.android.nextai.ui.component.markdown.utils.MarkdownNodeUtils.parseMarkDown
 import com.android.nextai.ui.icon.AppIcon
 import com.android.nextai.ui.theme.Animation
 import com.android.nextai.viewmodel.chat.ChatViewModel
@@ -46,23 +51,40 @@ fun HomeBody(
     val isGenerating by chatViewModel.messageHolder.isGenerating.collectAsStateWithLifecycle()
     val messageList = chatViewModel.messageHolder.messageList
     val listState = rememberLazyListState()
+    val listStateTest = rememberLazyListState()
 
     val isTextStreaming by chatViewModel.messageHolder.isTextStreaming.collectAsState()
-
+//    val isTextStreaming = false
     // body roll logic
     LaunchedEffect(messageList.size) {
-        listState.animateScrollToItem(index = messageList.size-1)
+//        listState.animateScrollToItem(index = if(messageList.isNotEmpty())messageList.size-1 else 0)
     }
-
+    val mdNodes = remember {
+//        parseMarkDown(TestData.getData2())
+        parseMarkDown("")
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(paddingValues)
     ) {
-        if (!isGenerating && messageList.isEmpty()) {
-            EmptyMessageView()
-        } else {
+        if (mdNodes.isNotEmpty()) {
+            LazyColumn(state = listStateTest,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(vertical = Standard.SpacingSm),
+                verticalArrangement = Arrangement.spacedBy(Standard.SpacingXs)) {
+                try {
+                    items(mdNodes) { node ->
+                        MarkdownNodeView(node)
+                    }
+                }catch (e: Exception){
+                    Log.e("HomeBody", "e:$e")
+                }
+
+            }
+
+        } else if(isGenerating) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
@@ -89,9 +111,9 @@ fun HomeBody(
                     }
 
                 }
-                else{}
             }
-
+        }else {
+            EmptyMessageView()
         }
         MaskView()
     }

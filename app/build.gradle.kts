@@ -130,5 +130,12 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
+    // remote
     implementation(libs.openai)
+
+    // parse markdown
+    implementation(libs.flexmark)
+    implementation(libs.flexmark.ext.strikethrough)
+    implementation(libs.flexmark.ext.superscript)
+    implementation(libs.flexmark.ext.tables)
 }

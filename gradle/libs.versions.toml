@@ -37,6 +37,9 @@ core-ktx = "1.18.0"
 
 openai = "2.0.0"
 
+# parse markdown
+flexmark = "0.64.8"
+
 [libraries]
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidx-activity-compose" }
@@ -67,7 +70,6 @@ hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref
 hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "dagger-hilt" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
-lz4-java = { group = "org.lz4", name = "lz4-java", version.ref = "lz4-java" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfbox-android" }
@@ -85,6 +87,13 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
 
 openai = {group = "com.openai", name = "openai-java", version.ref = "openai"}
+
+# parse markdown
+flexmark = {group = "com.vladsch.flexmark", name = "flexmark", version.ref = "flexmark"}
+flexmark-ext-strikethrough = {group = "com.vladsch.flexmark", name = "flexmark-ext-gfm-strikethrough", version.ref = "flexmark"}
+flexmark-ext-superscript = {group = "com.vladsch.flexmark", name = "flexmark-ext-superscript", version.ref = "flexmark"}
+flexmark-ext-tables = {group = "com.vladsch.flexmark", name = "flexmark-ext-tables", version.ref = "flexmark"}
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }

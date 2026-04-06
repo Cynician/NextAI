@@ -3,38 +3,25 @@ package com.android.nextai.ui.screen.home.body
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.Standard
-import com.android.nextai.ui.component.markdown.MarkdownElementView
-import com.android.nextai.ui.component.markdown.entity.InlineColors
-import com.android.nextai.ui.component.markdown.entity.MarkdownElement
-import com.android.nextai.ui.component.markdown.entity.bottomSpacing
-import com.android.nextai.ui.component.markdown.entity.topSpacing
+import com.android.nextai.ui.component.markdown.MarkdownNodeView
+import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 
 @Composable
-internal fun AssistantMessageBubble(element: MarkdownElement) {
-    val element = element
-    val scheme = MaterialTheme.colorScheme
-    val colors = remember(scheme) {
-        InlineColors(
-            codeBg = scheme.surfaceVariant.copy(alpha = 0.5f),
-            highlightBg = scheme.primary.copy(alpha = 0.3f),
-            mathColor = scheme.primary
-        )
-    }
+internal fun AssistantMessageBubble(element: MarkdownNode) {
     SelectionContainer() {
         Box(
             modifier = Modifier
                 .padding(
-                    top = element.topSpacing(),
-                    bottom = element.bottomSpacing()
+                    top = 4.dp,
+                    bottom = 4.dp
                 )
                 .padding(horizontal = Standard.SpacingMd)
         ) {
-            MarkdownElementView(element, colors)
+            MarkdownNodeView(element)
         }
     }
 
