@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -43,7 +42,6 @@ import com.android.nextai.ui.theme.MapleMonoFontFamily
 
 private fun Color.luminance(): Float = 0.299f * red + 0.587f * green + 0.114f * blue
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FencedCodeBlockView(node: MarkdownNode.FencedCodeBlock, isHighlightCode:Boolean = false) {
     var isExpanded by remember { mutableStateOf(true) }
