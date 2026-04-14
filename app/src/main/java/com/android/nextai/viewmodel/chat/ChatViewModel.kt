@@ -116,10 +116,8 @@ class ChatViewModel @Inject constructor(
         if (messageHolder.messageList.isEmpty()) return
         val lastIndex = messageHolder.messageList.size - 1
         val oldMessage = messageHolder.messageList[lastIndex]
-
         // create new object but keep original id
         val newMessage = oldMessage.copy(markdown = newMarkdown)
-
         // Replace the last element in the message list
         messageHolder.messageList[lastIndex] = newMessage
     }

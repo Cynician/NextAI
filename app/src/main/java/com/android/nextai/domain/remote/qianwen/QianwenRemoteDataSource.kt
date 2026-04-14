@@ -65,26 +65,10 @@ object QianwenRemoteDataSource : AIModelDataSource {
             }
         } catch (e: Exception) {
             Log.e(TAG, "getAIAnswer# error:${e}")
+            return ""
         }
         return ""
     }
-
-
-    @Volatile
-    var stringBuffer: StringBuilder = StringBuilder("")
-    @Volatile
-    var sentLength = 0
-    @Volatile
-    var holdBuffer = StringBuilder() // cache for special string
-    @Volatile
-    var isHoldingTitle= false
-    @Volatile
-    var isHoldingCode = false
-    @Volatile
-    var isHoldingSpace = false
-    @Volatile
-    var isHoldingBulletPoint= false
-
 
     override suspend fun getAIStreamingAnswer(
         messageList: List<Message>,
@@ -134,78 +118,16 @@ object QianwenRemoteDataSource : AIModelDataSource {
 
             // 2. collect flow and send to callback
             streamFlow.stream().forEach { chunk ->
-                if(chunk.choices().isNotEmpty()){
+                if(chunk.choices().isNotEmpty()) {
                     val content = chunk.choices().first().delta().content().get()
-                    stringBuffer.append(content)
-                    val currentTotalLength = stringBuffer.length
-
-                    if (currentTotalLength > sentLength) {
-                        val newPart = stringBuffer.substring(sentLength, currentTotalLength)
-
-                        for (char in newPart) {
-                            if (isHoldingCode || isHoldingTitle || isHoldingSpace || isHoldingBulletPoint) {
-                                // wait for condition to stop hold
-                                holdBuffer.append(char)
-                                if (isHoldingCode && char == '\n') {
-                                    isHoldingCode = false
-                                } else if (isHoldingTitle && char != '#') {
-                                    isHoldingTitle = false
-                                } else if (isHoldingSpace && char != ' ') {
-                                    isHoldingSpace = false
-                                } else if(isHoldingBulletPoint && holdBuffer.trimStart().length > 3){
-                                    isHoldingBulletPoint = false
-                                }
-                                if(!isHoldingCode && !isHoldingTitle && !isHoldingSpace && !isHoldingBulletPoint){
-                                    val contentToEmit = holdBuffer.toString()
-                                    sentLength += contentToEmit.length
-                                    callback(GenerationEvent.Word(contentToEmit))
-                                    // reset hold buffer
-                                    holdBuffer.clear()
-                                }
-                            } else {
-                                when (char) {
-                                    '`' -> {
-                                        isHoldingCode = true
-                                        holdBuffer.append(char)
-                                    }
-                                    '#' -> {
-                                        isHoldingTitle = true
-                                        holdBuffer.append(char)
-                                    }
-                                    ' ' -> {
-                                        isHoldingSpace = true
-                                        holdBuffer.append(char)
-                                    }
-                                    '-' ->{
-                                        isHoldingBulletPoint = true
-                                        holdBuffer.append(char)
-                                    }
-                                    else -> {
-                                        sentLength += 1
-                                        callback(GenerationEvent.Word(char.toString()))
-
-                                    }
-                                }
-                            }
-                        }
-                        holdBuffer.clear()
-                    }
-
-                }else if(!chunk.usage().isEmpty){
-                    if (isHoldingCode && holdBuffer.isNotEmpty()) {
-                        val contentToEmit = holdBuffer.toString()
-                        callback(GenerationEvent.Word(contentToEmit))
-                        holdBuffer.clear()
-                        isHoldingCode = false
-                    }
-                    Log.i(TAG, stringBuffer.toString())
+                    callback(GenerationEvent.Word(content))
+                }else {
                     callback(GenerationEvent.Done)
                 }
             }
         } catch (e: Exception) {
             Log.e(TAG, "getAIStreamingAnswer# error:${e}")
+            callback(GenerationEvent.Done)
         }
-
     }
-
 }

@@ -69,9 +69,7 @@ fun MarkdownNodeView(node: MarkdownNode) {
             index = node.index,
             node.ordered
         )
-
         is MarkdownNode.BlockQuote -> BlockQuoteView(node, 0)
-
         // Inline
         is MarkdownNode.Text -> TextView(node)
         is MarkdownNode.FencedCodeBlock -> FencedCodeBlockView(node, true)
@@ -79,16 +77,11 @@ fun MarkdownNodeView(node: MarkdownNode) {
             modifier = Modifier.padding(vertical = Standard.SpacingXs),
             color = MaterialTheme.colorScheme.outlineVariant
         )
-
         // Table
         is MarkdownNode.TableBlock -> TableBlockView(node, colors)
         else -> {}
     }
-
-
 }
-
-
 
 @Composable
 fun TableBlockView(node: MarkdownNode.TableBlock, colors: InlineColors) {
