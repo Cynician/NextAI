@@ -9,17 +9,14 @@ sealed class MarkdownNode {
     data class Heading(val level: Int, val children: List<MarkdownNode>) : MarkdownNode()
     data class ListBlock(val children: List<MarkdownNode>, val ordered: Boolean, val depth: Int) :
         MarkdownNode()
-
     data class ListItem(
         val children: List<MarkdownNode>,
         val depth: Int = 0,
         val index: Int = 0,
         val ordered: Boolean,
     ) : MarkdownNode()
-
     data class FencedCodeBlock(val code: String, val lang: String) : MarkdownNode()
     data class BlockQuote(val children: List<MarkdownNode>, val depth: Int = 0) : MarkdownNode()
-
     // inline
     data class Text(val text: String) : MarkdownNode()
     data class Strong(val children: List<MarkdownNode>) : MarkdownNode()

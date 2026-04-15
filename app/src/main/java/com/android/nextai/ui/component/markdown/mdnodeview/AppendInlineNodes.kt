@@ -50,7 +50,6 @@ fun AnnotatedString.Builder.appendInlineNodes(nodes: List<MarkdownNode>, colors:
                 pop()
             }
             is MarkdownNode.Subscript -> {
-
                 pushStyle(
                     SpanStyle(
                         baselineShift = BaselineShift.Subscript,

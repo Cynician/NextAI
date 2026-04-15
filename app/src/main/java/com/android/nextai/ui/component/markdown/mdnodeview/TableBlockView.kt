@@ -39,7 +39,6 @@ fun TableBlockView(node: MarkdownNode.TableBlock, colors: InlineColors) {
     val (headers, bodyRows) = remember(node) { // <-- 在组合阶段同步计算
         val headerRows = mutableListOf<MarkdownNode.TableRow>()
         val dataRows = mutableListOf<MarkdownNode.TableRow>()
-
         node.children.forEach { child ->
             when (child) {
                 is MarkdownNode.TableHead -> {
@@ -51,7 +50,6 @@ fun TableBlockView(node: MarkdownNode.TableBlock, colors: InlineColors) {
                 else -> { /* Ignore TableSeparator etc. */ }
             }
         }
-        //
         Pair(headerRows, dataRows)
     }
     TableView(headers = headers, rows = bodyRows, colors)

@@ -40,19 +40,15 @@ object MarkdownNodeUtils {
             .extensions(listOf(TablesExtension.create()))
             .build()
     }
-
     fun parseChildren(node: Node): List<MarkdownNode>{
         val result = mutableListOf<MarkdownNode>()
         var child = node.firstChild
-
         while(child!=null){
             parseNode(child)?.let { result.add(it) }
             child = child.next
         }
-
         return result
     }
-
     fun parseNode(node:Node):MarkdownNode?{
         Log.d(TAG, "Node class name: ${node::class.simpleName}")
         return when(node){
@@ -87,11 +83,9 @@ object MarkdownNodeUtils {
 
     fun parseMarkDown(md:String):List<MarkdownNode>{
         try{
-
             val document = parser.parse(md)
             val result = mutableListOf<MarkdownNode>()
             var node = document.firstChild
-
             while(node != null){
                 parseNode(node)?.let { result.add(it) }
                 node = node.next
@@ -100,7 +94,6 @@ object MarkdownNodeUtils {
         }catch (e: Exception){
             Log.e(TAG, "parseMarkDown# e:$e")
         }
-
         return emptyList()
     }
 }
