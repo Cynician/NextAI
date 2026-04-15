@@ -1,8 +1,10 @@
-package com.android.nextai.ui.screen.home.body
+package com.android.nextai.ui.screen.home.body.bubble
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +34,7 @@ internal fun UserMessageBubble(element: MarkdownNode) {
         ) {
             SelectionContainer {
                 MarkdownNodeView(element)
+                Spacer(modifier = Modifier.height(Standard.SpacingLg))
             }
         }
     }

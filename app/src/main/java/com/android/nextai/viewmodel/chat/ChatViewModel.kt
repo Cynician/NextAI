@@ -9,7 +9,6 @@ import com.android.nextai.domain.remote.Model
 import com.android.nextai.domain.remote.entity.GenerationEvent
 import com.android.nextai.domain.repository.ChatRepository
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
-import com.android.nextai.ui.component.markdown.entity.MarkdownType
 import com.android.nextai.ui.component.markdown.utils.MarkdownNodeUtils
 import com.android.nextai.viewmodel.chat.entity.Message
 import com.android.nextai.viewmodel.chat.entity.Role
@@ -30,32 +29,32 @@ class ChatViewModel @Inject constructor(
     companion object {
         private const val TAG = "ChatViewModel"
     }
-
     private var generationJob: Job? = null
-
-    @Volatile
-    private var currentMessageId: String? = null // current streaming message ID
-    @Volatile
-    private var currentType: MarkdownType = MarkdownType.UNKNOWN
     @Volatile
     private var currentBuffer = StringBuilder()
     @Volatile
-    private var fullTextBuffer = StringBuilder()
-
+    private var currentBlocks = mutableListOf<MarkdownNode>()
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     fun sendUserMessage(currentPrompt: String) {
+        val isSportStreamingGen = true
         val currentPrompt = currentPrompt.trim()
-        messageHolder.updateCurPrompt(currentPrompt)
+        val messageList = messageHolder.messageList
         val userMessage = Message(
             msgId = UUID.randomUUID().toString(),
             role = Role.User,
-            markdown = MarkdownNode.Text(currentPrompt)
+            blocks = listOf(MarkdownNode.Text(currentPrompt))
         )
-        val messageList = messageHolder.messageList
+        val initBlock = MarkdownNode.Text("")
+        val assistantMessage = Message(
+            msgId = UUID.randomUUID().toString(),
+            role = Role.Assistant,
+            blocks = listOf(initBlock)
+        )
         messageList.add(userMessage)
-
+        messageList.add(assistantMessage)
         messageHolder.updateIsGenerating(true)
-        val isSportStreamingGen = true
+        messageHolder.updateCurPrompt(currentPrompt)
+        currentBlocks.add(initBlock)
         generationJob = viewModelScope.launch {
             if (isSportStreamingGen) {
                 messageHolder.updateIsTextStreaming(true)
@@ -64,36 +63,27 @@ class ChatViewModel @Inject constructor(
                         is GenerationEvent.Word -> {
                             Log.d(TAG, event.content)
                             val text = event.content
-                            if (currentMessageId == null) {
-                                currentMessageId = UUID.randomUUID().toString()
-                                Log.d(TAG, currentMessageId!!)
-                                messageList.add(Message(
-                                    msgId = currentMessageId!!,
-                                    role = Role.Assistant,
-                                    markdown = MarkdownNode.Text("")
-                                ))
-                            }
                             currentBuffer.append(text)
-
                             val nodes = MarkdownNodeUtils.parseMarkDown(currentBuffer.toString())
-                            if(nodes.size == 1){
-                                updateLastMessage(nodes[0])
-                            }else if(nodes.size > 1){
-                                updateLastMessage(nodes[0])
-                                resetState()
+                            if (nodes.size == 1) {
+                                val last = nodes[0]
+                                currentBlocks[currentBlocks.lastIndex] = last
+                            } else {
+                                val first = nodes[0]
+                                currentBlocks[currentBlocks.lastIndex] = first
+                                currentBuffer.clear()
                                 currentBuffer.append(text)
+                                currentBlocks.add(
+                                    MarkdownNode.Text("")
+                                )
                             }
-
+                            updateLastMessageBlocks(currentBlocks.toList())
                         }
                         is GenerationEvent.Error,
-                        GenerationEvent.Done,
-                            -> {
-//                            _isTextStreaming.value = false
+                        GenerationEvent.Done -> {
                             generationJob?.cancel()
                         }
-
                     }
-
                 }
             } else {
                 val assistantAnswer = chatRepository.getAIAnswer(Model.TEST, messageList)
@@ -101,7 +91,7 @@ class ChatViewModel @Inject constructor(
                     val assistantMessage = Message(
                         msgId = UUID.randomUUID().toString(),
                         role = Role.Assistant,
-                        markdown = element
+                        blocks = mutableListOf(element)
                     )
                     messageList.add(assistantMessage)
                 }
@@ -112,19 +102,11 @@ class ChatViewModel @Inject constructor(
 
     }
 
-    private fun updateLastMessage(newMarkdown: MarkdownNode) {
+    private fun updateLastMessageBlocks(blocks: List<MarkdownNode>) {
         if (messageHolder.messageList.isEmpty()) return
         val lastIndex = messageHolder.messageList.size - 1
         val oldMessage = messageHolder.messageList[lastIndex]
-        // create new object but keep original id
-        val newMessage = oldMessage.copy(markdown = newMarkdown)
-        // Replace the last element in the message list
+        val newMessage = oldMessage.copy(blocks = blocks)
         messageHolder.messageList[lastIndex] = newMessage
-    }
-
-    private fun resetState() {
-        currentType = MarkdownType.UNKNOWN
-        currentBuffer.clear()
-        currentMessageId = null
     }
 }

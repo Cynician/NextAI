@@ -33,11 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.android.nextai.domain.remote.test.TestData
 import com.android.nextai.ui.Standard
 import com.android.nextai.ui.component.markdown.MarkdownNodeView
 import com.android.nextai.ui.component.markdown.utils.MarkdownNodeUtils.parseMarkDown
 import com.android.nextai.ui.icon.AppIcon
+import com.android.nextai.ui.screen.home.body.bubble.AssistantMessageBubbleList
+import com.android.nextai.ui.screen.home.body.bubble.UserMessageBubble
 import com.android.nextai.ui.theme.Animation
 import com.android.nextai.viewmodel.chat.ChatViewModel
 import com.android.nextai.viewmodel.chat.entity.Role
@@ -81,7 +82,6 @@ fun HomeBody(
                 }catch (e: Exception){
                     Log.e("HomeBody", "e:$e")
                 }
-
             }
 
         } else if(isGenerating) {
@@ -96,14 +96,12 @@ fun HomeBody(
                         when (message.role) {
                             Role.User -> {
                                 item(key = "${message.msgId}-user") {
-                                    Spacer(modifier = Modifier.height(Standard.SpacingLg))
-                                    UserMessageBubble(message.markdown)
-                                    Spacer(modifier = Modifier.height(Standard.SpacingLg))
+                                    UserMessageBubble(message.blocks[0])
                                 }
                             }
                             Role.Assistant -> {
                                 item(key = "${message.msgId}-assistant") {
-                                    AssistantMessageBubble(message.markdown)
+                                    AssistantMessageBubbleList(message.blocks)
                                 }
                             }
                             Role.None -> {}
@@ -144,7 +142,6 @@ internal fun EmptyMessageView() {
         }
     }
 }
-
 
 @Composable
 internal fun MaskView() {

@@ -10,5 +10,5 @@ data class Message(
     var msgId: String,
     var role: Role,
     val content: String = "",
-    var markdown : MarkdownNode
+    var blocks : List<MarkdownNode>
 )
