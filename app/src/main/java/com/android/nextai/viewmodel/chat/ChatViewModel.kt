@@ -68,7 +68,7 @@ class ChatViewModel @Inject constructor(
                             if (nodes.size == 1) {
                                 val last = nodes[0]
                                 currentBlocks[currentBlocks.lastIndex] = last
-                            } else {
+                            } else if(nodes.size > 1) {
                                 val first = nodes[0]
                                 currentBlocks[currentBlocks.lastIndex] = first
                                 currentBuffer.clear()
