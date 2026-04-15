@@ -16,16 +16,15 @@ import com.android.nextai.ui.theme.MapleMonoFontFamily
 fun AnnotatedString.Builder.appendInlineNodes(nodes: List<MarkdownNode>, colors: InlineColors) {
 
     nodes.forEach { node ->
+
         when (node) {
             is MarkdownNode.Text -> append(node.text)
             is MarkdownNode.Strong -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
                 appendInlineNodes(node.children, colors)
             }
-
             is MarkdownNode.Emphasis -> withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                 appendInlineNodes(node.children, colors)
             }
-
             is MarkdownNode.InlineCode -> withStyle(
                 SpanStyle(
                     fontFamily = MapleMonoFontFamily,
@@ -35,7 +34,6 @@ fun AnnotatedString.Builder.appendInlineNodes(nodes: List<MarkdownNode>, colors:
             ) {
                 append(node.code)
             }
-
             is MarkdownNode.Link -> {
                 pushStringAnnotation(tag = "URL", annotation = node.url)
                 withStyle(
@@ -43,18 +41,14 @@ fun AnnotatedString.Builder.appendInlineNodes(nodes: List<MarkdownNode>, colors:
                         color = colors.mathColor,
                         textDecoration = TextDecoration.Underline
                     )
-                ) {
-                    appendInlineNodes(node.children, colors)
-                }
+                ) { appendInlineNodes(node.children, colors) }
                 pop()
             }
-
             is MarkdownNode.Strikethrough -> {
                 pushStyle(SpanStyle(textDecoration = TextDecoration.LineThrough))
                 appendInlineNodes(node.children, colors)
                 pop()
             }
-
             is MarkdownNode.Subscript -> {
 
                 pushStyle(
@@ -66,7 +60,6 @@ fun AnnotatedString.Builder.appendInlineNodes(nodes: List<MarkdownNode>, colors:
                 appendInlineNodes(node.children, colors)
                 pop()
             }
-
             is MarkdownNode.Superscript ->{
                 pushStyle(
                     SpanStyle(
