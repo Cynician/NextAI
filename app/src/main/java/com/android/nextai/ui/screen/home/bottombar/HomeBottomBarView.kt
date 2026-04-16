@@ -35,7 +35,7 @@ import com.android.nextai.viewmodel.chat.ChatViewModel
 internal fun HomeBottomBar(
     chatViewModel: ChatViewModel
 ) {
-    var value by remember { mutableStateOf("") }
+    var query by remember { mutableStateOf("") }
 
     Box(
         Modifier
@@ -59,8 +59,8 @@ internal fun HomeBottomBar(
                     .heightIn(max = 200.dp)
             ) {
                 TextField(
-                    value = value,
-                    onValueChange = { value = it },
+                    value = query,
+                    onValueChange = { query = it },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(end = 56.dp),
@@ -78,8 +78,13 @@ internal fun HomeBottomBar(
                 )
                 ActionButton(
                     onClickListener = {
-                        if(value.isNotEmpty())chatViewModel.sendUserMessage(value)
-                        value = ""
+                        if(query.isNotEmpty() &&
+                            (chatViewModel.generationJob == null ||
+                                chatViewModel.generationJob?.isActive == false))
+                        {
+                            chatViewModel.sendUserQuery(query)
+                            query = ""
+                        }
                     },
                     icon = AppIcon.Send,
                     shape = MaterialTheme.shapes.small,

@@ -51,6 +51,9 @@ class ChatRepository @Inject constructor(
                 }
                 is GenerationEvent.Done,
                 is GenerationEvent.Error -> {
+                    if(mdBuffer.holdBuffer.isNotEmpty()){
+                        trySend(GenerationEvent.Word(mdBuffer.holdBuffer.toString()))
+                    }
                     trySend(event)
                     close()
                 }

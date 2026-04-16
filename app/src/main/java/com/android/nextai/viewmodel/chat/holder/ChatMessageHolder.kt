@@ -34,7 +34,12 @@ class ChatMessageHolder @Inject constructor(
     // record messages in a session
     private val _messageList = mutableStateListOf<Message>()
     val messageList: SnapshotStateList<Message> = _messageList
-
+    fun addMessage(newM: Message){
+        _messageList.add(newM)
+    }
+    fun updateLastMessage(newM: Message){
+        _messageList[_messageList.lastIndex] = newM
+    }
 
     // record text streaming state
     private val _isTextStreaming = MutableStateFlow(true)
@@ -42,5 +47,4 @@ class ChatMessageHolder @Inject constructor(
     fun updateIsTextStreaming(state:Boolean){
         _isTextStreaming.value = state
     }
-
 }

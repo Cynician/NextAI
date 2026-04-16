@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -27,71 +28,112 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.nextai.ui.Standard
-import com.android.nextai.ui.component.markdown.MarkdownNodeView
-import com.android.nextai.ui.component.markdown.utils.MarkdownNodeUtils.parseMarkDown
 import com.android.nextai.ui.icon.AppIcon
 import com.android.nextai.ui.screen.home.body.bubble.AssistantMessageBubbleList
 import com.android.nextai.ui.screen.home.body.bubble.UserMessageBubble
 import com.android.nextai.ui.theme.Animation
 import com.android.nextai.viewmodel.chat.ChatViewModel
 import com.android.nextai.viewmodel.chat.entity.Role
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+private const val TAG = "HomeBody"
+
+@OptIn(ExperimentalSharedTransitionApi::class, FlowPreview::class)
 @Composable
 fun HomeBody(
     paddingValues: PaddingValues,
     chatViewModel: ChatViewModel,
 ) {
-    val isGenerating by chatViewModel.messageHolder.isGenerating.collectAsStateWithLifecycle()
+    val isGenerating by chatViewModel.messageHolder.isGenerating.collectAsState()
     val messageList = chatViewModel.messageHolder.messageList
-    val listState = rememberLazyListState()
-    val listStateTest = rememberLazyListState()
-
     val isTextStreaming by chatViewModel.messageHolder.isTextStreaming.collectAsState()
-//    val isTextStreaming = false
-    // body roll logic
-    LaunchedEffect(messageList.size) {
-//        listState.animateScrollToItem(index = if(messageList.isNotEmpty())messageList.size-1 else 0)
+    val streamingTick = chatViewModel.uiStateHolder.streamingTick.collectAsState()
+    val listState = rememberLazyListState()
+
+    /**
+     * scroll logic
+     */
+    var shouldAutoScroll by remember { mutableStateOf(true) }
+    var isUserScrolling by remember { mutableStateOf(false) }
+    val scrollToHeadAssistMessage by chatViewModel.uiStateHolder.scrollToHeadAssistMessage.collectAsState()
+    // record whether the user actively triggers scrolling
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
+                if (source == NestedScrollSource.UserInput) {
+                    isUserScrolling = true
+                    shouldAutoScroll = false
+                }
+                return Offset.Zero
+            }
+        }
     }
-    val mdNodes = remember {
-//        parseMarkDown(TestData.getData2())
-        parseMarkDown("")
+    // scroll to the latest assistant message
+    LaunchedEffect(scrollToHeadAssistMessage) {
+        Log.d(TAG, "updateScrollToAssistMessage : $scrollToHeadAssistMessage")
+        val itemCount = listState.layoutInfo.totalItemsCount
+        if (itemCount > 0 && scrollToHeadAssistMessage) {
+            listState.scrollToItem(itemCount - 1)
+        }
+        isUserScrolling = false
+        shouldAutoScroll = true
     }
+    // auto scroll
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            Triple(
+                shouldAutoScroll,
+                isUserScrolling,
+                streamingTick.value
+            )
+        }.debounce(20)
+            .collect {
+                if (
+                    shouldAutoScroll &&
+                    isTextStreaming &&
+                    !isUserScrolling
+                ) {
+                    listState.scrollBy(1000f)
+                }
+            }
+    }
+    /**
+     * layout
+     */
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(paddingValues)
     ) {
-        if (mdNodes.isNotEmpty()) {
-            LazyColumn(state = listStateTest,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(vertical = Standard.SpacingSm),
-                verticalArrangement = Arrangement.spacedBy(Standard.SpacingXs)) {
-                try {
-                    items(mdNodes) { node ->
-                        MarkdownNodeView(node)
-                    }
-                }catch (e: Exception){
-                    Log.e("HomeBody", "e:$e")
-                }
-            }
-
-        } else if(isGenerating) {
+        if (isGenerating) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(nestedScrollConnection),
                 contentPadding = PaddingValues(vertical = Standard.SpacingSm),
                 verticalArrangement = Arrangement.spacedBy(Standard.SpacingXs)
+
             ) {
-                if(isTextStreaming){
+                if (isTextStreaming) {
                     messageList.forEachIndexed { index, message ->
                         when (message.role) {
                             Role.User -> {
@@ -99,18 +141,19 @@ fun HomeBody(
                                     UserMessageBubble(message.blocks[0])
                                 }
                             }
+
                             Role.Assistant -> {
                                 item(key = "${message.msgId}-assistant") {
                                     AssistantMessageBubbleList(message.blocks)
                                 }
                             }
+
                             Role.None -> {}
                         }
                     }
-
                 }
             }
-        }else {
+        } else {
             EmptyMessageView()
         }
         MaskView()

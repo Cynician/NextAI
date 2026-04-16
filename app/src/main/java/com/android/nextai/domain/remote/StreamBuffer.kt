@@ -2,7 +2,7 @@ package com.android.nextai.domain.remote
 
 class StreamBuffer {
 
-    private val holdBuffer = StringBuilder()
+    val holdBuffer = StringBuilder()
     private var state = HoldState.NONE
 
     fun process(char: Char): String? {
