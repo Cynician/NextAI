@@ -29,8 +29,7 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
         }
     }
@@ -38,11 +37,13 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
     kotlin {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
     }
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -59,6 +60,10 @@ android {
                 "META-INF/io.netty.versions.properties"
             )
         }
+    }
+
+    configurations.all {
+        exclude(group = "com.intellij", module = "annotations")
     }
 
 }
