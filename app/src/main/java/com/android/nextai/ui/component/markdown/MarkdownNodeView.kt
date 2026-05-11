@@ -8,7 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import com.android.nextai.ui.Standard
+import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.markdown.entity.InlineColors
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 import com.android.nextai.ui.component.markdown.mdnodeview.BlockQuoteView
@@ -49,7 +49,7 @@ fun MarkdownNodeView(node: MarkdownNode) {
         is MarkdownNode.Text -> TextView(node)
         is MarkdownNode.FencedCodeBlock -> FencedCodeBlockView(node, true)
         is MarkdownNode.ThematicBreak -> HorizontalDivider(
-            modifier = Modifier.padding(vertical = Standard.SpacingXs),
+            modifier = Modifier.padding(vertical = 4.dp),
             color = MaterialTheme.colorScheme.outlineVariant
         )
         // Table

@@ -25,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.unit.dp
-import com.android.nextai.ui.Standard
 import com.android.nextai.ui.component.button.ActionButton
 import com.android.nextai.ui.icon.AppIcon
 import com.android.nextai.viewmodel.chat.ChatViewModel
@@ -50,8 +49,8 @@ internal fun HomeBottomBar(
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .imePadding()
-                .padding(horizontal = Standard.SpacingSm)
-                .padding(top = Standard.SpacingSm, bottom = 10.dp)
+                .padding(horizontal = 8.dp)
+                .padding(top = 8.dp, bottom = 10.dp)
         ) {
             Box(
                 Modifier
@@ -76,7 +75,7 @@ internal fun HomeBottomBar(
                 )
                 ActionButton(
                     modifier = Modifier
-                        .padding(end = Standard.SpacingMd)
+                        .padding(end = 12.dp)
                         .align(Alignment.BottomEnd),
                     icon = AppIcon.Send,
                     shape = MaterialTheme.shapes.small,

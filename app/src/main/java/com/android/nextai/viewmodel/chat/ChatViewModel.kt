@@ -171,4 +171,13 @@ class ChatViewModel @Inject constructor(
             sessionHolder.batchPinSessions(idList)
         }
     }
+
+    /**
+     * Unpinned session
+     */
+    fun unpinnedSession(id:Long){
+        viewModelScope.launch {
+            sessionHolder.unpinnedSession(id)
+        }
+    }
 }

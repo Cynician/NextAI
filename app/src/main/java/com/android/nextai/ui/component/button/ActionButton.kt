@@ -12,7 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.android.nextai.ui.Standard
+import androidx.compose.ui.unit.dp
 
 @SuppressLint("ModifierParameter")
 @Composable
@@ -31,12 +31,12 @@ fun ActionButton(
         onClick = { onClickListener() },
         colors = colors,
         shape = shape,
-        modifier = modifier.size(Standard.ActionIconSize)
+        modifier = modifier.size(30.dp)
     ) {
         Icon(
             icon,
             contentDescription = contentDescription,
-            Modifier.padding(Standard.ActionIconPadding)
+            Modifier.padding(6.dp)
         )
     }
 }

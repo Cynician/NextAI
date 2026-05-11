@@ -31,7 +31,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.nextai.ui.Standard
 import com.android.nextai.ui.component.button.ActionButton
 import com.android.nextai.ui.component.button.ActionToggleButton
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
@@ -87,7 +86,7 @@ fun FencedCodeBlockView(node: MarkdownNode.FencedCodeBlock, isHighlightCode:Bool
                     )
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(Standard.SpacingXs)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 ActionButton(
                     onClickListener = {
                         val cm =
@@ -126,7 +125,7 @@ fun FencedCodeBlockView(node: MarkdownNode.FencedCodeBlock, isHighlightCode:Bool
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 10.dp, vertical = Standard.SpacingSm)
+                    .padding(horizontal = 10.dp, vertical = 8.dp)
             ) {
                 Text(
                     text = highlighted ?: AnnotatedString(code),

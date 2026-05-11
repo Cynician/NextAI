@@ -27,14 +27,15 @@ import com.android.nextai.ui.screen.home.drawer.views.EmptyStateView
 import com.android.nextai.ui.screen.home.drawer.views.SelectionBottomBarView
 import com.android.nextai.ui.screen.home.drawer.views.SessionHeaderView
 import com.android.nextai.ui.screen.home.drawer.views.SessionItemView
-import com.android.nextai.ui.screen.home.drawer.views.StartNewSession
+import com.android.nextai.ui.screen.home.drawer.views.StartNewSessionView
 import com.android.nextai.viewmodel.chat.ChatViewModel
+import com.android.nextai.viewmodel.chat.entity.SessionGroup
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeDrawerView(
     onStartNewSession: () -> Unit,
-    onSessionSelected: (Long) -> Unit,
+    onSessionItemClick: (Long) -> Unit,
     chatViewModel: ChatViewModel,
 ) {
     val isSessionLoading by chatViewModel.sessionHolder.isLoading.collectAsState()
@@ -56,7 +57,7 @@ fun HomeDrawerView(
                 modifier = Modifier.padding(bottom = 6.dp)
             ) {
                 TopAppBar(title = { Text("NextAI", style = MaterialTheme.typography.titleLarge) })
-                StartNewSession({
+                StartNewSessionView({
                     onStartNewSession()
                 })
             }
@@ -99,13 +100,17 @@ fun HomeDrawerView(
                                 SessionItemView(
                                     session = session,
                                     isActive = currentSessionId == session.id,
+                                    isPinned = group.name == SessionGroup.PINNED.name,
                                     isSelectionMode = isSelectionMode,
                                     isSelected = selectedSessionIdSet.contains(session.id),
                                     onClick = {
-                                        onSessionSelected(session.id)
+                                        onSessionItemClick(session.id)
                                     },
                                     onLongClick = {
                                         chatViewModel.sessionHolder.enterSelectionMode(session.id)
+                                    },
+                                    onUnpinnedClick = {
+                                        chatViewModel.unpinnedSession(session.id)
                                     }
                                 )
                             }

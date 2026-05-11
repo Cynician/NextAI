@@ -50,7 +50,7 @@ fun HomeScreen(
                             drawerState.close()
                         }
                     },
-                    onSessionSelected = {
+                    onSessionItemClick = {
                         if (isSelectionMode) {
                             chatViewModel.sessionHolder.toggleSelection(it)
                         } else {
@@ -84,5 +84,4 @@ fun HomeScreen(
             )
         }
     }
-
 }

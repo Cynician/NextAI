@@ -11,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.android.nextai.ui.Standard
 import com.android.nextai.ui.component.markdown.MarkdownNodeView
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 
@@ -21,7 +20,7 @@ fun ListBlockView(
     depth: Int = 0,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(Standard.SpacingXs),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.absolutePadding(top = 4.dp)
     ) {
         node.children.forEachIndexed { index, child ->

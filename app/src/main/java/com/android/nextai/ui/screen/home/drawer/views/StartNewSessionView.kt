@@ -18,18 +18,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.nextai.ui.Standard
 import com.android.nextai.ui.icon.AppIcon
 
 @Composable
-fun StartNewSession(
+fun StartNewSessionView(
     onClick:()->Unit
 ){
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 18.dp),
-        shape = RoundedCornerShape(Standard.RadiusMd),
+        shape = RoundedCornerShape(8.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         Row(

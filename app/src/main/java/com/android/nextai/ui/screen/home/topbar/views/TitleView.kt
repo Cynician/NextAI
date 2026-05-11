@@ -20,7 +20,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.android.nextai.ui.Standard
 import com.android.nextai.ui.icon.AppIcon
 
 
@@ -47,14 +46,14 @@ fun TitleRow(
         Surface(
             color = MaterialTheme.colorScheme.primaryContainer,
             shape = RoundedCornerShape(26.dp),
-            modifier = Modifier.height(Standard.ActionIconSize)
+            modifier = Modifier.height(30.dp)
                 .clip(shape = shape)
                 .clickable(onClick = onClick),
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = Standard.SpacingMd)
+                modifier = Modifier.padding(horizontal = 12.dp)
             ) {
                 Icon(
                     imageVector = icon,

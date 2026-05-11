@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
-import com.android.nextai.ui.Standard
+import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.markdown.entity.InlineColors
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 
@@ -28,7 +28,7 @@ fun ParagraphView(node: MarkdownNode.Paragraph, colors: InlineColors) {
         text = annotated,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = Standard.SpacingXs)
+            .padding(vertical = 4.dp)
             .pointerInput(Unit){
                 detectTapGestures { offsetPosition ->
                     layoutResult?.let { layout ->

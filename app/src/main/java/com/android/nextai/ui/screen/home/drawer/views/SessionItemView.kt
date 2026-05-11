@@ -2,14 +2,18 @@ package com.android.nextai.ui.screen.home.drawer.views
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -17,24 +21,28 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.nextai.domain.database.db.entity.SessionEntity
-import com.android.nextai.ui.Standard
 import com.android.nextai.ui.component.checkbox.CircleCheckbox
+import com.android.nextai.ui.icon.AppIcon
 
 @Composable
 fun SessionItemView(
     session: SessionEntity,
-    isActive:Boolean,
+    isActive: Boolean,
+    isPinned: Boolean,
     isSelectionMode: Boolean,
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    onUnpinnedClick: () -> Unit,
 ) {
     val sessionItemColor by animateColorAsState(
         targetValue =
@@ -45,12 +53,13 @@ fun SessionItemView(
             },
         label = ""
     )
+    val shape = RoundedCornerShape(8.dp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         AnimatedVisibility(visible = isSelectionMode) {
             CompositionLocalProvider(
@@ -65,17 +74,18 @@ fun SessionItemView(
         }
         Surface(
             modifier = Modifier
-                .fillMaxWidth()
+                .weight(1f)
+                .clip(shape)
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick
                 ),
-            shape = RoundedCornerShape(Standard.RadiusMd),
+            shape = RoundedCornerShape(8.dp),
             color = sessionItemColor
         ) {
             Row(
                 modifier = Modifier
-                    .height(48.dp)
+                    .heightIn(48.dp)
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -90,6 +100,28 @@ fun SessionItemView(
                     overflow = TextOverflow.Ellipsis
                 )
             }
+        }
+        if (isPinned) {
+            Box(
+                modifier = Modifier
+                    .padding(2.dp)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() },
+                        enabled = !isSelectionMode
+                    ) {
+                        onUnpinnedClick()
+                    }
+
+            ) {
+                Icon(
+                    imageVector = AppIcon.Pinned,
+                    contentDescription = "",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
         }
     }
 }

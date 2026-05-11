@@ -39,7 +39,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import com.android.nextai.ui.Standard
 import com.android.nextai.ui.icon.AppIcon
 import com.android.nextai.ui.screen.home.body.views.AssistantMessageBubbleList
 import com.android.nextai.ui.screen.home.body.views.UserMessageBubble
@@ -130,8 +129,8 @@ fun HomeBody(
                 modifier = Modifier
                     .fillMaxSize()
                     .nestedScroll(nestedScrollConnection),
-                contentPadding = PaddingValues(vertical = Standard.SpacingSm),
-                verticalArrangement = Arrangement.spacedBy(Standard.SpacingXs)
+                contentPadding = PaddingValues(vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
 
             ) {
                 messageList.forEachIndexed { index, message ->
@@ -174,7 +173,7 @@ internal fun EmptyMessageView() {
                 modifier = Modifier.size(64.dp),
                 tint = MaterialTheme.colorScheme.primary.copy(0.4f)
             )
-            Spacer(Modifier.height(Standard.SpacingLg))
+            Spacer(Modifier.height(16.dp))
             Text(
                 "有什么可以帮忙的？",
                 style = MaterialTheme.typography.titleMedium,

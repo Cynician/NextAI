@@ -90,11 +90,11 @@ class ChatDatabaseRepository @Inject constructor(
         val endOfToday = startOfToday + oneDay
 
         for (session in this) {
-            val cTime =session.createdAt
-            val diff = now - cTime
+            val uTime =session.updatedAt
+            val diff = now - uTime
             when {
                 session.isPinned == 1 -> pinedList.add(session)
-                cTime >= startOfToday && cTime <= endOfToday -> todayList.add(session)
+                uTime >= startOfToday && uTime <= endOfToday -> todayList.add(session)
                 diff <= oneWeek -> weekList.add(session)
                 diff <= oneMonth -> monthList.add(session)
                 else -> earlierList.add(session)

@@ -9,7 +9,6 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.android.nextai.ui.Standard
 import com.android.nextai.ui.component.markdown.MarkdownNodeView
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 
@@ -21,7 +20,7 @@ internal fun AssistantMessageBubble(block: MarkdownNode) {
                 top = 4.dp,
                 bottom = 4.dp
             )
-            .padding(horizontal = Standard.SpacingMd)
+            .padding(horizontal = 12.dp)
     ) {
         MarkdownNodeView(block)
     }
@@ -35,6 +34,6 @@ internal fun AssistantMessageBubbleList(blocks: List<MarkdownNode>) {
                 AssistantMessageBubble(block)
             }
         }
-        Spacer(modifier = Modifier.height(Standard.SpacingLg))
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }

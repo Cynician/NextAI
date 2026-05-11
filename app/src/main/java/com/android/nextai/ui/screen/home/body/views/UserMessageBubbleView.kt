@@ -14,7 +14,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.android.nextai.ui.Standard
 import com.android.nextai.ui.component.markdown.MarkdownNodeView
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 
@@ -25,16 +24,16 @@ internal fun UserMessageBubble(element: MarkdownNode) {
         horizontalArrangement = Arrangement.End
     ) {
         Surface(
-            shape = RoundedCornerShape(Standard.RadiusLg),
+            shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier
-                .padding(horizontal = Standard.SpacingSm, vertical = 5.dp)
+                .padding(horizontal = 8.dp, vertical = 5.dp)
                 .widthIn(max = 280.dp)
         ) {
             SelectionContainer {
                 MarkdownNodeView(element)
-                Spacer(modifier = Modifier.height(Standard.SpacingLg))
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }

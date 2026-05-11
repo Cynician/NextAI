@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.android.nextai.ui.Standard
 import com.android.nextai.ui.component.markdown.MarkdownNodeView
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 
@@ -29,8 +28,8 @@ fun BlockQuoteView(node: MarkdownNode.BlockQuote, depth:Int = 0){
             .padding(((depth+1)*10).dp)
             .clip(MaterialTheme.shapes.small)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            .padding(Standard.SpacingSm),
-        horizontalArrangement = Arrangement.spacedBy(Standard.SpacingSm)
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ){
         // left side vertical line
         Box(
