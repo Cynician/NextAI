@@ -8,58 +8,97 @@ import com.android.nextai.domain.database.db.entity.SessionEntity
 @Dao
 interface SessionDao {
     /**
-     * create new session
+     * Create new session
      */
     @Insert
     suspend fun insert(session: SessionEntity): Long
 
     /**
-     * get all sessions
+     * Get all sessions
      */
-    @Query("""
+    @Query(
+        """
         SELECT * FROM session
         WHERE is_deleted = 0
-        ORDER BY is_pinned DESC, id DESC
-    """)
-    suspend fun getSessions(): List<SessionEntity>
+        ORDER BY is_pinned DESC, updated_at DESC
+    """
+    )
+    suspend fun getAllSessions(): List<SessionEntity>
 
     /**
-     * update time
+     * Update time
      */
-    @Query("""
+    @Query(
+        """
         UPDATE session
         SET updated_at = :time
         WHERE id = :sessionId
-    """)
+    """
+    )
     suspend fun updateTime(sessionId: Long, time: Long)
 
     /**
-     * update ai generated title
+     * Update ai generated title
      */
-    @Query("""
+    @Query(
+        """
         UPDATE session
-        SET ai_title = :title
+        SET ai_title = :title,
+            updated_at = strftime('%s','now') * 1000
         WHERE id = :sessionId
-    """)
+    """
+    )
     suspend fun updateAiTitle(sessionId: Long, title: String)
 
     /**
-     * soft delete
+     * Soft delete session
      */
-    @Query("""
+    @Query(
+        """
         UPDATE session
-        SET is_deleted = 1
+        SET is_deleted = 1,
+            updated_at = strftime('%s','now') * 1000
         WHERE id = :sessionId
-    """)
+    """
+    )
     suspend fun softDelete(sessionId: Long)
 
     /**
-     * pinned
+     * Batch soft delete session
      */
-    @Query("""
+    @Query(
+        """
         UPDATE session
-        SET is_pinned = :pinned
+        SET is_deleted = :isDeleted,
+            updated_at = strftime('%s','now') * 1000
+        WHERE id IN (:idList)
+    """
+    )
+    suspend fun batchSoftDelete(isDeleted: Int, idList: List<Long>)
+
+    /**
+     * Pin session
+     */
+    @Query(
+        """
+        UPDATE session
+        SET is_pinned = :pinned,
+            updated_at = strftime('%s','now') * 1000
         WHERE id = :sessionId
-    """)
+    """
+    )
     suspend fun pinSession(sessionId: Long, pinned: Int)
+
+    /**
+     * Batch pin session
+     */
+    @Query(
+        """
+        UPDATE session
+        SET is_pinned = :pinned, 
+            updated_at = strftime('%s','now') * 1000
+        WHERE id IN (:idList)
+    """
+    )
+    suspend fun batchPinSession(pinned: Int, idList: List<Long>)
 }

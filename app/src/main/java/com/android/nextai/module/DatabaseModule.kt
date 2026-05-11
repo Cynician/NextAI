@@ -24,8 +24,7 @@ object DatabaseModule {
             context,
             ChatDatabase::class.java,
             "chat.db"
-        )
-            .fallbackToDestructiveMigration(true) // develop stage
+        ).fallbackToDestructiveMigration(true) // develop stage
             .build()
     }
 

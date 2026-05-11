@@ -5,13 +5,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.nextai.domain.remote.Model
 import com.android.nextai.domain.remote.entity.GenerationEvent
-import com.android.nextai.domain.repository.ChatRepository
+import com.android.nextai.domain.repository.ChatDatabaseRepository
+import com.android.nextai.domain.repository.ChatRemoteRepository
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 import com.android.nextai.ui.component.markdown.utils.MarkdownNodeUtils
 import com.android.nextai.viewmodel.chat.entity.Role
 import com.android.nextai.viewmodel.chat.entity.getAssistantMessage
 import com.android.nextai.viewmodel.chat.entity.getUserMessage
 import com.android.nextai.viewmodel.chat.holder.ChatMessageHolder
+import com.android.nextai.viewmodel.chat.holder.ChatSessionHolder
 import com.android.nextai.viewmodel.chat.holder.ChatUiStateHolder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -22,7 +24,9 @@ import javax.inject.Inject
 class ChatViewModel @Inject constructor(
     val messageHolder: ChatMessageHolder,
     val uiStateHolder: ChatUiStateHolder,
-    private val chatRepository: ChatRepository,
+    val sessionHolder: ChatSessionHolder,
+    val chatRemoteRepository: ChatRemoteRepository,
+    val chatDatabaseRepository: ChatDatabaseRepository
 ) : ViewModel() {
     companion object {
         private const val TAG = "ChatViewModel"
@@ -31,14 +35,30 @@ class ChatViewModel @Inject constructor(
     private var currentBuffer = StringBuilder()
     private var currentBlocks = mutableListOf<MarkdownNode>()
 
+    init{
+        viewModelScope.launch {
+            try {
+                sessionHolder.loadSessions()
+            }catch (e: Exception){
+                Log.e(TAG, "Could not load sessions: $e")
+            }
+        }
+    }
+
+    /**
+     * Get ai response
+     */
     fun sendUserQuery(query: String) {
         val isSportStreamingGen = true
         val query = query.trim()
-        val initBlock = MarkdownNode.Text("")
-        messageHolder.addMessage(getUserMessage(query))
-        messageHolder.addMessage(getAssistantMessage(listOf(initBlock)))
-        messageHolder.updateCurPrompt(query)
         generationJob = viewModelScope.launch {
+            messageHolder.init()
+            val initBlock = MarkdownNode.Text("")
+            messageHolder.updateCurQuery(query)
+            Log.d(TAG,"update query :$query")
+            val lastId = chatDatabaseRepository.chatDatabase.messageDao().getMaxId()?:0
+            messageHolder.addMessage(getUserMessage(lastId+1,query))
+            messageHolder.addMessage(getAssistantMessage(lastId+2, listOf(initBlock)))
             if (isSportStreamingGen) {
                 currentBuffer.clear()
                 currentBlocks.clear()
@@ -48,9 +68,9 @@ class ChatViewModel @Inject constructor(
                 uiStateHolder.updateScrollToHeadAssistMessage(true)
                 startStreamingGen()
             } else {
-                val assistantAnswer = chatRepository.getAIAnswer(Model.TEST, messageHolder.messageList)
+                val assistantAnswer = chatRemoteRepository.getAIAnswer(Model.TEST, messageHolder.messageList)
                 val nodes = MarkdownNodeUtils.parseMarkDown(assistantAnswer)
-                messageHolder.updateLastMessage(getAssistantMessage(nodes))
+                messageHolder.updateLastMessage(getAssistantMessage(lastId+2,nodes))
                 messageHolder.updateIsGenerating(false)
             }
         }
@@ -58,42 +78,58 @@ class ChatViewModel @Inject constructor(
     }
 
     /**
-     * Stream generates AI responses
+     * Get ai response in stream way
      */
     private suspend fun startStreamingGen(){
-        messageHolder.updateIsTextStreaming(true)
-        chatRepository.streamingGen(model = Model.TEST, messageList = messageHolder.messageList)
+        Log.d(TAG, "startStreamingGen# get ai response")
+        chatRemoteRepository.streamingGen(model = Model.TEST, messageList = messageHolder.messageList)
             .collect{ event ->
-            when (event) {
-                is GenerationEvent.Word -> {
-                    Log.d(TAG, event.content)
-                    val text = event.content
-                    uiStateHolder.updateStreamingTick(text.length)
-                    currentBuffer.append(text)
-                    val nodes = MarkdownNodeUtils.parseMarkDown(currentBuffer.toString())
-                    if (nodes.size == 1) {
-                        val last = nodes[0]
-                        currentBlocks[currentBlocks.lastIndex] = last
-                    } else if(nodes.size > 1) {
-                        val first = nodes[0]
-                        currentBlocks[currentBlocks.lastIndex] = first
-                        currentBuffer.clear()
+                when (event) {
+                    is GenerationEvent.Word -> {
+                        val text = event.content
+                        messageHolder.updateCurResponse(text)
+                        uiStateHolder.updateStreamingTick(text.length)
                         currentBuffer.append(text)
-                        currentBlocks.add(
-                            MarkdownNode.Text("")
-                        )
+                        val nodes = MarkdownNodeUtils.parseMarkDown(currentBuffer.toString())
+                        if (nodes.size == 1) {
+                            val last = nodes[0]
+                            currentBlocks[currentBlocks.lastIndex] = last
+                        } else if(nodes.size > 1) {
+                            val first = nodes[0]
+                            currentBlocks[currentBlocks.lastIndex] = first
+                            currentBuffer.clear()
+                            currentBuffer.append(text)
+                            currentBlocks.add(MarkdownNode.Text(""))
+                        }
+                        updateLastMessageBlocks(currentBlocks.toList())
                     }
-                    updateLastMessageBlocks(currentBlocks.toList())
-                }
-                is GenerationEvent.Error,
-                GenerationEvent.Done -> {
-                    //  messageHolder.updateIsGenerating(false)
-                    //  messageHolder.updateIsTextStreaming(false)
-                    uiStateHolder.updateScrollToHeadAssistMessage(false)
-                    generationJob?.cancel()
+                    is GenerationEvent.Done -> {
+                        try {
+                            // create new session
+                            if (!sessionHolder.getIsInSession()) {
+                                val session = sessionHolder.createSession(messageHolder.getCurQuery())
+                                Log.d(TAG, "title: ${messageHolder.getCurQuery()}")
+                                Log.i(TAG, "create new session, id: ${session.id}")
+                            }
+                            val (uId, aId) = chatDatabaseRepository.insertPairMessage(
+                                sessionHolder.getCurSessionId(),
+                                messageHolder.getCurQuery(),
+                                messageHolder.getCurResponse()
+                            )
+                            Log.i(TAG, "save pair message, uId: $uId, aId: $aId")
+                        } catch (e: Exception) {
+
+                        }
+                        messageHolder.updateIsGenerating(false)
+                        messageHolder.updateIsTextStreaming(false)
+                        uiStateHolder.updateScrollToHeadAssistMessage(false)
+                        generationJob?.cancel()
+                    }
+                    is GenerationEvent.Error -> {
+
+                    }
                 }
             }
-        }
     }
 
     private fun updateLastMessageBlocks(blocks: List<MarkdownNode>) {
@@ -102,5 +138,37 @@ class ChatViewModel @Inject constructor(
         if(oldMessage.role != Role.Assistant) return
         val newMessage = oldMessage.copy(blocks = blocks)
         messageHolder.updateLastMessage(newMessage)
+    }
+
+    /**
+     * Session init
+     *
+     * The initialization method when creating a new session or selecting a different session
+     */
+    fun initSession(){
+        messageHolder.init()
+        sessionHolder.init()
+        generationJob?.cancel()
+    }
+
+    /**
+     * Delete sessions in batch
+     */
+    fun batchDeleteSessions(idList:List<Long>){
+        viewModelScope.launch {
+            if(idList.contains(sessionHolder.getCurSessionId())){
+                initSession()
+            }
+            sessionHolder.batchDeleteSessions(idList)
+        }
+    }
+
+    /**
+     * Pin sessions in batch
+     */
+    fun batchPinSessions(idList:List<Long>){
+        viewModelScope.launch {
+            sessionHolder.batchPinSessions(idList)
+        }
     }
 }

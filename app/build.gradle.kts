@@ -76,6 +76,10 @@ dependencies {
     // Dependency Injection
     implementation(libs.hilt.android)
     implementation(libs.core.ktx)
+    implementation(libs.androidx.compose.animation.core)
+    implementation(libs.androidx.foundation)
+    implementation(libs.androidx.runtime)
+    implementation(libs.androidx.compose.animation)
     ksp(libs.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 

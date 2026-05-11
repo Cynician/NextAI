@@ -46,4 +46,9 @@ interface MessageDao {
     @Query("DELETE FROM message WHERE id = :id")
     suspend fun delete(id: Long)
 
+    /**
+     * get max id
+     */
+    @Query("SELECT MAX(id) FROM message")
+    suspend fun getMaxId(): Long?
 }

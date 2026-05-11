@@ -62,6 +62,7 @@ fun HomeBody(
     val messageList = chatViewModel.messageHolder.messageList
     val isTextStreaming by chatViewModel.messageHolder.isTextStreaming.collectAsState()
     val streamingTick = chatViewModel.uiStateHolder.streamingTick.collectAsState()
+    val isInSession by chatViewModel.sessionHolder.isInSession.collectAsState()
     val listState = rememberLazyListState()
 
     /**
@@ -75,7 +76,7 @@ fun HomeBody(
         object : NestedScrollConnection {
             override fun onPreScroll(
                 available: Offset,
-                source: NestedScrollSource
+                source: NestedScrollSource,
             ): Offset {
                 if (source == NestedScrollSource.UserInput) {
                     isUserScrolling = true
@@ -114,6 +115,7 @@ fun HomeBody(
                 }
             }
     }
+
     /**
      * layout
      */
@@ -123,7 +125,7 @@ fun HomeBody(
             .background(MaterialTheme.colorScheme.background)
             .padding(paddingValues)
     ) {
-        if (isGenerating) {
+        if (isInSession || isTextStreaming) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier
@@ -133,23 +135,21 @@ fun HomeBody(
                 verticalArrangement = Arrangement.spacedBy(Standard.SpacingXs)
 
             ) {
-                if (isTextStreaming) {
-                    messageList.forEachIndexed { index, message ->
-                        when (message.role) {
-                            Role.User -> {
-                                item(key = "${message.msgId}-user") {
-                                    UserMessageBubble(message.blocks[0])
-                                }
+                messageList.forEachIndexed { index, message ->
+                    when (message.role) {
+                        Role.User -> {
+                            item {
+                                UserMessageBubble(message.blocks[0])
                             }
-
-                            Role.Assistant -> {
-                                item(key = "${message.msgId}-assistant") {
-                                    AssistantMessageBubbleList(message.blocks)
-                                }
-                            }
-
-                            Role.None -> {}
                         }
+
+                        Role.Assistant -> {
+                            item {
+                                AssistantMessageBubbleList(message.blocks)
+                            }
+                        }
+
+                        Role.None -> {}
                     }
                 }
             }

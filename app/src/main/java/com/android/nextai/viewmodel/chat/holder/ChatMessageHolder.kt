@@ -3,7 +3,8 @@ package com.android.nextai.viewmodel.chat.holder
 import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import com.android.nextai.domain.repository.ChatRepository
+import androidx.lifecycle.ViewModel
+import com.android.nextai.domain.repository.ChatRemoteRepository
 import com.android.nextai.viewmodel.chat.entity.Message
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ViewModelScoped
@@ -15,36 +16,79 @@ import javax.inject.Inject
 @ViewModelScoped
 class ChatMessageHolder @Inject constructor(
     @ApplicationContext context: Context,
-    private val chatRepository: ChatRepository
-) {
-    // to record the generating state, no whether it is text/image/voice generating
+    private val chatRemoteRepository: ChatRemoteRepository,
+) : ViewModel() {
+    /**
+     * Generate state
+     * Record the current generation status of assistant, including text, graphics, and voice
+     */
     private var _isGenerating = MutableStateFlow(false)
+    private val _isTextStreaming = MutableStateFlow(true)
+
     val isGenerating: StateFlow<Boolean> = _isGenerating
-    fun updateIsGenerating(state: Boolean){
+    val isTextStreaming: StateFlow<Boolean> = _isTextStreaming.asStateFlow()
+
+    fun updateIsGenerating(state: Boolean) {
         _isGenerating.value = state
     }
 
-    // to record current user's prompt
-    private val _curPrompt = MutableStateFlow("")
-    val curPrompt: StateFlow<String> = _curPrompt.asStateFlow()
-    fun updateCurPrompt(prompt:String){
-        _curPrompt.value = prompt
+    fun updateIsTextStreaming(state: Boolean) {
+        _isTextStreaming.value = state
     }
 
-    // record messages in a session
+    /**
+     * Record the current user's query
+     */
+    private val _curQuery = MutableStateFlow("")
+
+    val curQuery: StateFlow<String> = _curQuery.asStateFlow()
+
+    fun updateCurQuery(query: String) {
+        _curQuery.value = query
+    }
+
+    fun getCurQuery(): String {
+        return curQuery.value
+    }
+
+    /**
+     * Record current assistant's response
+     */
+    private val _curResponse = MutableStateFlow("")
+
+    val curResponse: StateFlow<String> = _curResponse.asStateFlow()
+
+    fun updateCurResponse(content: String) {
+        _curResponse.value += content
+    }
+
+    fun getCurResponse(): String {
+        return curResponse.value
+    }
+
+    /**
+     * Record messages info in a session
+     */
     private val _messageList = mutableStateListOf<Message>()
+
     val messageList: SnapshotStateList<Message> = _messageList
-    fun addMessage(newM: Message){
+
+    fun addMessage(newM: Message) {
         _messageList.add(newM)
     }
-    fun updateLastMessage(newM: Message){
+
+    fun updateLastMessage(newM: Message) {
         _messageList[_messageList.lastIndex] = newM
     }
 
-    // record text streaming state
-    private val _isTextStreaming = MutableStateFlow(true)
-    val isTextStreaming: StateFlow<Boolean> = _isTextStreaming.asStateFlow()
-    fun updateIsTextStreaming(state:Boolean){
-        _isTextStreaming.value = state
+    /**
+     * The initialization method when creating a new session or when selecting a different session
+     */
+    fun init() {
+        _isGenerating.value = false
+        _isTextStreaming.value = false
+        _messageList.clear()
+        _curQuery.value = ""
+        _curResponse.value = ""
     }
 }

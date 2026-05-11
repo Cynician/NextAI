@@ -5,7 +5,6 @@ ksp = "2.2.21-2.0.4"
 
 
 androidx-activity-compose = "1.12.4"
-androidx-appcompat = "1.7.1"
 androidx-compose-bom = "2026.02.01"
 androidx-core-ktx = "1.17.0"
 androidx-datastore = "1.2.0"
@@ -35,11 +34,14 @@ openai = "2.0.0"
 
 # parse markdown
 flexmark = "0.64.8"
+animation-core = "1.11.0"
+foundation = "1.11.0"
+runtime = "1.11.1"
+animation = "1.11.1"
 
 [libraries]
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidx-activity-compose" }
-androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidx-appcompat" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "androidx-compose-bom" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
@@ -88,6 +90,10 @@ flexmark = {group = "com.vladsch.flexmark", name = "flexmark", version.ref = "fl
 flexmark-ext-strikethrough = {group = "com.vladsch.flexmark", name = "flexmark-ext-gfm-strikethrough", version.ref = "flexmark"}
 flexmark-ext-superscript = {group = "com.vladsch.flexmark", name = "flexmark-ext-superscript", version.ref = "flexmark"}
 flexmark-ext-tables = {group = "com.vladsch.flexmark", name = "flexmark-ext-tables", version.ref = "flexmark"}
+androidx-compose-animation-core = { group = "androidx.compose.animation", name = "animation-core", version.ref = "animation-core" }
+androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+androidx-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }
+androidx-compose-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animation" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
