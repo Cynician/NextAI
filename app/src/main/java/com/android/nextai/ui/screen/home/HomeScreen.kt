@@ -20,8 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.android.nextai.ui.screen.home.body.HomeBody
 import com.android.nextai.ui.screen.home.bottombar.HomeBottomBar
-import com.android.nextai.ui.screen.home.drawer.HomeDrawerScreen
-import com.android.nextai.ui.screen.home.topbar.HomeTopBar
+import com.android.nextai.ui.screen.home.drawer.HomeDrawerView
+import com.android.nextai.ui.screen.home.topbar.HomeTopBarView
 import com.android.nextai.viewmodel.chat.ChatViewModel
 import kotlinx.coroutines.launch
 
@@ -43,7 +43,7 @@ fun HomeScreen(
     ModalNavigationDrawer(
         drawerState = drawerState, drawerContent = {
             ModalDrawerSheet(modifier = Modifier.fillMaxWidth(0.85f)) {
-                HomeDrawerScreen(
+                HomeDrawerView(
                     onStartNewSession = {
                         chatViewModel.initSession()
                         scope.launch {
@@ -67,7 +67,7 @@ fun HomeScreen(
             containerColor = MaterialTheme.colorScheme.background,
             modifier = Modifier.fillMaxSize(),
             topBar = {
-                HomeTopBar(
+                HomeTopBarView(
                     onMenuClick = { scope.launch { drawerState.open() } },
                     onTitleClick = { true },
                     onSettingsClick = { null },

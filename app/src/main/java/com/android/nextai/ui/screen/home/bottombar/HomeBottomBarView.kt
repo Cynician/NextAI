@@ -64,9 +64,7 @@ internal fun HomeBottomBar(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(end = 56.dp),
-                    placeholder = {
-                        Text(text = "Ask NextAI…")
-                    },
+                    placeholder = { Text(text = "Ask NextAI…") },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
@@ -77,24 +75,24 @@ internal fun HomeBottomBar(
                     )
                 )
                 ActionButton(
+                    modifier = Modifier
+                        .padding(end = Standard.SpacingMd)
+                        .align(Alignment.BottomEnd),
+                    icon = AppIcon.Send,
+                    shape = MaterialTheme.shapes.small,
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primary.copy(0.3f),
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
                     onClickListener = {
                         if(query.isNotEmpty() &&
                             (chatViewModel.generationJob == null ||
-                                chatViewModel.generationJob?.isActive == false))
+                                    chatViewModel.generationJob?.isActive == false))
                         {
                             chatViewModel.sendUserQuery(query)
                             query = ""
                         }
                     },
-                    icon = AppIcon.Send,
-                    shape = MaterialTheme.shapes.small,
-                    modifier = Modifier
-                        .padding(end = Standard.SpacingMd)
-                        .align(Alignment.BottomEnd),
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primary.copy(0.3f),
-                        contentColor = MaterialTheme.colorScheme.primary
-                    )
                 )
             }
         }

@@ -1,4 +1,4 @@
-package com.android.nextai.ui.screen.home.topbar.title
+package com.android.nextai.ui.screen.home.topbar.views
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,7 +25,7 @@ import com.android.nextai.ui.icon.AppIcon
 
 
 @Composable
-fun HomeTorBarTitle(
+fun TitleView(
     modifier: Modifier = Modifier, onShowDynamicWindow: () -> Unit = {}
 ) {
     TitleRow(

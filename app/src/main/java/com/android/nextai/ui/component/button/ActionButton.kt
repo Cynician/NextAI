@@ -17,15 +17,15 @@ import com.android.nextai.ui.Standard
 @SuppressLint("ModifierParameter")
 @Composable
 fun ActionButton(
-    onClickListener: () -> Unit,
+    modifier: Modifier = Modifier,
     icon: ImageVector,
     contentDescription: String = "Description",
-    modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.extraSmall,
     colors: IconButtonColors = IconButtonDefaults.filledIconButtonColors(
         containerColor = MaterialTheme.colorScheme.primary.copy(0.06f),
         contentColor = MaterialTheme.colorScheme.primary
-    )
+    ),
+    onClickListener: () -> Unit,
 ) {
     FilledIconButton(
         onClick = { onClickListener() },

@@ -17,18 +17,18 @@ import com.android.nextai.ui.Standard
 @SuppressLint("ModifierParameter")
 @Composable
 fun ActionToggleButton(
+    modifier: Modifier = Modifier,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
     icon: ImageVector,
     contentDescription: String = "Description",
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
     shape: Shape = MaterialTheme.shapes.small,
     colors: IconToggleButtonColors = IconButtonDefaults.filledIconToggleButtonColors(
         containerColor = MaterialTheme.colorScheme.primary.copy(0.06f),
         contentColor = MaterialTheme.colorScheme.primary,
         checkedContentColor = MaterialTheme.colorScheme.onPrimary
-    )
+    ),
+    onCheckedChange: (Boolean) -> Unit,
 ) {
     FilledIconToggleButton(
         checked = checked,

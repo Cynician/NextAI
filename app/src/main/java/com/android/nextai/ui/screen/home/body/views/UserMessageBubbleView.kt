@@ -1,4 +1,4 @@
-package com.android.nextai.ui.screen.home.body.bubble
+package com.android.nextai.ui.screen.home.body.views
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row

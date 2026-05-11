@@ -19,9 +19,9 @@ import com.android.nextai.ui.icon.AppIcon
 
 @Composable
 fun CircleCheckbox(
+    modifier: Modifier = Modifier,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier

@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,8 +41,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.Standard
 import com.android.nextai.ui.icon.AppIcon
-import com.android.nextai.ui.screen.home.body.bubble.AssistantMessageBubbleList
-import com.android.nextai.ui.screen.home.body.bubble.UserMessageBubble
+import com.android.nextai.ui.screen.home.body.views.AssistantMessageBubbleList
+import com.android.nextai.ui.screen.home.body.views.UserMessageBubble
 import com.android.nextai.ui.theme.Animation
 import com.android.nextai.viewmodel.chat.ChatViewModel
 import com.android.nextai.viewmodel.chat.entity.Role

@@ -25,7 +25,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun LoadingState(repeat: Int = 5) {
+fun PageLoadingStateView(repeat: Int = 5) {
     Column(
         modifier = Modifier
             .fillMaxSize()
