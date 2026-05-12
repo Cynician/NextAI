@@ -1,12 +1,9 @@
 package com.android.nextai.viewmodel.chat.holder
 
-import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
-import com.android.nextai.domain.repository.ChatRemoteRepository
 import com.android.nextai.viewmodel.chat.entity.Message
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,10 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 @ViewModelScoped
-class ChatMessageHolder @Inject constructor(
-    @ApplicationContext context: Context,
-    private val chatRemoteRepository: ChatRemoteRepository,
-) : ViewModel() {
+class ChatMessageHolder @Inject constructor() : ViewModel() {
     /**
      * Generate state
      * Record the current generation status of assistant, including text, graphics, and voice

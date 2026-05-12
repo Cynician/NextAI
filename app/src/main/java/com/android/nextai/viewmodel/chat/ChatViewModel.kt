@@ -56,7 +56,7 @@ class ChatViewModel @Inject constructor(
             val initBlock = MarkdownNode.Text("")
             messageHolder.updateCurQuery(query)
             Log.d(TAG,"update query :$query")
-            val lastId = chatDatabaseRepository.chatDatabase.messageDao().getMaxId()?:0
+            val lastId = chatDatabaseRepository.messageDao.getMaxId()?:0
             messageHolder.addMessage(getUserMessage(lastId+1,query))
             messageHolder.addMessage(getAssistantMessage(lastId+2, listOf(initBlock)))
             if (isSportStreamingGen) {

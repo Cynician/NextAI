@@ -1,6 +1,7 @@
 package com.android.nextai.domain.repository
 
-import com.android.nextai.domain.database.db.ChatDatabase
+import com.android.nextai.domain.database.db.dao.MessageDao
+import com.android.nextai.domain.database.db.dao.SessionDao
 import com.android.nextai.domain.database.db.entity.MessageEntity
 import com.android.nextai.domain.database.db.entity.SessionEntity
 import com.android.nextai.viewmodel.chat.entity.Role
@@ -12,7 +13,8 @@ import java.time.ZoneId
 import javax.inject.Inject
 
 class ChatDatabaseRepository @Inject constructor(
-    val chatDatabase: ChatDatabase
+    val sessionDao: SessionDao,
+    val messageDao: MessageDao
 ) {
 
     suspend fun createSession(query: String): SessionEntity{
@@ -27,7 +29,7 @@ class ChatDatabaseRepository @Inject constructor(
                 tokenCount = 0,
                 isPinned = 0,
                 isDeleted = 0)
-            val id = chatDatabase.sessionDao().insert(sessionEntity)
+            val id = sessionDao.insert(sessionEntity)
             val newSession = sessionEntity.copy(id = id)
             return@withContext newSession
         }
@@ -56,8 +58,8 @@ class ChatDatabaseRepository @Inject constructor(
                 tokenCount = response.length,
                 extra = ""
             )
-            val userMessageId = chatDatabase.messageDao().insert(userEntity)
-            val assistantMessageId = chatDatabase.messageDao().insert(assistantEntity)
+            val userMessageId = messageDao.insert(userEntity)
+            val assistantMessageId = messageDao.insert(assistantEntity)
             return@withContext Pair(userMessageId, assistantMessageId)
         }
     }
@@ -67,7 +69,7 @@ class ChatDatabaseRepository @Inject constructor(
      */
     suspend fun getAllSessions(): Map<SessionGroup, List<SessionEntity>>  {
         return withContext(Dispatchers.IO){
-            return@withContext chatDatabase.sessionDao().getAllSessions().toGroup()
+            return@withContext sessionDao.getAllSessions().toGroup()
         }
     }
 

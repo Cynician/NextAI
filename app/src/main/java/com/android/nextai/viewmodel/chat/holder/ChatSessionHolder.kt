@@ -99,19 +99,19 @@ class ChatSessionHolder @Inject constructor(
     }
 
     suspend fun batchDeleteSessions(idList:List<Long>){
-        chatDatabaseRepository.chatDatabase.sessionDao().batchSoftDeleteSessions(1, idList)
+        chatDatabaseRepository.sessionDao.batchSoftDeleteSessions(1, idList)
         exitSelectionMode()
         loadSessions()
     }
 
     suspend fun batchPinSessions(idList:List<Long>){
-        chatDatabaseRepository.chatDatabase.sessionDao().batchPinSessions(1, idList)
+        chatDatabaseRepository.sessionDao.batchPinSessions(1, idList)
         exitSelectionMode()
         loadSessions()
     }
 
     suspend fun unpinnedSession(id:Long){
-        chatDatabaseRepository.chatDatabase.sessionDao().unpinnedSession(0, id)
+        chatDatabaseRepository.sessionDao.unpinnedSession(0, id)
         loadSessions()
     }
 
