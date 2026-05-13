@@ -1,9 +1,9 @@
 package com.android.nextai.domain.remote.test
 
 import android.util.Log
+import com.android.nextai.domain.database.db.entity.MessageEntity
 import com.android.nextai.domain.remote.AIModelDataSource
 import com.android.nextai.domain.remote.entity.GenerationEvent
-import com.android.nextai.viewmodel.chat.entity.Message
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -14,17 +14,14 @@ import kotlin.random.Random
 
 object TestRemoteDataSource : AIModelDataSource {
     private const val TAG = "TestRemoteDataSource"
+    private var generationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-
-    override suspend fun getAIAnswer(messageList: List<Message>): String {
+    override suspend fun getAIAnswer(messageList: List<MessageEntity>): String {
         return TestData.getData()
     }
 
-    private var generationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-
     override suspend fun getAIStreamingAnswer(
-        messageList: List<Message>,
+        messageList: List<MessageEntity>,
         callback: (GenerationEvent) -> Unit,
     ) {
         val testData = TestData.getData()

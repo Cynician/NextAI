@@ -1,8 +1,9 @@
 package com.android.nextai.domain.remote.doubao
 
+import android.util.Log
+import com.android.nextai.domain.database.db.entity.MessageEntity
 import com.android.nextai.domain.remote.AIModelDataSource
 import com.android.nextai.domain.remote.entity.GenerationEvent
-import com.android.nextai.viewmodel.chat.entity.Message
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -37,12 +38,13 @@ object DoubaoRemoteDataSource : AIModelDataSource {
                 "3. 第三步：运行项目\n" +
                 "   1. 检查端口\n" +
                 "   2. 启动服务"
-    override suspend fun getAIAnswer(messageList: List<Message>): String {
+    override suspend fun getAIAnswer(messageList: List<MessageEntity>): String {
+        Log.d(TAG,"getAIAnswer# success")
         return TEST_STRING
     }
 
     override suspend fun getAIStreamingAnswer(
-        messageList: List<Message>,
+        messageList: List<MessageEntity>,
         callback: (GenerationEvent) -> Unit,
     ) {
         try {

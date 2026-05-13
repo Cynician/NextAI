@@ -18,7 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.android.nextai.ui.screen.home.body.HomeBody
+import com.android.nextai.ui.screen.home.body.HomeBodyView
 import com.android.nextai.ui.screen.home.bottombar.HomeBottomBar
 import com.android.nextai.ui.screen.home.drawer.HomeDrawerView
 import com.android.nextai.ui.screen.home.topbar.HomeTopBarView
@@ -78,7 +78,7 @@ fun HomeScreen(
                 HomeBottomBar(chatViewModel = chatViewModel)
             }
         ) { paddingValues ->
-            HomeBody(
+            HomeBodyView(
                 paddingValues = paddingValues,
                 chatViewModel = chatViewModel
             )

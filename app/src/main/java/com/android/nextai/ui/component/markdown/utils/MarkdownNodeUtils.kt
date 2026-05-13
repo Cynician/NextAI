@@ -31,6 +31,12 @@ import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.ast.Node
 
 
+data class MarkdownParseResult(
+    val nodes: List<MarkdownNode>,
+    //Stable parsed character length
+    val parsedLength: Int
+)
+
 object MarkdownNodeUtils {
     private const val TAG = "MarkdownNodeUtils"
     private val parser by lazy {
@@ -40,6 +46,7 @@ object MarkdownNodeUtils {
             .extensions(listOf(TablesExtension.create()))
             .build()
     }
+
     fun parseChildren(node: Node): List<MarkdownNode>{
         val result = mutableListOf<MarkdownNode>()
         var child = node.firstChild
@@ -49,8 +56,8 @@ object MarkdownNodeUtils {
         }
         return result
     }
+
     fun parseNode(node:Node):MarkdownNode?{
-        Log.d(TAG, "Node class name: ${node::class.simpleName}")
         return when(node){
             // Block
             is Paragraph -> MarkdownNode.Paragraph(parseChildren(node))
@@ -81,20 +88,28 @@ object MarkdownNodeUtils {
         }
     }
 
-    fun parseMarkDown(md:String):List<MarkdownNode>{
-        try{
+    fun parseMarkDown(md: String): MarkdownParseResult {
+        try {
+
             val document = parser.parse(md)
             val result = mutableListOf<MarkdownNode>()
             var node = document.firstChild
-            while(node != null){
+            while (node != null) {
                 parseNode(node)?.let { result.add(it) }
                 node = node.next
             }
-            return result
-        }catch (e: Exception){
+             /** When streaming,  The last node may not be closed yet**/
+            val lastNode = document.lastChild
+            val parsedLength = if (lastNode != null && result.isNotEmpty()) {
+                lastNode.startOffset
+            } else {
+                md.length
+            }
+            return MarkdownParseResult(nodes = result, parsedLength = parsedLength)
+        } catch (e: Exception) {
             Log.e(TAG, "parseMarkDown# e:$e")
         }
-        return emptyList()
+        return MarkdownParseResult(nodes = emptyList(), parsedLength = 0)
     }
 }
 

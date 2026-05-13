@@ -1,10 +1,10 @@
 package com.android.nextai.domain.remote
 
+import com.android.nextai.domain.database.db.entity.MessageEntity
 import com.android.nextai.domain.remote.entity.GenerationEvent
-import com.android.nextai.viewmodel.chat.entity.Message
 
 interface AIModelDataSource {
-    suspend fun getAIAnswer(messageList:List<Message>): String
+    suspend fun getAIAnswer(messageList:List<MessageEntity>): String
 
-    suspend fun getAIStreamingAnswer(messageList:List<Message>, callback:(GenerationEvent)->Unit)
+    suspend fun getAIStreamingAnswer(messageList:List<MessageEntity>, callback:(GenerationEvent)->Unit)
 }

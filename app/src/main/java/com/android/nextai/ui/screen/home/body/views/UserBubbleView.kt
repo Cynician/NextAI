@@ -18,21 +18,21 @@ import com.android.nextai.ui.component.markdown.MarkdownNodeView
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 
 @Composable
-internal fun UserMessageBubble(element: MarkdownNode) {
+internal fun UserBubbleView(content: String) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.End
     ) {
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier
-                .padding(horizontal = 8.dp, vertical = 5.dp)
-                .widthIn(max = 280.dp)
-        ) {
-            SelectionContainer {
-                MarkdownNodeView(element)
+        SelectionContainer {
+            Surface(
+                modifier = Modifier
+                    .padding(horizontal = 8.dp, vertical = 5.dp)
+                    .widthIn(max = 280.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ) {
+                MarkdownNodeView(MarkdownNode.Text(content))
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }

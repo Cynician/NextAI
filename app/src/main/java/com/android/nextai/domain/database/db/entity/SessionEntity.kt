@@ -18,20 +18,20 @@ data class SessionEntity(
     val aiTitle: String = "",
 
     @ColumnInfo(name = "created_at")
-    val createdAt: Long,
+    val createdAt: Long = System.currentTimeMillis(),
 
     @ColumnInfo(name = "updated_at")
-    val updatedAt: Long,
+    val updatedAt: Long = System.currentTimeMillis(),
 
     @ColumnInfo(name = "system_prompt", defaultValue = "")
-    val systemPrompt: String,
+    val systemPrompt: String = "解答用户问题",
 
     @ColumnInfo(name = "token_count", defaultValue = "0")
-    val tokenCount: Int,
+    val tokenCount: Int = 0,
 
     @ColumnInfo(name = "is_pinned", defaultValue = "0")
-    val isPinned: Int,
+    val isPinned: Int = 0,
 
     @ColumnInfo(name = "is_deleted", defaultValue = "0")
-    val isDeleted: Int,
+    val isDeleted: Int = 0,
 )

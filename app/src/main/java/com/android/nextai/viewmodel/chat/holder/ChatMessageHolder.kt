@@ -2,28 +2,28 @@ package com.android.nextai.viewmodel.chat.holder
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.lifecycle.ViewModel
-import com.android.nextai.viewmodel.chat.entity.Message
+import com.android.nextai.domain.database.db.entity.MessageEntity
 import dagger.hilt.android.scopes.ViewModelScoped
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import javax.inject.Inject
 
 @ViewModelScoped
-class ChatMessageHolder @Inject constructor() : ViewModel() {
+class ChatMessageHolder @Inject constructor() {
     /**
      * Generate state
      * Record the current generation status of assistant, including text, graphics, and voice
      */
-    private var _isGenerating = MutableStateFlow(false)
     private val _isTextStreaming = MutableStateFlow(true)
+    private val _isImageGenerating = MutableStateFlow(false)
 
-    val isGenerating: StateFlow<Boolean> = _isGenerating
-    val isTextStreaming: StateFlow<Boolean> = _isTextStreaming.asStateFlow()
-
-    fun updateIsGenerating(state: Boolean) {
-        _isGenerating.value = state
+    val isGenerating: Flow<Boolean> = combine(
+        _isTextStreaming, _isImageGenerating
+    ) { text, image ->
+        text || image
     }
 
     fun updateIsTextStreaming(state: Boolean) {
@@ -35,43 +35,41 @@ class ChatMessageHolder @Inject constructor() : ViewModel() {
      */
     private val _curQuery = MutableStateFlow("")
 
-    val curQuery: StateFlow<String> = _curQuery.asStateFlow()
-
     fun updateCurQuery(query: String) {
         _curQuery.value = query
     }
 
-    fun getCurQuery(): String {
-        return curQuery.value
+    fun clearCurrentResponse() {
+        _curResponse.value.clear()
     }
 
     /**
      * Record current assistant's response
      */
-    private val _curResponse = MutableStateFlow("")
+    private val _curResponse = MutableStateFlow(StringBuilder(""))
 
-    val curResponse: StateFlow<String> = _curResponse.asStateFlow()
+    val curResponse: StateFlow<StringBuilder> = _curResponse.asStateFlow()
 
     fun updateCurResponse(content: String) {
-        _curResponse.value += content
+        _curResponse.value.append(content)
     }
 
     fun getCurResponse(): String {
-        return curResponse.value
+        return curResponse.value.toString()
     }
 
     /**
      * Record messages info in a session
      */
-    private val _messageList = mutableStateListOf<Message>()
+    private val _messageList = mutableStateListOf<MessageEntity>()
 
-    val messageList: SnapshotStateList<Message> = _messageList
+    val messageList: SnapshotStateList<MessageEntity> = _messageList
 
-    fun addMessage(newM: Message) {
+    fun addMessage(newM: MessageEntity) {
         _messageList.add(newM)
     }
 
-    fun updateLastMessage(newM: Message) {
+    fun updateLastMessage(newM: MessageEntity) {
         _messageList[_messageList.lastIndex] = newM
     }
 
@@ -79,10 +77,9 @@ class ChatMessageHolder @Inject constructor() : ViewModel() {
      * The initialization method when creating a new session or when selecting a different session
      */
     fun init() {
-        _isGenerating.value = false
         _isTextStreaming.value = false
         _messageList.clear()
         _curQuery.value = ""
-        _curResponse.value = ""
+        _curResponse.value.clear()
     }
 }

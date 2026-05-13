@@ -27,14 +27,17 @@ data class MessageEntity(
     val content: String,
 
     @ColumnInfo(name = "created_at")
-    val createdAt: Long,
+    val createdAt: Long = System.currentTimeMillis(),
+
+    @ColumnInfo(name = "updated_at")
+    val updatedAt: Long = System.currentTimeMillis(),
 
     @ColumnInfo(name = "status", defaultValue = "0")
-    val status: Int,
+    val status: Int = 0,
 
     @ColumnInfo(name = "token_count", defaultValue = "0")
-    val tokenCount: Int,
+    val tokenCount: Int = 0,
 
     @ColumnInfo(name = "extra", defaultValue = "")
-    val extra: String
+    val extra: String = ""
 )

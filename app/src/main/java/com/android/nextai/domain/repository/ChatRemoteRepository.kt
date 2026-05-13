@@ -1,11 +1,11 @@
 package com.android.nextai.domain.repository
 
 import android.util.Log
+import com.android.nextai.domain.database.db.entity.MessageEntity
 import com.android.nextai.domain.remote.AIFactory
 import com.android.nextai.domain.remote.Model
 import com.android.nextai.domain.remote.StreamBuffer
 import com.android.nextai.domain.remote.entity.GenerationEvent
-import com.android.nextai.viewmodel.chat.entity.Message
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
@@ -24,20 +24,20 @@ class ChatRemoteRepository @Inject constructor() {
         private const val TAG = "ChatRemoteRepository"
     }
 
-    suspend fun getAIAnswer(model: Model, messageList: List<Message>): String =
+    suspend fun getAIAnswer(model: Model, messageList: List<MessageEntity>): String =
         withContext(Dispatchers.IO) {
             return@withContext AIFactory.createAIModel(model).getAIAnswer(messageList)
         }
 
     suspend fun getAIStreamingAnswer(
         model: Model,
-        messageList: List<Message>,
+        messageList: List<MessageEntity>,
         callback: (GenerationEvent) -> Unit,
     ) = withContext(Dispatchers.IO) {
         AIFactory.createAIModel(model).getAIStreamingAnswer(messageList, callback)
     }
 
-    fun streamingGen(model: Model, messageList: List<Message>): Flow<GenerationEvent> =
+    fun streamingGen(model: Model, messageList: List<MessageEntity>): Flow<GenerationEvent> =
         callbackFlow<GenerationEvent> {
             val mdBuffer = StreamBuffer()
             val callback: (GenerationEvent) -> Unit = { event ->
@@ -70,7 +70,7 @@ class ChatRemoteRepository @Inject constructor() {
                 close()
             }
             awaitClose {
-                Log.d(TAG, "[streamingGen] cancel...")
+                Log.d(TAG, "[streamingGen] close...")
             }
         }.buffer(Channel.UNLIMITED).onEach { delay(5) }.flowOn(Dispatchers.IO)
 }

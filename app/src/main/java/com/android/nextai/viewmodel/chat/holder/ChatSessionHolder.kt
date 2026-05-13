@@ -1,6 +1,5 @@
 package com.android.nextai.viewmodel.chat.holder
 
-import androidx.lifecycle.ViewModel
 import com.android.nextai.domain.database.db.entity.SessionEntity
 import com.android.nextai.domain.repository.ChatDatabaseRepository
 import com.android.nextai.viewmodel.chat.entity.SessionGroup
@@ -13,9 +12,9 @@ import javax.inject.Inject
 @ViewModelScoped
 class ChatSessionHolder @Inject constructor(
     val chatDatabaseRepository: ChatDatabaseRepository
-): ViewModel() {
+) {
     /**
-     * session state
+     * Session state
      */
     private val _isLoading = MutableStateFlow(true)
     private val _isInSession = MutableStateFlow<Boolean>(false)
@@ -27,8 +26,12 @@ class ChatSessionHolder @Inject constructor(
         return isInSession.value
     }
 
+    fun updateIsInSession(state: Boolean){
+        _isInSession.value = state
+    }
+
     /**
-     * session info
+     * Session info
      */
     private val _curSessionId = MutableStateFlow(-1L)
     val curSessionId = _curSessionId.asStateFlow()
@@ -40,7 +43,7 @@ class ChatSessionHolder @Inject constructor(
     }
 
     /**
-     * session group
+     * Session group
      */
     private val _groupedSessions = MutableStateFlow<Map<SessionGroup, List<SessionEntity>>>(emptyMap())
     private val _isSelectionMode = MutableStateFlow(false)
@@ -53,17 +56,9 @@ class ChatSessionHolder @Inject constructor(
 
     suspend fun loadSessions() {
         _isLoading.value = true
-        val grouped = chatDatabaseRepository.getAllSessions()
+        val grouped = chatDatabaseRepository.getGroupSessions()
         _groupedSessions.value = grouped
         _isLoading.value = false
-    }
-
-    suspend fun createSession(curQuery: String): SessionEntity {
-        val session = chatDatabaseRepository.createSession(curQuery)
-        loadSessions()
-        _curSessionId.value = session.id
-        _isInSession.value = true
-        return session
     }
 
     fun enterSelectionMode(sessionId: Long) {
@@ -84,16 +79,15 @@ class ChatSessionHolder @Inject constructor(
 
     // Group selection/Ungroup selection
     fun toggleGroupSelection(
-        group: SessionGroup,
         sessions: List<SessionEntity>,
         isCheck: Boolean
     ) {
         val ids = sessions.map { it.id }
         _selectedIdSet.update { current ->
             if (isCheck) {
-                current + ids   // 全选该组
+                current + ids
             } else {
-                current - ids.toSet() // 取消该组
+                current - ids.toSet()
             }
         }
     }

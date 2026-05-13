@@ -1,76 +1,27 @@
 package com.android.nextai.domain.repository
 
+import androidx.room.withTransaction
+import com.android.nextai.domain.database.db.ChatDatabase
 import com.android.nextai.domain.database.db.dao.MessageDao
 import com.android.nextai.domain.database.db.dao.SessionDao
 import com.android.nextai.domain.database.db.entity.MessageEntity
 import com.android.nextai.domain.database.db.entity.SessionEntity
 import com.android.nextai.viewmodel.chat.entity.Role
 import com.android.nextai.viewmodel.chat.entity.SessionGroup
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZoneId
 import javax.inject.Inject
 
 class ChatDatabaseRepository @Inject constructor(
+    val chatDB: ChatDatabase,
     val sessionDao: SessionDao,
     val messageDao: MessageDao
 ) {
-
-    suspend fun createSession(query: String): SessionEntity{
-        return withContext(Dispatchers.IO){
-            val now = System.currentTimeMillis()
-            val sessionEntity = SessionEntity(
-                title = query,
-                aiTitle = "",
-                createdAt = now,
-                updatedAt = now,
-                systemPrompt = "解答用户问题",
-                tokenCount = 0,
-                isPinned = 0,
-                isDeleted = 0)
-            val id = sessionDao.insert(sessionEntity)
-            val newSession = sessionEntity.copy(id = id)
-            return@withContext newSession
-        }
-    }
-
     /**
-     * insert pairs of Q&A messages
+     * Get all sessions and divide into different group
      */
-    suspend fun insertPairMessage(sessionId:Long, query:String, response:String):Pair<Long, Long>{
-        return withContext(Dispatchers.IO){
-            val userEntity = MessageEntity(
-                sessionId = sessionId,
-                role = Role.User.name,
-                content = query,
-                createdAt = System.currentTimeMillis(),
-                status = 1,
-                tokenCount = query.length,
-                extra = ""
-            )
-            val assistantEntity = MessageEntity(
-                sessionId = sessionId,
-                role = Role.Assistant.name,
-                content = response,
-                createdAt = System.currentTimeMillis(),
-                status = 1,
-                tokenCount = response.length,
-                extra = ""
-            )
-            val userMessageId = messageDao.insert(userEntity)
-            val assistantMessageId = messageDao.insert(assistantEntity)
-            return@withContext Pair(userMessageId, assistantMessageId)
-        }
-    }
-
-    /**
-     * get all sessions and divide into different group
-     */
-    suspend fun getAllSessions(): Map<SessionGroup, List<SessionEntity>>  {
-        return withContext(Dispatchers.IO){
-            return@withContext sessionDao.getAllSessions().toGroup()
-        }
+    suspend fun getGroupSessions(): Map<SessionGroup, List<SessionEntity>>  {
+        return sessionDao.getAllSessions().toGroup()
     }
 
     fun List<SessionEntity>.toGroup(): Map<SessionGroup, List<SessionEntity>> {
@@ -110,5 +61,36 @@ class ChatDatabaseRepository @Inject constructor(
             SessionGroup.IN_MONTH to monthList,
             SessionGroup.EARLIER to earlierList
         ).filterValues { it.isNotEmpty() }
+    }
+
+    suspend fun createSession(query: String): SessionEntity{
+        val sessionEntity = SessionEntity(title = query)
+        val id = sessionDao.insert(sessionEntity)
+        val newSession = sessionEntity.copy(id = id)
+        return newSession
+    }
+
+    /**
+     * Create message
+     */
+    suspend fun createMessage(sessionId: Long, content: String, role: Role): MessageEntity{
+        val message = MessageEntity(
+            sessionId = sessionId,
+            role = role.name,
+            content = content,
+        )
+        val msgId = messageDao.insert(message)
+        return message.copy(id = msgId)
+    }
+
+    /**
+     * Create Session with user message
+     */
+    suspend fun createSessionWithUserMessage(query: String): Pair<SessionEntity, MessageEntity>{
+        return chatDB.withTransaction {
+            val session = createSession(query)
+            val message = createMessage(session.id, query, Role.User)
+            return@withTransaction Pair(session, message)
+        }
     }
 }

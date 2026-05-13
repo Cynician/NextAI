@@ -1,13 +1,12 @@
 package com.android.nextai.viewmodel.chat.holder
 
-import androidx.lifecycle.ViewModel
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 @ViewModelScoped
-class ChatUiStateHolder @Inject constructor() : ViewModel(){
+class ChatUiStateHolder @Inject constructor() {
 
     /**
      * Message list scrolling logic

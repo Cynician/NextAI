@@ -1,6 +1,5 @@
 package com.android.nextai.ui.component.markdown.mdnodeview
 
-import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,19 +18,54 @@ import com.android.nextai.ui.component.markdown.entity.InlineColors
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 
 @Composable
-fun HeadingView(node: MarkdownNode.Heading, colors: InlineColors){
-    val textStyle = when(node.level){
-        1 -> TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = LocalContentColor.current.copy(alpha = 1f))
-        2 -> TextStyle(fontSize = 26.sp, fontWeight = FontWeight.Bold, color = LocalContentColor.current.copy(alpha = 1f))
-        3 -> TextStyle(fontSize = 24.sp, fontWeight = FontWeight.SemiBold, color = LocalContentColor.current.copy(alpha = 1f))
-        4 -> TextStyle(fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = LocalContentColor.current.copy(alpha = 1f))
-        5 -> TextStyle(fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = LocalContentColor.current.copy(alpha = 1f))
-        6 -> TextStyle(fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = LocalContentColor.current.copy(alpha = 1f))
-        else -> TextStyle(fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = LocalContentColor.current.copy(alpha = 1f))
+fun HeadingView(node: MarkdownNode.Heading, colors: InlineColors) {
+    val textStyle = when (node.level) {
+        1 -> TextStyle(
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = LocalContentColor.current.copy(alpha = 1f)
+        )
+
+        2 -> TextStyle(
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold,
+            color = LocalContentColor.current.copy(alpha = 1f)
+        )
+
+        3 -> TextStyle(
+            fontSize = 24.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = LocalContentColor.current.copy(alpha = 1f)
+        )
+
+        4 -> TextStyle(
+            fontSize = 22.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = LocalContentColor.current.copy(alpha = 1f)
+        )
+
+        5 -> TextStyle(
+            fontSize = 20.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = LocalContentColor.current.copy(alpha = 1f)
+        )
+
+        6 -> TextStyle(
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = LocalContentColor.current.copy(alpha = 1f)
+        )
+
+        else -> TextStyle(
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = LocalContentColor.current.copy(alpha = 1f)
+        )
     }
 
-    Log.i("HeadingView", "${node.level}")
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)){
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .padding(vertical = 2.dp)) {
         ProvideTextStyle(textStyle) {
             Text(
                 text = buildAnnotatedString { appendInlineNodes(node.children, colors = colors) },
@@ -44,4 +78,3 @@ fun HeadingView(node: MarkdownNode.Heading, colors: InlineColors){
         }
     }
 }
-

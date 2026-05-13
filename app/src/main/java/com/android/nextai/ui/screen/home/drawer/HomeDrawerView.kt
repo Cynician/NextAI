@@ -87,7 +87,6 @@ fun HomeDrawerView(
                                 onToggleExpand = { expandedMap[group.name] = !isExpand },
                                 onSelectGroup = { isCheck ->
                                     chatViewModel.sessionHolder.toggleGroupSelection(
-                                        group = group,
                                         sessions = sessionList,
                                         isCheck = isCheck
                                     )

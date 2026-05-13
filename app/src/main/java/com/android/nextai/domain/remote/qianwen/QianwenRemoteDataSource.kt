@@ -1,9 +1,9 @@
 package com.android.nextai.domain.remote.qianwen
 
 import android.util.Log
+import com.android.nextai.domain.database.db.entity.MessageEntity
 import com.android.nextai.domain.remote.AIModelDataSource
 import com.android.nextai.domain.remote.entity.GenerationEvent
-import com.android.nextai.viewmodel.chat.entity.Message
 import com.android.nextai.viewmodel.chat.entity.Role
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam
@@ -26,32 +26,28 @@ object QianwenRemoteDataSource : AIModelDataSource {
             .build()
     }
 
-    override suspend fun getAIAnswer(messageList: List<Message>): String {
-
+    override suspend fun getAIAnswer(messageList: List<MessageEntity>): String {
         val systemMessage = ChatCompletionSystemMessageParam.builder()
             .content("解答用户问题")
             .build()
-
         val paramsBuilder = ChatCompletionCreateParams.builder()
             .model(MODEL)
             .addMessage(systemMessage)
 
         messageList.forEach {
             when (it.role) {
-                Role.User -> {
+                Role.User.name -> {
                     val userMessage = ChatCompletionUserMessageParam.builder()
                         .content(it.content)
                         .build()
                     paramsBuilder.addMessage(userMessage)
                 }
-
-                Role.Assistant -> {
+                Role.Assistant.name -> {
                     val assistantMessage = ChatCompletionAssistantMessageParam.builder()
                         .content(it.content)
                         .build()
                     paramsBuilder.addMessage(assistantMessage)
                 }
-
                 else -> {}
             }
         }
@@ -71,17 +67,15 @@ object QianwenRemoteDataSource : AIModelDataSource {
     }
 
     override suspend fun getAIStreamingAnswer(
-        messageList: List<Message>,
+        messageList: List<MessageEntity>,
         callback: (GenerationEvent) -> Unit,
     ) {
         val systemMessage = ChatCompletionSystemMessageParam.builder()
             .content("解答用户问题")
             .build()
-
         val streamOptions = ChatCompletionStreamOptions.builder()
             .includeUsage(true)
             .build()
-
         val paramsBuilder = ChatCompletionCreateParams.builder()
             .model(MODEL)
             .addMessage(systemMessage)
@@ -91,7 +85,7 @@ object QianwenRemoteDataSource : AIModelDataSource {
         var content = ""
         while (i < messageList.size) {
             val message = messageList[i]
-            if (message.role == Role.Assistant) {
+            if (message.role == Role.Assistant.name) {
                 content += message.content
                 i += 1
                 continue
@@ -103,7 +97,7 @@ object QianwenRemoteDataSource : AIModelDataSource {
                 paramsBuilder.addMessage(assistantMessage)
                 content = ""
             }
-            if (message.role == Role.User) {
+            if (message.role == Role.User.name) {
                 val userMessage = ChatCompletionUserMessageParam.builder()
                     .content(message.content)
                     .build()

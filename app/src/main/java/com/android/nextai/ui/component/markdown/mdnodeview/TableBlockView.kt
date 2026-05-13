@@ -1,6 +1,5 @@
 package com.android.nextai.ui.component.markdown.mdnodeview
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -182,7 +181,6 @@ fun TableCellView(
     modifier: Modifier = Modifier
 ) {
     val text = buildAnnotatedString { appendInlineNodes(cell.children, colors) }
-    Log.d("MarkdownNodeView", "cell:$text")
     val boxAlign = when (cell.alignment) {
         TableCell.Alignment.LEFT -> Alignment.CenterStart
         TableCell.Alignment.CENTER -> Alignment.Center

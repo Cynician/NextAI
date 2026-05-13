@@ -9,13 +9,13 @@ import com.android.nextai.domain.database.db.entity.MessageEntity
 @Dao
 interface MessageDao {
     /**
-     * insert new message
+     * Insert new message
      */
     @Insert
     suspend fun insert(message: MessageEntity): Long
 
     /**
-     * pagination (upload history)
+     * Pagination (upload history)
      */
     @Query("""
         SELECT * FROM message
@@ -31,7 +31,7 @@ interface MessageDao {
     ): List<MessageEntity>
 
     /**
-     * update status(sending:0, success:1, failure:2)
+     * Update status(sending:0, success:1, failure:2)
      */
     @Query("""
         UPDATE message
@@ -41,14 +41,18 @@ interface MessageDao {
     suspend fun updateStatus(id: Long, status: Int)
 
     /**
-     * delete message
+     * Delete message
      */
     @Query("DELETE FROM message WHERE id = :id")
     suspend fun delete(id: Long)
 
     /**
-     * get max id
+     * Update message content
      */
-    @Query("SELECT MAX(id) FROM message")
-    suspend fun getMaxId(): Long?
+    @Query("""
+        UPDATE message
+        SET content = :content
+        WHERE id = :id
+    """)
+    suspend fun updateMessageContent(id: Long, content: String)
 }
