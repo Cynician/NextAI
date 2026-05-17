@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.icon.AppIcon
 
 @Composable
-fun SelectionBottomBarView(
+fun BatchActionView(
     modifier: Modifier = Modifier,
     isSelectionMode: Boolean,
     onDelete: () -> Unit,
@@ -64,18 +64,18 @@ fun SelectionBottomBarView(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                BottomActionItem(
+                ActionItem(
                     icon = AppIcon.Delete,
                     text = "删除",
                     tint = Color(0xFFCC4B4B),
                     onClick = onDelete
                 )
-                BottomActionItem(
+                ActionItem(
                     icon = AppIcon.PushPin,
                     text = "置顶",
                     onClick = onPin
                 )
-                BottomActionItem(
+                ActionItem(
                     icon = AppIcon.Cancel,
                     text = "取消",
                     onClick = onCancel
@@ -86,7 +86,7 @@ fun SelectionBottomBarView(
 }
 
 @Composable
-fun BottomActionItem(
+fun ActionItem(
     icon: ImageVector?,
     text: String,
     tint: Color = MaterialTheme.colorScheme.onSurface,
