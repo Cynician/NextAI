@@ -11,7 +11,6 @@ import com.android.nextai.domain.repository.ChatRemoteRepository
 import com.android.nextai.viewmodel.chat.entity.Role
 import com.android.nextai.viewmodel.chat.holder.ChatMessageHolder
 import com.android.nextai.viewmodel.chat.holder.ChatSessionHolder
-import com.android.nextai.viewmodel.chat.holder.ChatUiStateHolder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -20,7 +19,6 @@ import javax.inject.Inject
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     val messageHolder: ChatMessageHolder,
-    val uiStateHolder: ChatUiStateHolder,
     val sessionHolder: ChatSessionHolder,
     val chatRemoteRepository: ChatRemoteRepository,
     val chatDatabaseRepository: ChatDatabaseRepository,
@@ -30,6 +28,7 @@ class ChatViewModel @Inject constructor(
     }
 
     var generationJob: Job? = null
+    var loadMessagesJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -47,17 +46,19 @@ class ChatViewModel @Inject constructor(
     fun sendUserQuery(query: String) {
         val isSportStreamingGen = true
         val query = query.trim()
+        generationJob?.cancel()
         generationJob = viewModelScope.launch {
             try {
+                // Pre-process
                 messageHolder.updateCurQuery(query)
                 messageHolder.clearCurrentResponse()
-                Log.d(TAG, "create session with query :$query")
                 var userMessage: MessageEntity
-                if (!sessionHolder.getIsInSession()) {
+                if (!sessionHolder.isInSession) {
+                    Log.d(TAG, "create session with query :$query")
                     val (_, tmpMessage) = chatDatabaseRepository.createSessionWithUserMessage(query)
-                    userMessage = tmpMessage
+                    userMessage = tmpMessage.copy()
                     sessionHolder.updateIsInSession(true)
-                    sessionHolder.updateCurSessionId(tmpMessage.sessionId)
+                    sessionHolder.updateCurSessionId(userMessage.sessionId)
                     sessionHolder.loadSessions()
                 } else {
                     userMessage = chatDatabaseRepository.createMessage(
@@ -67,9 +68,8 @@ class ChatViewModel @Inject constructor(
                     )
                 }
                 messageHolder.addMessage(userMessage)
+                // Core process
                 if (isSportStreamingGen) {
-                    messageHolder.updateIsTextStreaming(true)
-                    uiStateHolder.updateScrollToHeadAssistMessage(true)
                     startStreamingGen()
                 }
             } catch (e: Exception) {
@@ -79,11 +79,10 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Get ai response in stream way
-     */
+    // Get ai response in stream way
     private suspend fun startStreamingGen() {
         Log.d(TAG, "startStreamingGen# get ai response")
+        messageHolder.updateIsTextStreaming(true)
         val assistantMessage = chatDatabaseRepository.createMessage(
             sessionId = sessionHolder.getCurSessionId(),
             content = messageHolder.getCurResponse(),
@@ -98,21 +97,23 @@ class ChatViewModel @Inject constructor(
                 when (event) {
                     is GenerationEvent.Word -> {
                         messageHolder.updateCurResponse(content = event.content)
-                        uiStateHolder.updateStreamingTick(event.content.length)
                         messageHolder.updateLastMessage(
                             assistantMessage.copy(content = messageHolder.getCurResponse())
                         )
                     }
+
                     is GenerationEvent.Done -> {
                         chatDatabaseRepository.messageDao.updateMessageContent(
                             id = assistantMessage.id,
                             content = messageHolder.getCurResponse()
                         )
                         messageHolder.updateIsTextStreaming(false)
-                        uiStateHolder.updateScrollToHeadAssistMessage(false)
-                        generationJob?.cancel()
+                        messageHolder.emitScrollToLatestMessageEvent()
                     }
-                    is GenerationEvent.Error -> {}
+
+                    is GenerationEvent.Error -> {
+                        messageHolder.updateIsTextStreaming(false)
+                    }
                 }
             }
     }
@@ -123,10 +124,9 @@ class ChatViewModel @Inject constructor(
      *
      * The initialization method when creating a new session or selecting a different session
      */
-    fun initSession() {
-        messageHolder.init()
-        sessionHolder.init()
-        generationJob?.cancel()
+    fun createSessionInit() {
+        messageHolder.createSessionInit()
+        sessionHolder.createSessionInit()
     }
 
     /**
@@ -135,7 +135,7 @@ class ChatViewModel @Inject constructor(
     fun batchDeleteSessions(idList: List<Long>) {
         viewModelScope.launch {
             if (idList.contains(sessionHolder.getCurSessionId())) {
-                initSession()
+                createSessionInit()
             }
             sessionHolder.batchDeleteSessions(idList)
         }
@@ -157,5 +157,66 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             sessionHolder.unpinnedSession(id)
         }
+    }
+
+    /**
+     * Load messages
+     */
+    fun loadMessages(sessionId: Long, callBack: (() -> Unit)? = null) {
+        loadMessagesJob?.cancel()
+        loadMessagesJob = viewModelScope.launch {
+            try {
+                val messageList = chatDatabaseRepository.messageDao.getMessagesBefore(
+                    sessionId = sessionId,
+                    id = messageHolder.curMessagesMinId
+                ).reversed()
+                if (messageList.isNotEmpty()) {
+                    messageHolder.updateCurMessagesMinId(id = messageList.first().id)
+                    messageHolder.addMessagesToHead(messageList)
+                    Log.d(TAG, "loadMessages# size:${messageList.size}")
+                } else {
+                    messageHolder.updateHasMoreMessages(false)
+                }
+                if (callBack != null) callBack()
+            } finally {
+                messageHolder.updateIsFirstLoadMessages(false)
+                messageHolder.updateIsLoadingMore(false)
+            }
+
+        }
+    }
+
+    fun loadMessagesInit(sessionId: Long) {
+        sessionHolder.loadMessagesInit(sessionId)
+        messageHolder.loadMessagesInit()
+        loadMessages(
+            sessionId = sessionId,
+            callBack = {
+                messageHolder.updateIsFirstLoadMessages(false)
+                messageHolder.emitScrollToLatestMessageEvent()
+            }
+        )
+    }
+
+    fun loadMoreMessages() {
+        if (
+            !messageHolder.hasMoreMessages ||
+            messageHolder.isLoadingMore ||
+            messageHolder.isFirstLoadMessages ||
+            !sessionHolder.isInSession
+        ) {
+            Log.d(TAG, "loadMoreMessages# skip to load messages")
+            return
+        }
+
+        Log.d(TAG, "loadMoreMessages# load more messages")
+        messageHolder.updateIsLoadingMore(true)
+        loadMessages(
+            sessionId = sessionHolder.getCurSessionId(),
+            callBack = {
+                messageHolder.updateIsLoadingMore(false)
+                Log.d(TAG, "loadMoreMessages# success")
+            }
+        )
     }
 }

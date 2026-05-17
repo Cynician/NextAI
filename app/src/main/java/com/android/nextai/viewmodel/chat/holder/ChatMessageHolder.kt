@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
 @ViewModelScoped
@@ -17,7 +18,7 @@ class ChatMessageHolder @Inject constructor() {
      * Generate state
      * Record the current generation status of assistant, including text, graphics, and voice
      */
-    private val _isTextStreaming = MutableStateFlow(true)
+    private val _isTextStreaming = MutableStateFlow(false)
     private val _isImageGenerating = MutableStateFlow(false)
 
     val isGenerating: Flow<Boolean> = combine(
@@ -39,23 +40,36 @@ class ChatMessageHolder @Inject constructor() {
         _curQuery.value = query
     }
 
-    fun clearCurrentResponse() {
-        _curResponse.value.clear()
-    }
 
     /**
      * Record current assistant's response
      */
-    private val _curResponse = MutableStateFlow(StringBuilder(""))
+    private val _curResponse = MutableStateFlow("")
 
-    val curResponse: StateFlow<StringBuilder> = _curResponse.asStateFlow()
+    val curResponse: StateFlow<String> = _curResponse.asStateFlow()
+
+    fun clearCurrentResponse() {
+        _curResponse.value = ""
+    }
 
     fun updateCurResponse(content: String) {
-        _curResponse.value.append(content)
+        _curResponse.value += content
     }
 
     fun getCurResponse(): String {
-        return curResponse.value.toString()
+        return curResponse.value
+    }
+
+    /**
+     * Message list scrolling logic
+     */
+
+    private val _scrollToLatestMessageEvent = MutableStateFlow(0)
+
+    val scrollToLatestMessageEvent = _scrollToLatestMessageEvent.asStateFlow()
+
+    fun emitScrollToLatestMessageEvent() {
+        _scrollToLatestMessageEvent.update { it + 1 }
     }
 
     /**
@@ -73,13 +87,65 @@ class ChatMessageHolder @Inject constructor() {
         _messageList[_messageList.lastIndex] = newM
     }
 
+    fun addMessagesToHead(
+        newMessages: List<MessageEntity>
+    ) {
+        _messageList.addAll(index = 0, elements = newMessages)
+    }
+
     /**
-     * The initialization method when creating a new session or when selecting a different session
+     * Init for creating a new session
      */
-    fun init() {
+    fun createSessionInit() {
         _isTextStreaming.value = false
         _messageList.clear()
         _curQuery.value = ""
-        _curResponse.value.clear()
+        _curResponse.value = ""
+        _curMessagesMinId.value = Long.MAX_VALUE
+    }
+
+    /**
+     * Load messages
+     *
+     */
+    private val _isFirstLoadMessages = MutableStateFlow(false)
+    private val _isLoadingMore = MutableStateFlow(false)
+    private val _hasMoreMessages = MutableStateFlow(true)
+    private val _curMessagesMinId = MutableStateFlow(Long.MAX_VALUE)
+
+
+    val isFirstLoadMessages: Boolean get() = _isFirstLoadMessages.value
+    val isLoadingMore: Boolean get() = _isLoadingMore.value
+    val hasMoreMessages:Boolean get() = _hasMoreMessages.value
+    val curMessagesMinId: Long get() = _curMessagesMinId.value
+
+    fun updateHasMoreMessages(
+        value: Boolean
+    ) {
+        _hasMoreMessages.value = value
+    }
+
+    fun updateIsFirstLoadMessages(state: Boolean){
+        _isFirstLoadMessages.value = state
+    }
+
+    fun updateIsLoadingMore(state: Boolean){
+        _isLoadingMore.value = state
+    }
+
+    fun updateCurMessagesMinId(id: Long){
+        _curMessagesMinId.value = id
+    }
+
+    fun loadMessagesInit() {
+        _isTextStreaming.value = false
+        _isImageGenerating.value = false
+        _curQuery.value = ""
+        _curResponse.value = ""
+        _messageList.clear()
+        _curMessagesMinId.value = Long.MAX_VALUE
+        _isFirstLoadMessages.value = true
+        _isLoadingMore.value = false
+        _hasMoreMessages.value = true
     }
 }

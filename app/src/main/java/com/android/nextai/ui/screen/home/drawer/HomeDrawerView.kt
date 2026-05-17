@@ -24,7 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.loading.PageLoadingStateView
 import com.android.nextai.ui.screen.home.drawer.views.EmptyStateView
-import com.android.nextai.ui.screen.home.drawer.views.SelectionBottomBarView
+import com.android.nextai.ui.screen.home.drawer.views.BatchActionView
 import com.android.nextai.ui.screen.home.drawer.views.SessionHeaderView
 import com.android.nextai.ui.screen.home.drawer.views.SessionItemView
 import com.android.nextai.ui.screen.home.drawer.views.StartNewSessionView
@@ -40,13 +40,13 @@ fun HomeDrawerView(
 ) {
     val isSessionLoading by chatViewModel.sessionHolder.isLoading.collectAsState()
     val groupedSessions by chatViewModel.sessionHolder.groupedSessions.collectAsState()
-    val isSelectionMode by chatViewModel.sessionHolder.isSelectionMode.collectAsState()
-    val selectedSessionIdSet by chatViewModel.sessionHolder.selectedIdSet.collectAsState()
-    val currentSessionId by chatViewModel.sessionHolder.curSessionId.collectAsState()
+    val isBatchSelectMode by chatViewModel.sessionHolder.isBatchSelectMode.collectAsState()
+    val batchSelectedIdSet by chatViewModel.sessionHolder.batchSelectedIdSet.collectAsState()
+    val currentSessionId = chatViewModel.sessionHolder.curSessionId.collectAsState()
     val expandedMap = remember { mutableStateMapOf<String, Boolean>() }
 
-    BackHandler(isSelectionMode) {
-        chatViewModel.sessionHolder.exitSelectionMode()
+    BackHandler(isBatchSelectMode) {
+        chatViewModel.sessionHolder.exitBatchSelectMode()
     }
 
     Scaffold(
@@ -57,9 +57,7 @@ fun HomeDrawerView(
                 modifier = Modifier.padding(bottom = 6.dp)
             ) {
                 TopAppBar(title = { Text("NextAI", style = MaterialTheme.typography.titleLarge) })
-                StartNewSessionView({
-                    onStartNewSession()
-                })
+                StartNewSessionView(onClick = { onStartNewSession() })
             }
         }
     ) { paddingValues ->
@@ -81,12 +79,12 @@ fun HomeDrawerView(
                             SessionHeaderView(
                                 title = group.title,
                                 sessions = sessionList,
-                                selectedIdSet = selectedSessionIdSet,
-                                isSelectionMode = isSelectionMode,
+                                selectedIdSet = batchSelectedIdSet,
+                                isSelectionMode = isBatchSelectMode,
                                 isExpand = isExpand,
                                 onToggleExpand = { expandedMap[group.name] = !isExpand },
                                 onSelectGroup = { isCheck ->
-                                    chatViewModel.sessionHolder.toggleGroupSelection(
+                                    chatViewModel.sessionHolder.toggleGroupSelect(
                                         sessions = sessionList,
                                         isCheck = isCheck
                                     )
@@ -98,15 +96,15 @@ fun HomeDrawerView(
                             items(sessionList, key = { it.id }) { session ->
                                 SessionItemView(
                                     session = session,
-                                    isActive = currentSessionId == session.id,
+                                    isActive = currentSessionId.value == session.id,
                                     isPinned = group.name == SessionGroup.PINNED.name,
-                                    isSelectionMode = isSelectionMode,
-                                    isSelected = selectedSessionIdSet.contains(session.id),
+                                    isSelectionMode = isBatchSelectMode,
+                                    isSelected = batchSelectedIdSet.contains(session.id),
                                     onClick = {
                                         onSessionItemClick(session.id)
                                     },
                                     onLongClick = {
-                                        chatViewModel.sessionHolder.enterSelectionMode(session.id)
+                                        chatViewModel.sessionHolder.enterBatchSelectMode(session.id)
                                     },
                                     onUnpinnedClick = {
                                         chatViewModel.unpinnedSession(session.id)
@@ -116,12 +114,12 @@ fun HomeDrawerView(
                         }
                     }
                 }
-                SelectionBottomBarView(
+                BatchActionView(
                     modifier = Modifier.align(Alignment.BottomCenter),
-                    isSelectionMode = isSelectionMode,
-                    onDelete = { chatViewModel.batchDeleteSessions(selectedSessionIdSet.toList()) },
-                    onPin = { chatViewModel.batchPinSessions(selectedSessionIdSet.toList()) },
-                    onCancel = { chatViewModel.sessionHolder.exitSelectionMode() },
+                    isSelectionMode = isBatchSelectMode,
+                    onDelete = { chatViewModel.batchDeleteSessions(batchSelectedIdSet.toList()) },
+                    onPin = { chatViewModel.batchPinSessions(batchSelectedIdSet.toList()) },
+                    onCancel = { chatViewModel.sessionHolder.exitBatchSelectMode() },
                 )
             }
         }

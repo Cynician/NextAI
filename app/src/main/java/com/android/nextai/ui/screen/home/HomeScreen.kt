@@ -34,28 +34,29 @@ fun HomeScreen(
     // Drawer
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val isSelectionMode by chatViewModel.sessionHolder.isSelectionMode.collectAsState()
+    val isSelectionMode by chatViewModel.sessionHolder.isBatchSelectMode.collectAsState()
+
     BackHandler(drawerState.isOpen && !isSelectionMode) {
         scope.launch {
             drawerState.close()
         }
     }
+
     ModalNavigationDrawer(
         drawerState = drawerState, drawerContent = {
             ModalDrawerSheet(modifier = Modifier.fillMaxWidth(0.85f)) {
                 HomeDrawerView(
                     onStartNewSession = {
-                        chatViewModel.initSession()
+                        chatViewModel.createSessionInit()
                         scope.launch {
                             drawerState.close()
                         }
                     },
                     onSessionItemClick = {
                         if (isSelectionMode) {
-                            chatViewModel.sessionHolder.toggleSelection(it)
+                            chatViewModel.sessionHolder.toggleItemSelect(it)
                         } else {
-                            // TODO: Load session
-                            chatViewModel.sessionHolder.updateCurSessionId(it)
+                            chatViewModel.loadMessagesInit(sessionId = it)
                         }
                     },
                     chatViewModel = chatViewModel,

@@ -1,6 +1,5 @@
 package com.android.nextai.ui.screen.home.body
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.fadeIn
@@ -16,10 +15,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,15 +39,15 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.icon.AppIcon
-import com.android.nextai.ui.screen.home.body.views.AssistantStreamBubbleView
+import com.android.nextai.ui.screen.home.body.views.AssistantBubbleView
 import com.android.nextai.ui.screen.home.body.views.UserBubbleView
 import com.android.nextai.ui.theme.Animation
 import com.android.nextai.viewmodel.chat.ChatViewModel
 import com.android.nextai.viewmodel.chat.entity.Role
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.debounce
-
-private const val TAG = "HomeBodyView"
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @OptIn(ExperimentalSharedTransitionApi::class, FlowPreview::class)
 @Composable
@@ -59,17 +57,32 @@ fun HomeBodyView(
 ) {
     val isGenerating by chatViewModel.messageHolder.isGenerating.collectAsState(initial = false)
     val messageList = chatViewModel.messageHolder.messageList
-    val streamingTick = chatViewModel.uiStateHolder.streamingTick.collectAsState()
-    val isInSession by chatViewModel.sessionHolder.isInSession.collectAsState()
     val listState = rememberLazyListState()
+
+    /**
+     * Load messages
+     */
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val layoutInfo = listState.layoutInfo
+            val firstVisible = layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0
+            firstVisible
+        }
+            .distinctUntilChanged()
+            .collect { index ->
+                if (index <= 2) {
+                    chatViewModel.loadMoreMessages()
+                }
+            }
+    }
 
     /**
      * Scroll logic
      */
     var shouldAutoScroll by remember { mutableStateOf(true) }
     var isUserScrolling by remember { mutableStateOf(false) }
-    val scrollToHeadAssistMessage by chatViewModel.uiStateHolder.scrollToHeadAssistMessage.collectAsState()
-    // record whether the user actively triggers scrolling
+    val scrollToLatestMessageEvent by chatViewModel.messageHolder.scrollToLatestMessageEvent.collectAsState()
+    // Record if user actively triggers scrolling
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(
@@ -85,11 +98,12 @@ fun HomeBodyView(
         }
     }
     // Scroll to the latest assistant message
-    LaunchedEffect(scrollToHeadAssistMessage) {
-        Log.d(TAG, "updateScrollToAssistMessage : $scrollToHeadAssistMessage")
-        val itemCount = listState.layoutInfo.totalItemsCount
-        if (itemCount > 0 && scrollToHeadAssistMessage) {
-            listState.scrollToItem(itemCount - 1)
+    LaunchedEffect(scrollToLatestMessageEvent) {
+        if (messageList.isNotEmpty()) {
+            awaitFrame()
+            listState.animateScrollToItem(
+                messageList.lastIndex
+            )
         }
         isUserScrolling = false
         shouldAutoScroll = true
@@ -97,11 +111,8 @@ fun HomeBodyView(
     // Auto scroll
     LaunchedEffect(listState) {
         snapshotFlow {
-            Triple(
-                shouldAutoScroll,
-                isUserScrolling,
-                streamingTick.value
-            )
+                shouldAutoScroll
+                isUserScrolling
         }.debounce(16)
             .collect {
                 if (
@@ -109,7 +120,7 @@ fun HomeBodyView(
                     isGenerating &&
                     !isUserScrolling
                 ) {
-                    listState.scrollBy(1000f)
+                    listState.scrollBy(100f)
                 }
             }
     }
@@ -121,28 +132,37 @@ fun HomeBodyView(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(paddingValues)
     ) {
-        if (isInSession || isGenerating) {
+        if (messageList.isNotEmpty()) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
                     .nestedScroll(nestedScrollConnection),
-                contentPadding = PaddingValues(vertical = 8.dp),
+                contentPadding = PaddingValues(
+                    top = paddingValues.calculateTopPadding() + 8.dp,
+                    bottom = paddingValues.calculateBottomPadding() + 8.dp
+                ),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
-
             ) {
-                items(
+                itemsIndexed(
                     items = messageList,
-                    key = { it.id }
-                ) { message ->
+                    key = { _, item -> item.id }
+                ) { index, message ->
+
+                    val isLastAssistant =
+                        index == messageList.lastIndex &&
+                                message.role == Role.Assistant.name
                     when (message.role) {
                         Role.User.name -> {
                             UserBubbleView(message.content)
                         }
                         Role.Assistant.name -> {
-                            AssistantStreamBubbleView(message.content)
+                            AssistantBubbleView(
+                                messageId = message.id,
+                                content = message.content,
+                                isStreaming = isGenerating && isLastAssistant
+                            )
                         }
                         Role.None.name -> {}
                     }

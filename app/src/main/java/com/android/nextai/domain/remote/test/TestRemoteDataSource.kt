@@ -24,8 +24,8 @@ object TestRemoteDataSource : AIModelDataSource {
         messageList: List<MessageEntity>,
         callback: (GenerationEvent) -> Unit,
     ) {
-        val testData = TestData.getData()
-
+//        val testData = TestData.getData()
+        val testData = "123456789"
         try {
             val chunks = mutableListOf<String>()
             var currentIndex = 0
