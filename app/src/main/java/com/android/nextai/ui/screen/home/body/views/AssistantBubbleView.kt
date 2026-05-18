@@ -27,10 +27,17 @@ internal fun AssistantBubbleView(
      * Different message -> different parser
      * Same message streaming -> same parser
      */
-    val parser = remember(messageId) { IncrementalMarkdownParser() }
+    val parser = remember(messageId) {
+        IncrementalMarkdownParser().apply {
+            if (!isStreaming) {
+                update(content)
+                complete()
+            }
+        }
+    }
 
     LaunchedEffect(content) {
-        parser.update(content)
+        if(isStreaming) parser.update(content)
     }
 
     /**
