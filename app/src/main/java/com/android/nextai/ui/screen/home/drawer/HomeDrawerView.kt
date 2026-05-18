@@ -23,8 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.loading.PageLoadingStateView
-import com.android.nextai.ui.screen.home.drawer.views.EmptyStateView
 import com.android.nextai.ui.screen.home.drawer.views.BatchActionView
+import com.android.nextai.ui.screen.home.drawer.views.EmptyStateView
 import com.android.nextai.ui.screen.home.drawer.views.SessionHeaderView
 import com.android.nextai.ui.screen.home.drawer.views.SessionItemView
 import com.android.nextai.ui.screen.home.drawer.views.StartNewSessionView
@@ -75,7 +75,7 @@ fun HomeDrawerView(
                 LazyColumn {
                     groupedSessions.forEach { (group, sessionList) ->
                         val isExpand = expandedMap[group.name] ?: true
-                        stickyHeader {
+                        item(key = group.name) {
                             SessionHeaderView(
                                 title = group.title,
                                 sessions = sessionList,
