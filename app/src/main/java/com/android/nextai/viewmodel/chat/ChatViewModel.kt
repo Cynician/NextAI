@@ -68,6 +68,7 @@ class ChatViewModel @Inject constructor(
                     )
                 }
                 messageHolder.addMessage(userMessage)
+                messageHolder.emitScrollToLatestMessageEvent()
                 // Core process
                 if (isSportStreamingGen) {
                     startStreamingGen()
@@ -108,7 +109,6 @@ class ChatViewModel @Inject constructor(
                             content = messageHolder.getCurResponse()
                         )
                         messageHolder.updateIsTextStreaming(false)
-                        messageHolder.emitScrollToLatestMessageEvent()
                     }
 
                     is GenerationEvent.Error -> {

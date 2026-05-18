@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.icon.AppIcon
 import com.android.nextai.ui.screen.home.body.views.AssistantBubbleView
@@ -46,7 +47,6 @@ import com.android.nextai.viewmodel.chat.ChatViewModel
 import com.android.nextai.viewmodel.chat.entity.Role
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.android.awaitFrame
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @OptIn(ExperimentalSharedTransitionApi::class, FlowPreview::class)
@@ -82,7 +82,16 @@ fun HomeBodyView(
     var shouldAutoScroll by remember { mutableStateOf(true) }
     var isUserScrolling by remember { mutableStateOf(false) }
     val scrollToLatestMessageEvent by chatViewModel.messageHolder.scrollToLatestMessageEvent.collectAsState()
-    // Record if user actively triggers scrolling
+    // Scroll to the latest user message
+    LaunchedEffect(scrollToLatestMessageEvent) {
+        if (messageList.isEmpty()) return@LaunchedEffect
+        val lastIndex = messageList.lastIndex
+        listState.scrollToItem(lastIndex, Int.MAX_VALUE)
+        awaitFrame()
+        isUserScrolling = false
+        shouldAutoScroll = true
+    }
+    // User actively triggers scrolling
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(
@@ -97,32 +106,30 @@ fun HomeBodyView(
             }
         }
     }
-    // Scroll to the latest assistant message
-    LaunchedEffect(scrollToLatestMessageEvent) {
-        if (messageList.isNotEmpty()) {
-            awaitFrame()
-            listState.animateScrollToItem(
-                messageList.lastIndex
-            )
+    // Auto scroll logic
+    val density = LocalDensity.current
+    val bottomPaddingPx = remember(paddingValues) {
+        with(density) {
+            paddingValues.calculateBottomPadding().toPx()
         }
-        isUserScrolling = false
-        shouldAutoScroll = true
     }
-    // Auto scroll
-    LaunchedEffect(listState) {
+    LaunchedEffect(Unit) {
         snapshotFlow {
-                shouldAutoScroll
-                isUserScrolling
-        }.debounce(16)
-            .collect {
-                if (
-                    shouldAutoScroll &&
-                    isGenerating &&
-                    !isUserScrolling
-                ) {
-                    listState.scrollBy(100f)
-                }
+            messageList.lastOrNull()?.content
+        }.collect {
+            while (shouldAutoScroll && !isUserScrolling) {
+                val layoutInfo = listState.layoutInfo
+                val lastItem = layoutInfo.visibleItemsInfo.lastOrNull()
+                if (lastItem == null) break
+                val visibleBottom = layoutInfo.viewportEndOffset - bottomPaddingPx
+                val isBottomReached =
+                    lastItem.index == messageList.lastIndex &&
+                            lastItem.offset + lastItem.size <= visibleBottom
+                if (isBottomReached) { break }
+                listState.scrollBy(12f)
+                awaitFrame()
             }
+        }
     }
 
     /**
