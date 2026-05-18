@@ -62,7 +62,6 @@ fun HomeBodyView(
     /**
      * Load messages
      */
-    val isFirstLoadMessages = chatViewModel.messageHolder.isFirstLoadMessages
     LaunchedEffect(listState) {
         snapshotFlow {
             val layoutInfo = listState.layoutInfo
@@ -71,7 +70,7 @@ fun HomeBodyView(
         }
             .distinctUntilChanged()
             .collect { index ->
-                if (index <= 2 && isFirstLoadMessages) {
+                if (index <= 2) {
                     chatViewModel.loadMoreMessages()
                 }
             }

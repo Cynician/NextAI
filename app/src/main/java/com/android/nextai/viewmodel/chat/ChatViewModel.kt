@@ -53,12 +53,14 @@ class ChatViewModel @Inject constructor(
                 messageHolder.updateCurQuery(query)
                 messageHolder.clearCurrentResponse()
                 var userMessage: MessageEntity
+                // Create a new session
                 if (!sessionHolder.isInSession) {
                     Log.d(TAG, "create session with query :$query")
                     val (_, tmpMessage) = chatDatabaseRepository.createSessionWithUserMessage(query)
                     userMessage = tmpMessage.copy()
                     sessionHolder.updateIsInSession(true)
                     sessionHolder.updateCurSessionId(userMessage.sessionId)
+                    messageHolder.updateCurMessagesMinId(userMessage.id)
                     sessionHolder.loadSessions()
                 } else {
                     userMessage = chatDatabaseRepository.createMessage(
