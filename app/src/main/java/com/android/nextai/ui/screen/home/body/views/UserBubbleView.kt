@@ -1,6 +1,7 @@
 package com.android.nextai.ui.screen.home.body.views
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,20 +18,29 @@ import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 
 @Composable
 internal fun UserBubbleView(content: String) {
+
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.End
     ) {
+
         SelectionContainer {
+
             Surface(
-                modifier = Modifier
-                    .padding(horizontal = 8.dp, vertical = 5.dp)
-                    .widthIn(max = 280.dp),
-                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.widthIn(max = 320.dp),
+                shape = RoundedCornerShape( 12.dp),
                 color = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             ) {
-                MarkdownNodeView(MarkdownNode.Text(content))
+
+                Box(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                ) {
+
+                    MarkdownNodeView(MarkdownNode.Text(content))
+                }
             }
         }
     }
