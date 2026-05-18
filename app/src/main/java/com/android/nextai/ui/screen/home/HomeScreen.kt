@@ -58,6 +58,9 @@ fun HomeScreen(
                         } else {
                             chatViewModel.loadMessagesInit(sessionId = it)
                         }
+                        scope.launch {
+                            drawerState.close()
+                        }
                     },
                     chatViewModel = chatViewModel,
                 )
