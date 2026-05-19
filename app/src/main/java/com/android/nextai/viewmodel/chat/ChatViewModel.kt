@@ -61,7 +61,6 @@ class ChatViewModel @Inject constructor(
                     sessionHolder.updateIsInSession(true)
                     sessionHolder.updateCurSessionId(userMessage.sessionId)
                     messageHolder.updateCurMessagesMinId(userMessage.id)
-                    sessionHolder.loadSessions()
                 } else {
                     userMessage = chatDatabaseRepository.createMessage(
                         sessionId = sessionHolder.getCurSessionId(),
@@ -69,6 +68,7 @@ class ChatViewModel @Inject constructor(
                         role = Role.User
                     )
                 }
+                sessionHolder.loadSessions()
                 messageHolder.addMessage(userMessage)
                 messageHolder.emitScrollToLatestMessageEvent()
                 // Core process
@@ -106,11 +106,13 @@ class ChatViewModel @Inject constructor(
                     }
 
                     is GenerationEvent.Done -> {
-                        chatDatabaseRepository.messageDao.updateMessageContent(
-                            id = assistantMessage.id,
+                        chatDatabaseRepository.updateMessageContent(
+                            sessionId = sessionHolder.getCurSessionId(),
+                            msgId = assistantMessage.id,
                             content = messageHolder.getCurResponse()
                         )
                         messageHolder.updateIsTextStreaming(false)
+                        sessionHolder.loadSessions()
                     }
 
                     is GenerationEvent.Error -> {

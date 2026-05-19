@@ -74,13 +74,16 @@ class ChatDatabaseRepository @Inject constructor(
      * Create message
      */
     suspend fun createMessage(sessionId: Long, content: String, role: Role): MessageEntity{
-        val message = MessageEntity(
-            sessionId = sessionId,
-            role = role.name,
-            content = content,
-        )
-        val msgId = messageDao.insert(message)
-        return message.copy(id = msgId)
+        return chatDB.withTransaction {
+            sessionDao.updateTime(sessionId, System.currentTimeMillis())
+            val message = MessageEntity(
+                sessionId = sessionId,
+                role = role.name,
+                content = content,
+            )
+            val msgId = messageDao.insert(message)
+            return@withTransaction message.copy(id = msgId)
+        }
     }
 
     /**
@@ -91,6 +94,14 @@ class ChatDatabaseRepository @Inject constructor(
             val session = createSession(query)
             val message = createMessage(session.id, query, Role.User)
             return@withTransaction Pair(session, message)
+        }
+    }
+
+
+    suspend fun updateMessageContent(sessionId:Long, msgId: Long, content: String) {
+        chatDB.withTransaction {
+            sessionDao.updateTime(sessionId, System.currentTimeMillis())
+            messageDao.updateMessageContent(msgId, content)
         }
     }
 }
