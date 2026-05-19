@@ -170,9 +170,9 @@ class ChatViewModel @Inject constructor(
         loadMessagesJob?.cancel()
         loadMessagesJob = viewModelScope.launch {
             try {
-                val messageList = chatDatabaseRepository.messageDao.getMessagesBefore(
+                val messageList = chatDatabaseRepository.getPageBefore(
                     sessionId = sessionId,
-                    id = messageHolder.curMessagesMinId
+                    minMsgId = messageHolder.curMessagesMinId
                 ).reversed()
                 if (messageList.isNotEmpty()) {
                     messageHolder.updateCurMessagesMinId(id = messageList.first().id)

@@ -97,11 +97,29 @@ class ChatDatabaseRepository @Inject constructor(
         }
     }
 
-
+    /**
+     * Update message content, used after streaming generation ends
+     */
     suspend fun updateMessageContent(sessionId:Long, msgId: Long, content: String) {
         chatDB.withTransaction {
             sessionDao.updateTime(sessionId, System.currentTimeMillis())
             messageDao.updateMessageContent(msgId, content)
+        }
+    }
+
+    /**
+     * Pagination loads while removing messages with empty content
+     */
+    suspend fun getPageBefore(sessionId: Long, minMsgId: Long, pageSize:Int = 20): List<MessageEntity> {
+        return chatDB.withTransaction {
+            val messageList = messageDao.getPageBefore(sessionId, minMsgId, pageSize = pageSize)
+            val emptyMessageIds = messageList
+                .filter { it.content.isEmpty() }
+                .map { it.id }
+            if (emptyMessageIds.isNotEmpty()) {
+                messageDao.deleteByIds(emptyMessageIds)
+            }
+            return@withTransaction messageList.filter { it.content.isNotEmpty() }
         }
     }
 }

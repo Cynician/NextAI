@@ -20,14 +20,14 @@ interface MessageDao {
     @Query("""
         SELECT * FROM message
         WHERE session_id = :sessionId
-        AND id < :id
+        AND id < :minMsgId
         ORDER BY id DESC
-        LIMIT :limit
+        LIMIT :pageSize
     """)
-    suspend fun getMessagesBefore(
+    suspend fun getPageBefore(
         sessionId: Long,
-        id: Long,
-        limit: Int = 20
+        minMsgId: Long,
+        pageSize: Int = 20
     ): List<MessageEntity>
 
     /**
@@ -55,4 +55,13 @@ interface MessageDao {
         WHERE id = :id
     """)
     suspend fun updateMessageContent(id: Long, content: String)
+
+    /**
+     * Delete by id list
+     */
+    @Query("""
+    DELETE FROM message
+    WHERE id IN (:ids)
+""")
+    suspend fun deleteByIds(ids: List<Long>)
 }
