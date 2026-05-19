@@ -34,9 +34,9 @@ fun HomeScreen(
     // Drawer
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val isSelectionMode by chatViewModel.sessionHolder.isBatchSelectMode.collectAsState()
+    val isSelectMode by chatViewModel.sessionHolder.isBatchSelectMode.collectAsState()
 
-    BackHandler(drawerState.isOpen && !isSelectionMode) {
+    BackHandler(drawerState.isOpen && !isSelectMode) {
         scope.launch {
             drawerState.close()
         }
@@ -53,13 +53,13 @@ fun HomeScreen(
                         }
                     },
                     onSessionItemClick = {
-                        if (isSelectionMode) {
+                        if (isSelectMode) {
                             chatViewModel.sessionHolder.toggleItemSelect(it)
                         } else {
                             chatViewModel.loadMessagesInit(sessionId = it)
-                        }
-                        scope.launch {
-                            drawerState.close()
+                            scope.launch {
+                                drawerState.close()
+                            }
                         }
                     },
                     chatViewModel = chatViewModel,
