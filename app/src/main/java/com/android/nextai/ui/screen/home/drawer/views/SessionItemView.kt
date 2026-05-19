@@ -53,7 +53,7 @@ fun SessionItemView(
             },
         label = ""
     )
-    val shape = RoundedCornerShape(8.dp)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -68,14 +68,15 @@ fun SessionItemView(
                 CircleCheckbox(
                     modifier = Modifier.size(18.dp),
                     checked = isSelected,
-                    onCheckedChange = { _ -> onClick() }
+                    onCheckedChange = { onClick() }
                 )
             }
         }
+
         Surface(
             modifier = Modifier
                 .weight(1f)
-                .clip(shape)
+                .clip(RoundedCornerShape(8.dp))
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick
@@ -88,7 +89,6 @@ fun SessionItemView(
                     .heightIn(48.dp)
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -97,31 +97,31 @@ fun SessionItemView(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
                 )
-            }
-        }
-        if (isPinned) {
-            Box(
-                modifier = Modifier
-                    .padding(2.dp)
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() },
-                        enabled = !isSelectionMode
+
+                if (isPinned) {
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() },
+                                enabled = !isSelectionMode
+                            ) {
+                                onUnpinnedClick()
+                            }
                     ) {
-                        onUnpinnedClick()
+                        Icon(
+                            imageVector = AppIcon.Pinned,
+                            contentDescription = "",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
-
-            ) {
-                Icon(
-                    imageVector = AppIcon.Pinned,
-                    contentDescription = "",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
-                )
+                }
             }
-
         }
     }
 }
