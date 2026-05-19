@@ -104,8 +104,9 @@ class ChatSessionHolder @Inject constructor(
         loadSessions()
     }
 
-    suspend fun unpinnedSession(id: Long) {
-        chatDatabaseRepository.sessionDao.unpinnedSession(0, id)
+    suspend fun batchUnpinSessions(idList: List<Long>) {
+        chatDatabaseRepository.sessionDao.batchUnpinSessions(0, idList)
+        exitBatchSelectMode()
         loadSessions()
     }
 

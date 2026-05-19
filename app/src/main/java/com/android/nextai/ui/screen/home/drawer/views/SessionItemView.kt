@@ -37,12 +37,12 @@ import com.android.nextai.ui.icon.AppIcon
 fun SessionItemView(
     session: SessionEntity,
     isActive: Boolean,
-    isPinned: Boolean,
+    isPin: Boolean,
     isSelectionMode: Boolean,
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    onUnpinnedClick: () -> Unit,
+    onUnpinClick: () -> Unit,
 ) {
     val sessionItemColor by animateColorAsState(
         targetValue =
@@ -101,7 +101,7 @@ fun SessionItemView(
                     modifier = Modifier.weight(1f)
                 )
 
-                if (isPinned) {
+                if (isPin) {
                     Box(
                         modifier = Modifier
                             .padding(start = 8.dp)
@@ -110,11 +110,11 @@ fun SessionItemView(
                                 interactionSource = remember { MutableInteractionSource() },
                                 enabled = !isSelectionMode
                             ) {
-                                onUnpinnedClick()
+                                onUnpinClick()
                             }
                     ) {
                         Icon(
-                            imageVector = AppIcon.Pinned,
+                            imageVector = AppIcon.Pin,
                             contentDescription = "",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                             modifier = Modifier.size(20.dp)

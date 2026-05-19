@@ -134,7 +134,7 @@ class ChatViewModel @Inject constructor(
     }
 
     /**
-     * Delete sessions in batch
+     * Batch operation
      */
     fun batchDeleteSessions(idList: List<Long>) {
         viewModelScope.launch {
@@ -145,21 +145,15 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Pin sessions in batch
-     */
     fun batchPinSessions(idList: List<Long>) {
         viewModelScope.launch {
             sessionHolder.batchPinSessions(idList)
         }
     }
 
-    /**
-     * Unpinned session
-     */
-    fun unpinnedSession(id: Long) {
+    fun batchUnpinSessions(idList: List<Long>){
         viewModelScope.launch {
-            sessionHolder.unpinnedSession(id)
+            sessionHolder.batchUnpinSessions(idList)
         }
     }
 

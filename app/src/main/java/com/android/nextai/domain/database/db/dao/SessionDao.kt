@@ -76,18 +76,6 @@ interface SessionDao {
     )
     suspend fun batchSoftDeleteSessions(isDeleted: Int, idList: List<Long>)
 
-    /**
-     * Pin session
-     */
-    @Query(
-        """
-        UPDATE session
-        SET is_pinned = :pinned,
-            updated_at = strftime('%s','now') * 1000
-        WHERE id = :sessionId
-    """
-    )
-    suspend fun pinSession(sessionId: Long, pinned: Int)
 
     /**
      * Batch pin sessions
@@ -95,23 +83,23 @@ interface SessionDao {
     @Query(
         """
         UPDATE session
-        SET is_pinned = :pinned, 
+        SET is_pinned = :isPin, 
             updated_at = strftime('%s','now') * 1000
         WHERE id IN (:idList)
     """
     )
-    suspend fun batchPinSessions(pinned: Int, idList: List<Long>)
+    suspend fun batchPinSessions(isPin: Int, idList: List<Long>)
 
     /**
-     * Unpinned session
+     * Batch unpin sessions
      */
     @Query(
         """
             UPDATE session
-            SET is_pinned = :pinned, 
+            SET is_pinned = :isPin, 
             updated_at = strftime('%s','now') * 1000
-        WHERE id = :id
+        WHERE id in (:idList)
         """
     )
-    suspend fun unpinnedSession(pinned:Int, id:Long)
+    suspend fun batchUnpinSessions(isPin: Int, idList: List<Long>)
 }

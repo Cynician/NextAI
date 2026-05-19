@@ -23,7 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.loading.PageLoadingStateView
-import com.android.nextai.ui.screen.home.drawer.views.BatchActionView
+import com.android.nextai.ui.screen.home.drawer.views.BatchActionBarView
 import com.android.nextai.ui.screen.home.drawer.views.EmptyStateView
 import com.android.nextai.ui.screen.home.drawer.views.SessionHeaderView
 import com.android.nextai.ui.screen.home.drawer.views.SessionItemView
@@ -43,7 +43,13 @@ fun HomeDrawerView(
     val isBatchSelectMode by chatViewModel.sessionHolder.isBatchSelectMode.collectAsState()
     val batchSelectedIdSet by chatViewModel.sessionHolder.batchSelectedIdSet.collectAsState()
     val currentSessionId = chatViewModel.sessionHolder.curSessionId.collectAsState()
-    val expandedMap = remember { mutableStateMapOf<String, Boolean>() }
+    val expandedMap = remember { mutableStateMapOf<SessionGroup, Boolean>() }
+    val pinIdSet = remember(groupedSessions) {
+        groupedSessions[SessionGroup.PIN]
+            ?.map { it.id }
+            ?.toSet()
+            ?: emptySet()
+    }
 
     BackHandler(isBatchSelectMode) {
         chatViewModel.sessionHolder.exitBatchSelectMode()
@@ -74,15 +80,15 @@ fun HomeDrawerView(
             } else {
                 LazyColumn {
                     groupedSessions.forEach { (group, sessionList) ->
-                        val isExpand = expandedMap[group.name] ?: true
-                        item(key = group.name) {
+                        val isExpand = expandedMap[group] ?: true
+                        item(key = group) {
                             SessionHeaderView(
                                 title = group.title,
                                 sessions = sessionList,
                                 selectedIdSet = batchSelectedIdSet,
-                                isSelectionMode = isBatchSelectMode,
+                                isBatchSelectMode = isBatchSelectMode,
                                 isExpand = isExpand,
-                                onToggleExpand = { expandedMap[group.name] = !isExpand },
+                                onToggleExpand = { expandedMap[group] = !isExpand },
                                 onSelectGroup = { isCheck ->
                                     chatViewModel.sessionHolder.toggleGroupSelect(
                                         sessions = sessionList,
@@ -97,7 +103,7 @@ fun HomeDrawerView(
                                 SessionItemView(
                                     session = session,
                                     isActive = currentSessionId.value == session.id,
-                                    isPinned = group.name == SessionGroup.PINNED.name,
+                                    isPin = group == SessionGroup.PIN,
                                     isSelectionMode = isBatchSelectMode,
                                     isSelected = batchSelectedIdSet.contains(session.id),
                                     onClick = {
@@ -106,19 +112,22 @@ fun HomeDrawerView(
                                     onLongClick = {
                                         chatViewModel.sessionHolder.enterBatchSelectMode(session.id)
                                     },
-                                    onUnpinnedClick = {
-                                        chatViewModel.unpinnedSession(session.id)
+                                    onUnpinClick = {
+                                        chatViewModel.batchUnpinSessions(listOf(session.id))
                                     }
                                 )
                             }
                         }
                     }
                 }
-                BatchActionView(
+
+                BatchActionBarView(
                     modifier = Modifier.align(Alignment.BottomCenter),
-                    isSelectionMode = isBatchSelectMode,
+                    isBatchSelectMode = isBatchSelectMode,
+                    isSelectPinGroupOnly = batchSelectedIdSet.isNotEmpty() && batchSelectedIdSet.all { it in pinIdSet },
                     onDelete = { chatViewModel.batchDeleteSessions(batchSelectedIdSet.toList()) },
                     onPin = { chatViewModel.batchPinSessions(batchSelectedIdSet.toList()) },
+                    onUnpin = { chatViewModel.batchUnpinSessions(batchSelectedIdSet.toList()) },
                     onCancel = { chatViewModel.sessionHolder.exitBatchSelectMode() },
                 )
             }

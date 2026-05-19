@@ -34,7 +34,7 @@ fun SessionHeaderView(
     title: String,
     sessions: List<SessionEntity>,
     selectedIdSet: Set<Long>,
-    isSelectionMode: Boolean,
+    isBatchSelectMode: Boolean,
     isExpand: Boolean,
     onToggleExpand: () -> Unit,
     onSelectGroup: (Boolean) -> Unit,
@@ -56,7 +56,7 @@ fun SessionHeaderView(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        AnimatedVisibility(visible = isSelectionMode) {
+        AnimatedVisibility(visible = isBatchSelectMode) {
             CompositionLocalProvider(
                 LocalMinimumInteractiveComponentSize provides Dp.Unspecified
             ) {

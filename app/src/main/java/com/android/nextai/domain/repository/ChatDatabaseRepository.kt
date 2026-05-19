@@ -55,7 +55,7 @@ class ChatDatabaseRepository @Inject constructor(
         }
 
         return mapOf(
-            SessionGroup.PINNED to pinedList,
+            SessionGroup.PIN to pinedList,
             SessionGroup.TODAY to todayList,
             SessionGroup.IN_WEEK to weekList,
             SessionGroup.IN_MONTH to monthList,

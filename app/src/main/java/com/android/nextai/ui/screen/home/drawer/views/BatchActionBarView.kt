@@ -28,16 +28,18 @@ import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.icon.AppIcon
 
 @Composable
-fun BatchActionView(
+fun BatchActionBarView(
     modifier: Modifier = Modifier,
-    isSelectionMode: Boolean,
+    isSelectPinGroupOnly: Boolean,
+    isBatchSelectMode: Boolean,
     onDelete: () -> Unit,
     onPin: () -> Unit,
+    onUnpin:() ->Unit,
     onCancel: () -> Unit,
 ) {
     AnimatedVisibility(
         modifier = modifier,
-        visible = isSelectionMode,
+        visible = isBatchSelectMode,
         enter = slideInVertically(
             initialOffsetY = { it / 2 }
         ) + fadeIn(),
@@ -71,9 +73,9 @@ fun BatchActionView(
                     onClick = onDelete
                 )
                 ActionItem(
-                    icon = AppIcon.PushPin,
-                    text = "置顶",
-                    onClick = onPin
+                    icon = if (isSelectPinGroupOnly) AppIcon.UnPin else AppIcon.PushPin,
+                    text = if (isSelectPinGroupOnly) "取消置顶" else "置顶",
+                    onClick = if(isSelectPinGroupOnly) onUnpin else onPin,
                 )
                 ActionItem(
                     icon = AppIcon.Cancel,
