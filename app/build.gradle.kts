@@ -75,11 +75,6 @@ dependencies {
 
     // Dependency Injection
     implementation(libs.hilt.android)
-    implementation(libs.core.ktx)
-    implementation(libs.androidx.compose.animation.core)
-    implementation(libs.androidx.foundation)
-    implementation(libs.androidx.runtime)
-    implementation(libs.androidx.compose.animation)
     ksp(libs.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 
@@ -109,9 +104,6 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
 
-    // Local Projects & AI Libraries
-    //...
-
     // AndroidX Core & Lifecycle
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -121,17 +113,14 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.compose.runtime)
-    implementation(libs.androidx.compose.ui.text)
-    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.animation)
+    implementation(libs.androidx.navigation.compose)
 
     // Material Design
     implementation(libs.androidx.material3)
 
-    // Debug
+    // Preview / Debug
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     // Testing
@@ -139,10 +128,10 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    // remote
+    // AI & Remote
     implementation(libs.openai)
 
-    // parse markdown
+    // Markdown
     implementation(libs.flexmark)
     implementation(libs.flexmark.ext.strikethrough)
     implementation(libs.flexmark.ext.superscript)
