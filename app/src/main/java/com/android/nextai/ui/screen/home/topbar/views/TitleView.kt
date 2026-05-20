@@ -46,7 +46,7 @@ fun TitleRow(
         Surface(
             color = MaterialTheme.colorScheme.primaryContainer,
             shape = RoundedCornerShape(26.dp),
-            modifier = Modifier.height(30.dp)
+            modifier = Modifier.height(32.dp)
                 .clip(shape = shape)
                 .clickable(onClick = onClick),
         ) {

@@ -25,11 +25,13 @@ import com.android.nextai.ui.screen.home.topbar.HomeTopBarView
 import com.android.nextai.viewmodel.chat.ChatViewModel
 import kotlinx.coroutines.launch
 
+
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun HomeScreen(
     chatViewModel: ChatViewModel = hiltViewModel(),
+    onNavigateToSettings: () -> Unit
 ) {
     // Drawer
     val scope = rememberCoroutineScope()
@@ -74,7 +76,7 @@ fun HomeScreen(
                 HomeTopBarView(
                     onMenuClick = { scope.launch { drawerState.open() } },
                     onTitleClick = { true },
-                    onSettingsClick = { null },
+                    onSettingsClick = { onNavigateToSettings() },
                     onStoreButtonClicked = { null },
                 )
             },

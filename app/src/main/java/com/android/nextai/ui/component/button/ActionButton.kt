@@ -14,13 +14,14 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
+
 @SuppressLint("ModifierParameter")
 @Composable
 fun ActionButton(
     modifier: Modifier = Modifier,
     icon: ImageVector,
     contentDescription: String = "Description",
-    shape: Shape = MaterialTheme.shapes.extraSmall,
+    shape: Shape = MaterialTheme.shapes.small,
     colors: IconButtonColors = IconButtonDefaults.filledIconButtonColors(
         containerColor = MaterialTheme.colorScheme.primary.copy(0.06f),
         contentColor = MaterialTheme.colorScheme.primary
@@ -31,7 +32,7 @@ fun ActionButton(
         onClick = { onClickListener() },
         colors = colors,
         shape = shape,
-        modifier = modifier.size(30.dp)
+        modifier = modifier.size(32.dp)
     ) {
         Icon(
             icon,
