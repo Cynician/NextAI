@@ -9,7 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.button.ActionButton
-import com.android.nextai.ui.icon.AppIcon
+import com.android.nextai.ui.icon.HomeIcon
 import com.android.nextai.ui.screen.home.topbar.views.TitleView
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,7 +32,7 @@ internal fun HomeTopBarView(
         navigationIcon = {
             ActionButton(
                 modifier = Modifier.padding(start = 6.dp),
-                icon = AppIcon.Menu,
+                icon = HomeIcon.Menu,
                 onClickListener = onMenuClick,
             )
         },
@@ -40,12 +40,12 @@ internal fun HomeTopBarView(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 ActionButton(
                     modifier = Modifier.padding(end = 6.dp),
-                    icon = AppIcon.Settings,
+                    icon = HomeIcon.Settings,
                     onClickListener = onSettingsClick,
                 )
                 ActionButton(
                     modifier = Modifier.padding(end = 6.dp),
-                    icon = AppIcon.Download,
+                    icon = HomeIcon.Download,
                     onClickListener = {
                         onStoreButtonClicked()
                     },

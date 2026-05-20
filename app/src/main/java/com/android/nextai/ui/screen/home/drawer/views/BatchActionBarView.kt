@@ -25,7 +25,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.android.nextai.ui.icon.AppIcon
+import com.android.nextai.ui.icon.HomeIcon
 
 @Composable
 fun BatchActionBarView(
@@ -67,18 +67,18 @@ fun BatchActionBarView(
                 horizontalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 ActionItem(
-                    icon = AppIcon.Delete,
+                    icon = HomeIcon.Delete,
                     text = "删除",
                     tint = Color(0xFFCC4B4B),
                     onClick = onDelete
                 )
                 ActionItem(
-                    icon = if (isSelectPinGroupOnly) AppIcon.UnPin else AppIcon.PushPin,
+                    icon = if (isSelectPinGroupOnly) HomeIcon.UnPin else HomeIcon.PushPin,
                     text = if (isSelectPinGroupOnly) "取消置顶" else "置顶",
                     onClick = if(isSelectPinGroupOnly) onUnpin else onPin,
                 )
                 ActionItem(
-                    icon = AppIcon.Cancel,
+                    icon = HomeIcon.Cancel,
                     text = "取消",
                     onClick = onCancel
                 )

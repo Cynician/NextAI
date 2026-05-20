@@ -26,7 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.button.ActionButton
-import com.android.nextai.ui.icon.AppIcon
+import com.android.nextai.ui.icon.HomeIcon
 import com.android.nextai.viewmodel.chat.ChatViewModel
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
@@ -77,7 +77,7 @@ internal fun HomeBottomBar(
                     modifier = Modifier
                         .padding(end = 12.dp)
                         .align(Alignment.BottomEnd),
-                    icon = AppIcon.Send,
+                    icon = HomeIcon.Send,
                     shape = MaterialTheme.shapes.small,
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = MaterialTheme.colorScheme.primary.copy(0.3f),

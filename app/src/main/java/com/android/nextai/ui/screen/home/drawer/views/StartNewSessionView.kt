@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.nextai.ui.icon.AppIcon
+import com.android.nextai.ui.icon.HomeIcon
 
 @Composable
 fun StartNewSessionView(
@@ -45,7 +45,7 @@ fun StartNewSessionView(
             ){
                 Icon(
                     modifier = Modifier.size(18.dp),
-                    imageVector = AppIcon.StartSession,
+                    imageVector = HomeIcon.StartSession,
                     contentDescription = "",
                     tint = MaterialTheme.colorScheme.onSurface
                 )

@@ -20,7 +20,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.android.nextai.ui.icon.AppIcon
+import com.android.nextai.ui.icon.HomeIcon
 
 
 @Composable
@@ -29,7 +29,7 @@ fun TitleView(
 ) {
     TitleRow(
         text = "欢迎使用NextAI",
-        icon = AppIcon.Sparkles,
+        icon = HomeIcon.Sparkles,
         modifier = modifier,
         onClick = onShowDynamicWindow
     )

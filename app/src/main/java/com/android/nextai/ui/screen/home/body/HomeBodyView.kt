@@ -39,7 +39,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import com.android.nextai.ui.icon.AppIcon
+import com.android.nextai.ui.icon.HomeIcon
 import com.android.nextai.ui.screen.home.body.views.AssistantBubbleView
 import com.android.nextai.ui.screen.home.body.views.UserBubbleView
 import com.android.nextai.ui.theme.Animation
@@ -192,7 +192,7 @@ internal fun EmptyMessageView() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
-                imageVector = AppIcon.User,
+                imageVector = HomeIcon.User,
                 contentDescription = null,
                 modifier = Modifier.size(64.dp),
                 tint = MaterialTheme.colorScheme.primary.copy(0.4f)

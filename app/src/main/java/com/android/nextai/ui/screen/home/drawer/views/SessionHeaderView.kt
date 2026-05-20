@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.nextai.domain.database.db.entity.SessionEntity
 import com.android.nextai.ui.component.checkbox.CircleCheckbox
-import com.android.nextai.ui.icon.AppIcon
+import com.android.nextai.ui.icon.HomeIcon
 
 @Composable
 fun SessionHeaderView(
@@ -74,7 +74,7 @@ fun SessionHeaderView(
             color = MaterialTheme.colorScheme.onSurface,
         )
         Icon(
-            imageVector = AppIcon.ArrowRight,
+            imageVector = HomeIcon.ArrowRight,
             contentDescription = null,
             modifier = Modifier
                 .size(16.dp)

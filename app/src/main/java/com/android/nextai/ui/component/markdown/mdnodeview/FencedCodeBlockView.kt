@@ -36,7 +36,7 @@ import com.android.nextai.ui.component.button.ActionToggleButton
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 import com.android.nextai.ui.component.markdown.utils.highlightCode
 import com.android.nextai.ui.component.markdown.utils.resolveSyntaxTheme
-import com.android.nextai.ui.icon.AppIcon
+import com.android.nextai.ui.icon.HomeIcon
 import com.android.nextai.ui.theme.MapleMonoFontFamily
 
 private fun Color.luminance(): Float = 0.299f * red + 0.587f * green + 0.114f * blue
@@ -70,7 +70,7 @@ fun FencedCodeBlockView(node: MarkdownNode.FencedCodeBlock, isHighlightCode:Bool
             ) {
                 ActionButton(
                     onClickListener = {},
-                    icon = AppIcon.Code,
+                    icon = HomeIcon.Code,
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = headerFg.copy(0.1f),
                         contentColor = headerFg.copy(0.7f)
@@ -94,7 +94,7 @@ fun FencedCodeBlockView(node: MarkdownNode.FencedCodeBlock, isHighlightCode:Bool
                         cm.setPrimaryClip(ClipData.newPlainText(lang, code))
                         Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
                     },
-                    icon = AppIcon.Copy,
+                    icon = HomeIcon.Copy,
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = headerFg.copy(0.1f),
                         contentColor = headerFg.copy(0.7f)
@@ -103,7 +103,7 @@ fun FencedCodeBlockView(node: MarkdownNode.FencedCodeBlock, isHighlightCode:Bool
                 ActionToggleButton(
                     checked = isExpanded,
                     onCheckedChange = { isExpanded = !isExpanded },
-                    icon = if (isExpanded) AppIcon.ChevronUp else AppIcon.ChevronDown,
+                    icon = if (isExpanded) HomeIcon.ChevronUp else HomeIcon.ChevronDown,
                     colors = IconButtonDefaults.filledIconToggleButtonColors(
                         containerColor = headerFg.copy(0.1f),
                         contentColor = headerFg.copy(0.7f),

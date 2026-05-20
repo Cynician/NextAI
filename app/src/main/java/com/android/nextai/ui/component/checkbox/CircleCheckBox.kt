@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.android.nextai.ui.icon.AppIcon
+import com.android.nextai.ui.icon.HomeIcon
 
 @Composable
 fun CircleCheckbox(
@@ -46,7 +46,7 @@ fun CircleCheckbox(
     ) {
         AnimatedVisibility(checked) {
             Icon(
-                imageVector = AppIcon.CircleCheck,
+                imageVector = HomeIcon.CircleCheck,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(12.dp)
