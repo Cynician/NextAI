@@ -23,24 +23,30 @@ import com.android.nextai.ui.screen.settings.sections.ModelProviderSectionView
 @Composable
 fun SettingsScreen(
     onBackClick: () -> Unit,
+    onNavigateToQwenProvider: () -> Unit,
 ) {
-
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background, topBar = {
-            CenterAlignedTopAppBar(modifier = Modifier.padding(horizontal = 12.dp), title = {
-                Text(
-                    text = "设置",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }, navigationIcon = {
-                ActionButton(
-                    icon = SettingsIcon.ArrowBackIosNew,
-                    contentDescription = "Back",
-                    onClickListener = onBackClick,
-                )
-            })
-        }) { padding ->
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            CenterAlignedTopAppBar(
+                modifier = Modifier.padding(horizontal = 12.dp),
+                title = {
+                    Text(
+                        text = "设置",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
+                navigationIcon = {
+                    ActionButton(
+                        icon = SettingsIcon.ArrowBackIosNew,
+                        contentDescription = "Back",
+                        onClickListener = onBackClick,
+                    )
+                }
+            )
+        }
+    ) { padding ->
 
         LazyColumn(
             modifier = Modifier
@@ -50,7 +56,9 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item {
-                ModelProviderSectionView()
+                ModelProviderSectionView(
+                    onQwenClick = { onNavigateToQwenProvider() }
+                )
             }
         }
     }

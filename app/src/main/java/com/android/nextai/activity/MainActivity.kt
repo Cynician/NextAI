@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.android.nextai.ui.screen.home.HomeScreen
+import com.android.nextai.ui.screen.model_setting.QwenProviderScreen
 import com.android.nextai.ui.screen.settings.SettingsScreen
 import com.android.nextai.ui.theme.NeuronVerseTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -54,6 +55,16 @@ fun AppNavHost() {
             SettingsScreen(
                 onBackClick = {
                     navController.popBackStack()
+                },
+                onNavigateToQwenProvider = {
+                    navController.navigate(AppRoute.QWEN_PROVIDER)
+                }
+            )
+        }
+        composable(AppRoute.QWEN_PROVIDER) {
+            QwenProviderScreen(
+                onBackClick = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -64,8 +75,10 @@ fun AppNavHost() {
  * Route define
  */
 object AppRoute {
-
     const val HOME = "home"
 
     const val SETTINGS = "settings"
+
+    // Provider Config
+    const val QWEN_PROVIDER = "qwen_provider"
 }
