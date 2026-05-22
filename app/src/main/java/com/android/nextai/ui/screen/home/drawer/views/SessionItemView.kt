@@ -29,7 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.nextai.domain.database.db.entity.SessionEntity
+import com.android.nextai.domain.database.sqlite.entity.SessionEntity
 import com.android.nextai.ui.component.checkbox.CircleCheckbox
 import com.android.nextai.ui.icon.HomeIcon
 

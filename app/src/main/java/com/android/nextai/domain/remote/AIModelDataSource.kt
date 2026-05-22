@@ -1,6 +1,6 @@
 package com.android.nextai.domain.remote
 
-import com.android.nextai.domain.database.db.entity.MessageEntity
+import com.android.nextai.domain.database.sqlite.entity.MessageEntity
 import com.android.nextai.domain.remote.entity.GenerationEvent
 
 interface AIModelDataSource {

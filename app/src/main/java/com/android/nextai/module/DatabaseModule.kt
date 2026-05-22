@@ -2,9 +2,9 @@ package com.android.nextai.module
 
 import android.content.Context
 import androidx.room.Room
-import com.android.nextai.domain.database.db.ChatDatabase
-import com.android.nextai.domain.database.db.dao.MessageDao
-import com.android.nextai.domain.database.db.dao.SessionDao
+import com.android.nextai.domain.database.sqlite.ChatDatabase
+import com.android.nextai.domain.database.sqlite.dao.MessageDao
+import com.android.nextai.domain.database.sqlite.dao.SessionDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

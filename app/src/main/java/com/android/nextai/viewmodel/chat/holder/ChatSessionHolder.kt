@@ -1,6 +1,6 @@
 package com.android.nextai.viewmodel.chat.holder
 
-import com.android.nextai.domain.database.db.entity.SessionEntity
+import com.android.nextai.domain.database.sqlite.entity.SessionEntity
 import com.android.nextai.domain.repository.ChatDatabaseRepository
 import com.android.nextai.viewmodel.chat.entity.SessionGroup
 import dagger.hilt.android.scopes.ViewModelScoped

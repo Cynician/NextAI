@@ -1,7 +1,7 @@
 package com.android.nextai.domain.repository
 
 import android.util.Log
-import com.android.nextai.domain.database.db.entity.MessageEntity
+import com.android.nextai.domain.database.sqlite.entity.MessageEntity
 import com.android.nextai.domain.remote.AIFactory
 import com.android.nextai.domain.remote.Model
 import com.android.nextai.domain.remote.StreamBuffer

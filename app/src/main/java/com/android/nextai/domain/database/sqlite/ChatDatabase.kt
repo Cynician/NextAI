@@ -1,11 +1,11 @@
-package com.android.nextai.domain.database.db
+package com.android.nextai.domain.database.sqlite
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import com.android.nextai.domain.database.db.dao.MessageDao
-import com.android.nextai.domain.database.db.dao.SessionDao
-import com.android.nextai.domain.database.db.entity.MessageEntity
-import com.android.nextai.domain.database.db.entity.SessionEntity
+import com.android.nextai.domain.database.sqlite.dao.MessageDao
+import com.android.nextai.domain.database.sqlite.dao.SessionDao
+import com.android.nextai.domain.database.sqlite.entity.MessageEntity
+import com.android.nextai.domain.database.sqlite.entity.SessionEntity
 
 @Database(
     entities = [

@@ -2,7 +2,7 @@ package com.android.nextai.viewmodel.chat.holder
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import com.android.nextai.domain.database.db.entity.MessageEntity
+import com.android.nextai.domain.database.sqlite.entity.MessageEntity
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

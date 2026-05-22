@@ -1,11 +1,11 @@
 package com.android.nextai.domain.repository
 
 import androidx.room.withTransaction
-import com.android.nextai.domain.database.db.ChatDatabase
-import com.android.nextai.domain.database.db.dao.MessageDao
-import com.android.nextai.domain.database.db.dao.SessionDao
-import com.android.nextai.domain.database.db.entity.MessageEntity
-import com.android.nextai.domain.database.db.entity.SessionEntity
+import com.android.nextai.domain.database.sqlite.ChatDatabase
+import com.android.nextai.domain.database.sqlite.dao.MessageDao
+import com.android.nextai.domain.database.sqlite.dao.SessionDao
+import com.android.nextai.domain.database.sqlite.entity.MessageEntity
+import com.android.nextai.domain.database.sqlite.entity.SessionEntity
 import com.android.nextai.viewmodel.chat.entity.Role
 import com.android.nextai.viewmodel.chat.entity.SessionGroup
 import java.time.LocalDate

@@ -1,9 +1,9 @@
-package com.android.nextai.domain.database.db.dao
+package com.android.nextai.domain.database.sqlite.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
-import com.android.nextai.domain.database.db.entity.SessionEntity
+import com.android.nextai.domain.database.sqlite.entity.SessionEntity
 
 @Dao
 interface SessionDao {

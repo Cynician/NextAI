@@ -1,4 +1,4 @@
-package com.android.nextai.domain.database.db.entity
+package com.android.nextai.domain.database.sqlite.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

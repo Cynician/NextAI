@@ -3,7 +3,7 @@ package com.android.nextai.viewmodel.chat
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.nextai.domain.database.db.entity.MessageEntity
+import com.android.nextai.domain.database.sqlite.entity.MessageEntity
 import com.android.nextai.domain.remote.Model
 import com.android.nextai.domain.remote.entity.GenerationEvent
 import com.android.nextai.domain.repository.ChatDatabaseRepository
