@@ -5,7 +5,9 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -32,6 +34,7 @@ import com.android.nextai.ui.component.textfield.SettingTextField
 
 @Composable
 fun ModelConfigSectionView(
+    title: String = "",
     apiUrl: String,
     apiToken: String,
     customModelName: String,
@@ -51,12 +54,14 @@ fun ModelConfigSectionView(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        SectionHeader(title = "配置模型")
+        SectionHeader(title = title)
         SuccessTipLabel(
             visible = configured,
             text = "已配置"
         )
     }
+
+    Spacer(modifier = Modifier.height(12.dp))
 
     Card(
         modifier = Modifier

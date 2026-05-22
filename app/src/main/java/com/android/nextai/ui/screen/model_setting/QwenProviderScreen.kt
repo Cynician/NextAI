@@ -3,48 +3,35 @@
  */
 package com.android.nextai.ui.screen.model_setting
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.button.ActionButton
-import com.android.nextai.ui.component.other.SectionHeader
 import com.android.nextai.ui.icon.SettingsIcon
 import com.android.nextai.ui.screen.model_setting.sections.ModelConfigSectionView
+import com.android.nextai.ui.screen.model_setting.sections.ModelSelectSectionView
+import com.android.nextai.viewmodel.provider.ProviderViewModel
 import kotlinx.coroutines.delay
 
 data class ModelSeries(
@@ -57,15 +44,21 @@ data class ModelSeries(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QwenProviderScreen(
+    providerViewModel: ProviderViewModel,
     onBackClick: () -> Unit,
 ) {
+    val provider by providerViewModel.curProvider.collectAsState()
 
-    var apiUrl by remember { mutableStateOf("https://dashscope.aliyuncs.com/compatible-mode/v1") }
-    var apiToken by remember { mutableStateOf("") }
-    var customModelName by remember { mutableStateOf("") }
+    var apiUrl by remember {
+        mutableStateOf(
+            provider?.apiUrl?: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        )
+    }
+    var apiKey by remember { mutableStateOf(provider?.apiKey?:"") }
+    var model by remember { mutableStateOf(provider?.model?:"") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isTesting by remember { mutableStateOf(false) }
-    var configured by remember { mutableStateOf(false) }
+    var isOK by remember { mutableStateOf(provider?.isOK?:false) }
     var selectedModel by remember { mutableStateOf("Qwen3-30B-A3B") }
 
     val modelSeries = remember {
@@ -103,7 +96,14 @@ fun QwenProviderScreen(
                 },
                 actions = {
                     TextButton(
-                        onClick = { }
+                        onClick = {
+                            providerViewModel.updateProvider(
+                                apiUrl = apiUrl.trim(),
+                                apiKey = apiKey.trim(),
+                                model = model.trim(),
+                                isOK = isOK
+                            )
+                        }
                     ) {
                         Text(
                             text = "保存",
@@ -115,57 +115,10 @@ fun QwenProviderScreen(
             )
         },
         bottomBar = {
-            Surface(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-
-                    Button(
-                        modifier = Modifier
-                            .height(48.dp)
-                            .fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = Color.White,
-                        ),
-                        onClick = {
-                            customModelName = selectedModel
-                        },
-                    ) {
-                        Text(
-                            text = "设为默认模型",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-
-                    Button(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = MaterialTheme.colorScheme.primary,
-                        ),
-                        onClick = {
-
-                        },
-                    ) {
-                        Text(
-                            text = "查看模型详情",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
+            BottomBar(
+                onSetModelClick = {model = selectedModel },
+                onModelDetailsClick = {}
+            )
         }
     ) { padding ->
 
@@ -179,15 +132,16 @@ fun QwenProviderScreen(
 
             item {
                 ModelConfigSectionView(
+                    title = "配置模型",
                     apiUrl = apiUrl,
-                    apiToken = apiToken,
-                    customModelName = customModelName,
-                    configured = configured,
+                    apiToken = apiKey,
+                    customModelName = model,
+                    configured = isOK,
                     isTesting = isTesting,
                     passwordVisible = passwordVisible,
                     onApiUrlChange = { apiUrl = it },
-                    onApiTokenChange = { apiToken = it },
-                    onCustomModelNameChange = { customModelName = it },
+                    onApiTokenChange = { apiKey = it },
+                    onCustomModelNameChange = { model = it },
                     onPasswordVisibleChange = { passwordVisible = !passwordVisible },
                     onTestClick = {
                         if (isTesting) return@ModelConfigSectionView
@@ -196,17 +150,12 @@ fun QwenProviderScreen(
                 )
             }
 
-            item { SectionHeader(title = "选择模型") }
-
-            items(modelSeries) { item ->
-                ModelSeriesItem(
-                    modelSeries = item,
-                    selectedModel = selectedModel,
-                    onModelSelected = {
-                        selectedModel = it
-                    }
-                )
-            }
+            ModelSelectSectionView(
+                title = "选择模型",
+                modelSeries = modelSeries,
+                selectedModel = selectedModel,
+                onModelSelected = {selectedModel = it}
+            )
 
             item {
                 Spacer(modifier = Modifier.height(120.dp))
@@ -217,138 +166,61 @@ fun QwenProviderScreen(
     LaunchedEffect(isTesting) {
         if (isTesting) {
             delay(2500)
-            configured = true
+            isOK = true
             isTesting = false
         }
     }
 }
 
 @Composable
-private fun ModelSeriesItem(
-    modelSeries: ModelSeries,
-    selectedModel: String,
-    onModelSelected: (String) -> Unit,
+private fun BottomBar(
+    onSetModelClick: () -> Unit,
+    onModelDetailsClick: () -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    Card(
-        modifier = Modifier
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
-    ) {
 
-        Column {
-            Row(
+    Surface(
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+
+            Button(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { expanded = !expanded }
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .height(48.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White,
+                ),
+                onClick = onSetModelClick,
             ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = modelSeries.title,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = modelSeries.desc,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-                Icon(
-                    imageVector = if (expanded) {
-                        SettingsIcon.KeyboardArrowUp
-                    } else {
-                        SettingsIcon.KeyboardArrowDown
-                    }, contentDescription = null
+                Text(
+                    text = "设为默认模型",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
 
-            AnimatedVisibility(visible = expanded) {
-                Column {
-                    HorizontalDivider()
-                    modelSeries.models.forEach { model ->
-                        ModelItem(
-                            model = model,
-                            isSelected = model == selectedModel,
-                            onClick = onModelSelected
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ModelItem(
-    model: String,
-    isSelected: Boolean = false,
-    onClick: (String) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                onClick(model)
-            }
-            .padding(
-                horizontal = 16.dp, vertical = 8.dp
-            ),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-
-            Text(
-                text = model,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "点击选择该模型",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .size(16.dp)
-                .border(
-                    width = 1.5.dp,
-                    color = if (isSelected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.outline
-                    },
-                    shape = CircleShape
-                ), contentAlignment = Alignment.Center
-        ) {
-
-            if (isSelected) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primary, CircleShape
-                        )
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                ),
+                onClick = onModelDetailsClick,
+            ) {
+                Text(
+                    text = "查看模型详情",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }

@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -14,6 +15,7 @@ import com.android.nextai.ui.screen.home.HomeScreen
 import com.android.nextai.ui.screen.model_setting.QwenProviderScreen
 import com.android.nextai.ui.screen.settings.SettingsScreen
 import com.android.nextai.ui.theme.NeuronVerseTheme
+import com.android.nextai.viewmodel.provider.ProviderViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 
@@ -36,7 +38,7 @@ class MainActivity : ComponentActivity() {
 fun AppNavHost() {
 
     val navController = rememberNavController()
-
+    val providerViewModel: ProviderViewModel = hiltViewModel()
     NavHost(
         navController = navController,
         startDestination = AppRoute.HOME
@@ -53,6 +55,7 @@ fun AppNavHost() {
 
         composable(AppRoute.SETTINGS) {
             SettingsScreen(
+                providerViewModel = providerViewModel,
                 onBackClick = {
                     navController.popBackStack()
                 },
@@ -63,6 +66,7 @@ fun AppNavHost() {
         }
         composable(AppRoute.QWEN_PROVIDER) {
             QwenProviderScreen(
+                providerViewModel = providerViewModel,
                 onBackClick = {
                     navController.popBackStack()
                 }

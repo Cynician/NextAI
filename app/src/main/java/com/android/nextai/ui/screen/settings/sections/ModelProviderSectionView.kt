@@ -17,56 +17,53 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.android.nextai.domain.database.datastore.entity.ProviderEntity
+import com.android.nextai.domain.database.datastore.entity.ProviderType
 import com.android.nextai.ui.component.button.SettingButton
 import com.android.nextai.ui.component.other.SectionHeader
 import com.android.nextai.ui.component.other.SuccessTipLabel
 import com.android.nextai.ui.icon.SettingsIcon
+import com.android.nextai.viewmodel.provider.ProviderViewModel
 
 
-data class ModelProvider(
-    val name: String,
-    val desc: String,
-    val icon: ImageVector? = SettingsIcon.Settings,
-    val isConfig: Boolean = false,
-)
 
 @Composable
 fun ModelProviderSectionView(
+    providerViewModel: ProviderViewModel,
     onQwenClick: () -> Unit,
 ) {
-    val customProviders = listOf(
-        ModelProvider(
-            name = "自定义提供商",
-            desc = "添加自定义 API 接口与模型",
-            icon = SettingsIcon.Settings,
-            isConfig = true
-        ),
-    )
+
+    val providers by providerViewModel.providers.collectAsStateWithLifecycle(emptyList())
 
     SectionHeader(title = "模型提供商")
-
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        ProviderItem(
-            provider = ModelProvider(
-                name = "通义千问",
-                desc = "阿里巴巴通义大模型系列",
-                icon = SettingsIcon.Qianwen
-            ),
-            onClick = onQwenClick
-        )
+        providers.forEach { provider ->
+            val icon = when(provider.type){
+                ProviderType.QWEN -> SettingsIcon.Qianwen
+                else -> SettingsIcon.Settings
+            }
+            val onClick = when (provider.type) {
+                ProviderType.QWEN ->  ({
+                    onQwenClick()
+                    providerViewModel.setCurrentProvider(provider.id)
+                })
+                else -> ({})
+            }
 
-        customProviders.forEach { provider ->
             ProviderItem(
                 provider = provider,
-                onClick = {}
+                icon = icon,
+                onClick = onClick ,
             )
         }
 
@@ -80,7 +77,8 @@ fun ModelProviderSectionView(
 
 @Composable
 fun ProviderItem(
-    provider: ModelProvider,
+    provider: ProviderEntity,
+    icon: ImageVector = SettingsIcon.Settings,
     onClick: () -> Unit,
 ) {
     Surface(
@@ -110,7 +108,7 @@ fun ProviderItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = provider.icon!!,
+                        imageVector = icon,
                         contentDescription = null,
                         tint = Color.Unspecified
                     )
@@ -133,10 +131,8 @@ fun ProviderItem(
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
-                    if (provider.isConfig) {
-
+                    if (provider.isOK) {
                         Spacer(modifier = Modifier.width(8.dp))
-
                         SuccessTipLabel(
                             visible = true,
                             text = "已配置"

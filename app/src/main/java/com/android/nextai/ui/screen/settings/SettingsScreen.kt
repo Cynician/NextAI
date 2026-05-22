@@ -17,11 +17,13 @@ import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.button.ActionButton
 import com.android.nextai.ui.icon.SettingsIcon
 import com.android.nextai.ui.screen.settings.sections.ModelProviderSectionView
+import com.android.nextai.viewmodel.provider.ProviderViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    providerViewModel: ProviderViewModel,
     onBackClick: () -> Unit,
     onNavigateToQwenProvider: () -> Unit,
 ) {
@@ -55,8 +57,10 @@ fun SettingsScreen(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+
             item {
                 ModelProviderSectionView(
+                    providerViewModel = providerViewModel,
                     onQwenClick = { onNavigateToQwenProvider() }
                 )
             }

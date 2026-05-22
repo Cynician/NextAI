@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 
@@ -19,7 +20,8 @@ import androidx.compose.ui.unit.dp
 fun SectionHeader(
     title: String,
     modifier: Modifier = Modifier,
-    action: @Composable (() -> Unit)? = null
+    action: @Composable (() -> Unit)? = null,
+    bottomSpaceHeight: Dp = 12.dp,
 ) {
     Row(
         modifier = modifier
@@ -37,5 +39,5 @@ fun SectionHeader(
             action()
         }
     }
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(modifier = Modifier.height(bottomSpaceHeight))
 }
