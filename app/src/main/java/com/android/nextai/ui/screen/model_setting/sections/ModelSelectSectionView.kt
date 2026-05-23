@@ -132,7 +132,7 @@ private fun ModelSeriesItem(
 
                         if (index != modelSeries.models.lastIndex) {
                             HorizontalDivider(
-                                modifier = Modifier.padding(start = 16.dp),
+                                modifier = Modifier.padding(horizontal = 16.dp),
                                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
                             )
                         }

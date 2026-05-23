@@ -35,13 +35,6 @@ import com.android.nextai.ui.screen.model_setting.sections.ModelSelectSectionVie
 import com.android.nextai.viewmodel.provider.ProviderViewModel
 import kotlinx.coroutines.delay
 
-data class ModelSeries(
-    val title: String,
-    val desc: String,
-    val models: List<String>,
-    val recommend: Boolean = false,
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QwenProviderScreen(
