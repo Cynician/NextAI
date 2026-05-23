@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.android.nextai.domain.database.data.QwenModels
 import com.android.nextai.ui.component.button.ActionButton
 import com.android.nextai.ui.icon.SettingsIcon
 import com.android.nextai.ui.screen.model_setting.sections.ModelConfigSectionView
@@ -61,19 +62,7 @@ fun QwenProviderScreen(
     var isOK by remember { mutableStateOf(provider?.isOK?:false) }
     var selectedModel by remember { mutableStateOf("Qwen3-30B-A3B") }
 
-    val modelSeries = remember {
-        listOf(
-            ModelSeries(
-                title = "Qwen3", desc = "千问3系列", models = listOf(
-                    "Qwen3-30B-A3B", "Qwen3-14B", "Qwen3-7B", "Qwen3-1.7B"
-                )
-            ), ModelSeries(
-                title = "Qwen2.5", desc = "千问2.5系列", models = listOf(
-                    "Qwen2.5-72B-Instruct", "Qwen2.5-32B-Instruct"
-                ), recommend = true
-            )
-        )
-    }
+    val modelSeries = remember { QwenModels.allSeries }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -154,7 +143,7 @@ fun QwenProviderScreen(
                 title = "选择模型",
                 modelSeries = modelSeries,
                 selectedModel = selectedModel,
-                onModelSelected = {selectedModel = it}
+                onModelSelected = {selectedModel = it.modelName}
             )
 
             item {

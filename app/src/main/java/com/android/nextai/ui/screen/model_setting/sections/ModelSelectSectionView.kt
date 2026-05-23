@@ -30,17 +30,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.android.nextai.domain.database.data.QwenModel
+import com.android.nextai.domain.database.data.QwenModelSeries
 import com.android.nextai.ui.component.other.SectionHeader
 import com.android.nextai.ui.icon.SettingsIcon
-import com.android.nextai.ui.screen.model_setting.ModelSeries
 
 fun LazyListScope.ModelSelectSectionView(
     title: String,
-    modelSeries: List<ModelSeries>,
+    modelSeries: List<QwenModelSeries>,
     selectedModel: String,
-    onModelSelected: (String) -> Unit
+    onModelSelected: (QwenModel) -> Unit
 ) {
 
     item {
@@ -58,23 +60,22 @@ fun LazyListScope.ModelSelectSectionView(
 
 @Composable
 private fun ModelSeriesItem(
-    modelSeries: ModelSeries,
+    modelSeries: QwenModelSeries,
     selectedModel: String,
-    onModelSelected: (String) -> Unit,
+    onModelSelected: (QwenModel) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Card(
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
 
-        Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        Column{
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -90,7 +91,7 @@ private fun ModelSeriesItem(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = modelSeries.title,
+                            text = modelSeries.seriesName,
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -111,14 +112,30 @@ private fun ModelSeriesItem(
             }
 
             AnimatedVisibility(visible = expanded) {
-                Column {
-                    HorizontalDivider()
-                    modelSeries.models.forEach { model ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                ) {
+
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+
+                    modelSeries.models.forEachIndexed { index, model ->
+
                         ModelItem(
                             model = model,
-                            isSelected = model == selectedModel,
+                            isSelected = model.modelName == selectedModel,
                             onClick = onModelSelected
                         )
+
+                        if (index != modelSeries.models.lastIndex) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(start = 16.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                            )
+                        }
                     }
                 }
             }
@@ -128,9 +145,9 @@ private fun ModelSeriesItem(
 
 @Composable
 private fun ModelItem(
-    model: String,
+    model: QwenModel,
     isSelected: Boolean = false,
-    onClick: (String) -> Unit,
+    onClick: (QwenModel) -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -149,7 +166,7 @@ private fun ModelItem(
         ) {
 
             Text(
-                text = model,
+                text = model.modelName,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold
             )
@@ -157,9 +174,9 @@ private fun ModelItem(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "点击选择该模型",
+                text = "上下文：${model.contextWindow} \t 最大输出：${model.maxOutputTokens}",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )
         }
 
