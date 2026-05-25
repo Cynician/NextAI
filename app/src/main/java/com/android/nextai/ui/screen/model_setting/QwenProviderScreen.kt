@@ -3,7 +3,9 @@
  */
 package com.android.nextai.ui.screen.model_setting
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,17 +25,24 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.nextai.domain.database.data.QwenModels
 import com.android.nextai.ui.component.button.ActionButton
+import com.android.nextai.ui.component.other.NoticeBubble
+import com.android.nextai.ui.component.other.NoticeBubbleData
+import com.android.nextai.ui.component.other.NoticeType
 import com.android.nextai.ui.icon.SettingsIcon
 import com.android.nextai.ui.screen.model_setting.sections.ModelConfigSectionView
 import com.android.nextai.ui.screen.model_setting.sections.ModelSelectSectionView
 import com.android.nextai.viewmodel.provider.ProviderViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,115 +51,199 @@ fun QwenProviderScreen(
     onBackClick: () -> Unit,
 ) {
     val provider by providerViewModel.curProvider.collectAsState()
+    var initialApiUrl = provider?.apiUrl
+        ?.takeIf { it.isNotBlank() }
+        ?: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    var initialApiKey = provider?.apiKey ?: ""
+    var initialModel = provider?.model ?: ""
+    var apiUrl by remember(provider) { mutableStateOf(initialApiUrl) }
+    var apiKey by remember(provider) { mutableStateOf(initialApiKey) }
+    var model by remember(provider) { mutableStateOf(initialModel) }
+    var isOK by remember { mutableStateOf(false) }
 
-    var apiUrl by remember {
-        mutableStateOf(
-            provider?.apiUrl?: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-        )
+    val hasChanges by remember(
+        apiUrl, apiKey, model,initialApiUrl,initialApiKey,initialModel
+    ) {
+        derivedStateOf {
+            apiUrl.trim() != initialApiUrl ||
+                    apiKey.trim() != initialApiKey ||
+                    model.trim() != initialModel
+        }
     }
-    var apiKey by remember { mutableStateOf(provider?.apiKey?:"") }
-    var model by remember { mutableStateOf(provider?.model?:"") }
-    var passwordVisible by remember { mutableStateOf(false) }
-    var isTesting by remember { mutableStateOf(false) }
-    var isOK by remember { mutableStateOf(provider?.isOK?:false) }
-    var selectedModel by remember { mutableStateOf("Qwen3-30B-A3B") }
 
     val modelSeries = remember { QwenModels.allSeries }
+    var selectedModel by remember { mutableStateOf(initialModel) }
+    var isTesting by remember { mutableStateOf(false) }
+    var passwordVisible by remember { mutableStateOf(false) }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            CenterAlignedTopAppBar(
-                modifier = Modifier.padding(horizontal = 12.dp),
-                title = {
-                    Text(
-                        text = "通义千问",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                },
-                navigationIcon = {
-                    ActionButton(
-                        icon = SettingsIcon.ArrowBackIosNew,
-                        contentDescription = "Back",
-                        onClickListener = onBackClick,
-                    )
-                },
-                actions = {
-                    TextButton(
-                        onClick = {
-                            providerViewModel.updateProvider(
-                                apiUrl = apiUrl.trim(),
-                                apiKey = apiKey.trim(),
-                                model = model.trim(),
-                                isOK = isOK
-                            )
-                        }
-                    ) {
-                        Text(
-                            text = "保存",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            )
-        },
-        bottomBar = {
-            BottomBar(
-                onSetModelClick = {model = selectedModel },
-                onModelDetailsClick = {}
-            )
+    /**
+     * Save button & notice bubble
+     */
+    val scope = rememberCoroutineScope()
+    var isNoticeBubbleVisible by remember { mutableStateOf(false) }
+    var noticeData by remember { mutableStateOf<NoticeBubbleData?>(null) }
+    fun showNoticeBubble(message: String, type: NoticeType) {
+        if (noticeData != null) return
+        scope.launch {
+            noticeData = NoticeBubbleData(message = message, type = type)
+            isNoticeBubbleVisible = true
+            delay(1200)
+            isNoticeBubbleVisible = false
+            delay(300)
+            noticeData = null
         }
-    ) { padding ->
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues = padding)
-                .padding(horizontal = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-
-            item {
-                ModelConfigSectionView(
-                    title = "配置模型",
-                    apiUrl = apiUrl,
-                    apiToken = apiKey,
-                    customModelName = model,
-                    configured = isOK,
-                    isTesting = isTesting,
-                    passwordVisible = passwordVisible,
-                    onApiUrlChange = { apiUrl = it },
-                    onApiTokenChange = { apiKey = it },
-                    onCustomModelNameChange = { model = it },
-                    onPasswordVisibleChange = { passwordVisible = !passwordVisible },
-                    onTestClick = {
-                        if (isTesting) return@ModelConfigSectionView
-                        isTesting = true
-                    }
+    }
+    LaunchedEffect(Unit) {
+        providerViewModel.saveState.collect { result ->
+            result.onSuccess {
+                showNoticeBubble(
+                    message = "保存成功",
+                    type = NoticeType.SUCCESS
                 )
-            }
-
-            ModelSelectSectionView(
-                title = "选择模型",
-                modelSeries = modelSeries,
-                selectedModel = selectedModel,
-                onModelSelected = {selectedModel = it.modelName}
-            )
-
-            item {
-                Spacer(modifier = Modifier.height(120.dp))
+            }.onFailure {
+                showNoticeBubble(
+                    message = "保存失败",
+                    type = NoticeType.ERROR
+                )
             }
         }
     }
+
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(isTesting) {
         if (isTesting) {
+            // TODO Implement test logic
             delay(2500)
             isOK = true
             isTesting = false
         }
+    }
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+        .pointerInput(Unit) {
+            detectTapGestures(
+                onTap = {
+                    focusManager.clearFocus()
+                }
+            )
+        },
+    ) {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+
+            topBar = {
+                CenterAlignedTopAppBar(
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    title = {
+                        Text(
+                            text = "通义千问",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    },
+                    navigationIcon = {
+                        ActionButton(
+                            icon = SettingsIcon.ArrowBackIosNew,
+                            contentDescription = "Back",
+                            onClickListener = onBackClick,
+                        )
+                    },
+                    actions = {
+                        SaveButton(
+                            visible = hasChanges,
+                            onClick = {
+                                initialApiUrl = apiUrl.trim()
+                                initialApiKey = apiKey.trim()
+                                initialModel = model.trim()
+                                providerViewModel.updateProvider(
+                                    apiUrl = initialApiUrl,
+                                    apiKey = initialApiKey,
+                                    model = initialModel,
+                                    isOK = isOK
+                                )
+                                focusManager.clearFocus()
+                            }
+                        )
+                    }
+                )
+            },
+            bottomBar = {
+                BottomBar(
+                    onSetModelClick = { model = selectedModel },
+                    onModelDetailsClick = {}
+                )
+            },
+        ) { padding ->
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues = padding)
+                    .padding(horizontal = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+
+                item {
+                    ModelConfigSectionView(
+                        title = "配置模型",
+                        apiUrl = apiUrl,
+                        apiToken = apiKey,
+                        customModelName = model,
+                        configured = isOK,
+                        isTesting = isTesting,
+                        passwordVisible = passwordVisible,
+                        onApiUrlChange = { apiUrl = it },
+                        onApiKeyChange = { apiKey = it },
+                        onCustomModelNameChange = { model = it },
+                        onPasswordVisibleChange = { passwordVisible = !passwordVisible },
+                        onTestClick = {
+                            if (isTesting) return@ModelConfigSectionView
+                            isTesting = true
+                            focusManager.clearFocus()
+                        }
+                    )
+                }
+
+                ModelSelectSectionView(
+                    title = "选择模型",
+                    modelSeries = modelSeries,
+                    selectedModel = selectedModel,
+                    onModelSelected = { selectedModel = it.modelName }
+                )
+
+                item {
+                    Spacer(modifier = Modifier.height(120.dp))
+                }
+            }
+        }
+
+        NoticeBubble(
+            visible = isNoticeBubbleVisible,
+            data = noticeData,
+            modifier = Modifier.align(
+                Alignment.BottomCenter
+            )
+        )
+    }
+}
+
+@Composable
+private fun SaveButton(
+    visible: Boolean,
+    onClick: () -> Unit,
+) {
+    if (!visible) return
+
+    TextButton(
+        onClick = onClick
+    ) {
+        Text(
+            text = "保存",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }
 

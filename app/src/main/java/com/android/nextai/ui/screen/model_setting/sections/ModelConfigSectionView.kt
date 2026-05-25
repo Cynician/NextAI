@@ -1,7 +1,6 @@
 package com.android.nextai.ui.screen.model_setting.sections
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,8 +21,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.loading.LoadingDots
@@ -42,12 +39,11 @@ fun ModelConfigSectionView(
     isTesting: Boolean,
     passwordVisible: Boolean,
     onApiUrlChange: (String) -> Unit,
-    onApiTokenChange: (String) -> Unit,
+    onApiKeyChange: (String) -> Unit,
     onCustomModelNameChange: (String) -> Unit,
     onPasswordVisibleChange: () -> Unit,
     onTestClick: () -> Unit,
 ) {
-    val focusManager = LocalFocusManager.current
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -65,14 +61,7 @@ fun ModelConfigSectionView(
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = {
-                        focusManager.clearFocus()
-                    }
-                )
-            },
+            .fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -94,7 +83,7 @@ fun ModelConfigSectionView(
             SettingPasswordField(
                 title = "API Key",
                 value = apiToken,
-                onValueChange = onApiTokenChange,
+                onValueChange = onApiKeyChange,
                 passwordVisible = passwordVisible,
                 onPasswordVisibleChange = onPasswordVisibleChange,
                 placeholder = "请输入 API Key"
@@ -113,7 +102,6 @@ fun ModelConfigSectionView(
                     isTesting = isTesting,
                     onClick = {
                         onTestClick()
-                        focusManager.clearFocus()
                     }
                 )
             }
