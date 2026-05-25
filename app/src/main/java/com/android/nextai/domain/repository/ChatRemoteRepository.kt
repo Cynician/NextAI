@@ -4,7 +4,7 @@ import android.util.Log
 import com.android.nextai.domain.database.sqlite.entity.MessageEntity
 import com.android.nextai.domain.remote.AIFactory
 import com.android.nextai.domain.remote.Model
-import com.android.nextai.domain.remote.StreamBuffer
+import com.android.nextai.domain.remote.utils.StreamBuffer
 import com.android.nextai.domain.remote.entity.GenerationEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel

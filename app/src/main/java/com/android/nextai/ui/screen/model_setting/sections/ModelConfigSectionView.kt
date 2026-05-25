@@ -36,13 +36,13 @@ fun ModelConfigSectionView(
     apiToken: String,
     customModelName: String,
     configured: Boolean,
-    isTesting: Boolean,
+    isValidating: Boolean,
     passwordVisible: Boolean,
     onApiUrlChange: (String) -> Unit,
     onApiKeyChange: (String) -> Unit,
     onCustomModelNameChange: (String) -> Unit,
     onPasswordVisibleChange: () -> Unit,
-    onTestClick: () -> Unit,
+    onValidateClick: () -> Unit,
 ) {
 
     Row(
@@ -98,10 +98,10 @@ fun ModelConfigSectionView(
             CompositionLocalProvider(
                 LocalRippleConfiguration provides null
             ) {
-                TestButton(
-                    isTesting = isTesting,
+                ProviderValidateButton(
+                    isValidating = isValidating,
                     onClick = {
-                        onTestClick()
+                        onValidateClick()
                     }
                 )
             }
@@ -110,8 +110,8 @@ fun ModelConfigSectionView(
 }
 
 @Composable
-private fun TestButton(
-    isTesting: Boolean = false,
+private fun ProviderValidateButton(
+    isValidating: Boolean = false,
     onClick: ()->Unit,
 ){
     Button(
@@ -127,11 +127,11 @@ private fun TestButton(
             contentColor = Color.White,
         )
     ) {
-        if (isTesting) {
+        if (isValidating) {
             LoadingDots(dotsColor = Color.White)
         } else {
             Text(
-                text = "连接测试",
+                text = "验       证",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
             )

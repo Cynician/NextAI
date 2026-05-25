@@ -130,6 +130,11 @@ dependencies {
 
     // AI & Remote
     implementation(libs.openai)
+    implementation(libs.jackson.databind)
+    implementation(libs.jackson.module.kotlin)
+    implementation(libs.jackson.datatype.jdk8)
+    implementation(libs.jackson.datatype.jsr310)
+
 
     // Markdown
     implementation(libs.flexmark)

@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.nextai.domain.database.datastore.entity.ProviderEntity
 import com.android.nextai.domain.database.datastore.entity.ProviderType
+import com.android.nextai.domain.remote.utils.ModelManager
 import com.android.nextai.domain.repository.ProviderRepository
+import com.android.nextai.viewmodel.provider.entity.ProviderValidateEvent
+import com.android.nextai.viewmodel.provider.entity.ProviderValidateState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,9 +42,18 @@ class ProviderViewModel @Inject constructor(
     /**
      * State
      */
-    private val _saveState = MutableSharedFlow<Result<Unit>>()
+    private val _saveProviderState = MutableSharedFlow<Result<Unit>>()
+    private val _providerValidateState = MutableStateFlow<ProviderValidateState>(ProviderValidateState.Idle)
 
-    val saveState = _saveState.asSharedFlow()
+    val saveProviderState = _saveProviderState.asSharedFlow()
+    val providerValidateState = _providerValidateState.asStateFlow()
+
+    /**
+     * Event
+     */
+    private val _providerValidateEvent = MutableSharedFlow<ProviderValidateEvent>()
+
+    val providerValidateEvent = _providerValidateEvent.asSharedFlow()
 
 
     fun addProvider(
@@ -90,10 +102,35 @@ class ProviderViewModel @Inject constructor(
                     _providers.value = repository.getProviders()
                 }
             }.onSuccess {
-                _saveState.emit(Result.success(Unit))
+                _saveProviderState.emit(Result.success(Unit))
             }.onFailure {
-                _saveState.emit(Result.failure(it))
+                _saveProviderState.emit(Result.failure(it))
             }
+        }
+    }
+
+    fun checkModelValidity(apiUrl: String, apiKey: String, model: String) {
+        viewModelScope.launch {
+            _providerValidateState.value = ProviderValidateState.Validating
+            runCatching {
+                ModelManager(
+                    baseUrl = apiUrl,
+                    apiKey = apiKey
+                ).checkModelExists(model)
+            }.onSuccess { result ->
+                if (result.success) {
+                    _providerValidateEvent.emit(ProviderValidateEvent.Success)
+                } else {
+                    _providerValidateEvent.emit(
+                        ProviderValidateEvent.Error(result.message)
+                    )
+                }
+            }.onFailure {
+                _providerValidateEvent.emit(
+                    ProviderValidateEvent.Error(it.message ?: "Unknown error")
+                )
+            }
+            _providerValidateState.value = ProviderValidateState.Idle
         }
     }
 }

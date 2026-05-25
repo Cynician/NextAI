@@ -24,7 +24,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,6 +49,8 @@ import com.android.nextai.ui.icon.SettingsIcon
 import com.android.nextai.ui.screen.model_setting.sections.ModelConfigSectionView
 import com.android.nextai.ui.screen.model_setting.sections.ModelSelectSectionView
 import com.android.nextai.viewmodel.provider.ProviderViewModel
+import com.android.nextai.viewmodel.provider.entity.ProviderValidateEvent
+import com.android.nextai.viewmodel.provider.entity.ProviderValidateState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -51,8 +61,8 @@ fun QwenProviderScreen(
     onBackClick: () -> Unit,
 ) {
     val provider by providerViewModel.curProvider.collectAsState()
-    var initialApiUrl = provider?.apiUrl
-        ?.takeIf { it.isNotBlank() }
+
+    var initialApiUrl = provider?.apiUrl?.takeIf { it.isNotBlank() }
         ?: "https://dashscope.aliyuncs.com/compatible-mode/v1"
     var initialApiKey = provider?.apiKey ?: ""
     var initialModel = provider?.model ?: ""
@@ -60,20 +70,17 @@ fun QwenProviderScreen(
     var apiKey by remember(provider) { mutableStateOf(initialApiKey) }
     var model by remember(provider) { mutableStateOf(initialModel) }
     var isOK by remember { mutableStateOf(false) }
-
     val hasChanges by remember(
-        apiUrl, apiKey, model,initialApiUrl,initialApiKey,initialModel
+        apiUrl, apiKey, model, initialApiUrl, initialApiKey, initialModel
     ) {
         derivedStateOf {
-            apiUrl.trim() != initialApiUrl ||
-                    apiKey.trim() != initialApiKey ||
-                    model.trim() != initialModel
+            apiUrl.trim() != initialApiUrl || apiKey.trim() != initialApiKey || model.trim() != initialModel
         }
     }
 
     val modelSeries = remember { QwenModels.allSeries }
     var selectedModel by remember { mutableStateOf(initialModel) }
-    var isTesting by remember { mutableStateOf(false) }
+
     var passwordVisible by remember { mutableStateOf(false) }
 
     /**
@@ -94,29 +101,36 @@ fun QwenProviderScreen(
         }
     }
     LaunchedEffect(Unit) {
-        providerViewModel.saveState.collect { result ->
+        providerViewModel.saveProviderState.collect { result ->
             result.onSuccess {
-                showNoticeBubble(
-                    message = "保存成功",
-                    type = NoticeType.SUCCESS
-                )
+                showNoticeBubble(message = "保存成功", type = NoticeType.SUCCESS)
             }.onFailure {
-                showNoticeBubble(
-                    message = "保存失败",
-                    type = NoticeType.ERROR
-                )
+                showNoticeBubble(message = "保存失败", type = NoticeType.ERROR)
             }
         }
     }
 
     val focusManager = LocalFocusManager.current
 
-    LaunchedEffect(isTesting) {
-        if (isTesting) {
-            // TODO Implement test logic
-            delay(2500)
-            isOK = true
-            isTesting = false
+    /**
+     * Check validate state of provider
+     */
+    val providerValidateState by providerViewModel.providerValidateState.collectAsState()
+    LaunchedEffect(providerValidateState) {
+        providerViewModel.providerValidateEvent.collect { event ->
+            when (event) {
+                ProviderValidateEvent.Success -> {
+                    showNoticeBubble(
+                        message = "验证成功", type = NoticeType.SUCCESS
+                    )
+                }
+
+                is ProviderValidateEvent.Error -> {
+                    showNoticeBubble(
+                        message = event.message, type = NoticeType.ERROR
+                    )
+                }
+            }
         }
     }
 
@@ -132,7 +146,6 @@ fun QwenProviderScreen(
     ) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
-
             topBar = {
                 CenterAlignedTopAppBar(
                     modifier = Modifier.padding(horizontal = 12.dp),
@@ -192,15 +205,19 @@ fun QwenProviderScreen(
                         apiToken = apiKey,
                         customModelName = model,
                         configured = isOK,
-                        isTesting = isTesting,
+                        isValidating = providerValidateState is ProviderValidateState.Validating,
                         passwordVisible = passwordVisible,
                         onApiUrlChange = { apiUrl = it },
                         onApiKeyChange = { apiKey = it },
                         onCustomModelNameChange = { model = it },
                         onPasswordVisibleChange = { passwordVisible = !passwordVisible },
-                        onTestClick = {
-                            if (isTesting) return@ModelConfigSectionView
-                            isTesting = true
+                        onValidateClick = {
+                            if (providerValidateState is ProviderValidateState.Validating) {
+                                return@ModelConfigSectionView
+                            }
+                            providerViewModel.checkModelValidity(
+                                apiUrl = apiUrl, apiKey = apiKey, model = model
+                            )
                             focusManager.clearFocus()
                         }
                     )
@@ -210,8 +227,7 @@ fun QwenProviderScreen(
                     title = "选择模型",
                     modelSeries = modelSeries,
                     selectedModel = selectedModel,
-                    onModelSelected = { selectedModel = it.modelName }
-                )
+                    onModelSelected = { selectedModel = it.modelName })
 
                 item {
                     Spacer(modifier = Modifier.height(120.dp))
@@ -220,11 +236,9 @@ fun QwenProviderScreen(
         }
 
         NoticeBubble(
+            modifier = Modifier.align(Alignment.BottomCenter),
             visible = isNoticeBubbleVisible,
             data = noticeData,
-            modifier = Modifier.align(
-                Alignment.BottomCenter
-            )
         )
     }
 }

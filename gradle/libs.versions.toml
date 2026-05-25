@@ -40,6 +40,7 @@ xz = "1.12"
 
 # OpenAI
 openai = "2.0.0"
+jackson = "2.21.3"
 
 # Markdown
 flexmark = "0.64.8"
@@ -100,6 +101,11 @@ xz = { group = "org.tukaani", name = "xz", version.ref = "xz" }
 
 # OpenAI
 openai = { group = "com.openai", name = "openai-java", version.ref = "openai" }
+jackson-databind = {group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jackson"}
+jackson-module-kotlin = {group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jackson"}
+jackson-datatype-jdk8 = {group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jdk8", version.ref = "jackson"}
+jackson-datatype-jsr310 = {group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jsr310", version.ref = "jackson"}
+
 
 # Markdown
 flexmark = { group = "com.vladsch.flexmark", name = "flexmark", version.ref = "flexmark" }

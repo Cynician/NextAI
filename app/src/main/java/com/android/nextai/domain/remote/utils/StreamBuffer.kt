@@ -1,4 +1,4 @@
-package com.android.nextai.domain.remote
+package com.android.nextai.domain.remote.utils
 
 class StreamBuffer {
 
