@@ -1,4 +1,4 @@
-package com.android.nextai.ui.screen.model_setting.sections
+package com.android.nextai.ui.screen.model_provider.sections
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -35,7 +35,7 @@ fun ModelConfigSectionView(
     apiUrl: String,
     apiToken: String,
     customModelName: String,
-    configured: Boolean,
+    isValid: Boolean,
     isValidating: Boolean,
     passwordVisible: Boolean,
     onApiUrlChange: (String) -> Unit,
@@ -52,8 +52,8 @@ fun ModelConfigSectionView(
     ) {
         SectionHeader(title = title)
         SuccessTipLabel(
-            visible = configured,
-            text = "已配置"
+            visible = isValid,
+            text = "有效"
         )
     }
 

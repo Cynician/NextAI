@@ -1,7 +1,7 @@
 /**
  * QwenProviderScreen.kt
  */
-package com.android.nextai.ui.screen.model_setting
+package com.android.nextai.ui.screen.model_provider
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -46,8 +46,8 @@ import com.android.nextai.ui.component.other.NoticeBubble
 import com.android.nextai.ui.component.other.NoticeBubbleData
 import com.android.nextai.ui.component.other.NoticeType
 import com.android.nextai.ui.icon.SettingsIcon
-import com.android.nextai.ui.screen.model_setting.sections.ModelConfigSectionView
-import com.android.nextai.ui.screen.model_setting.sections.ModelSelectSectionView
+import com.android.nextai.ui.screen.model_provider.sections.ModelConfigSectionView
+import com.android.nextai.ui.screen.model_provider.sections.ModelSelectSectionView
 import com.android.nextai.viewmodel.provider.ProviderViewModel
 import com.android.nextai.viewmodel.provider.entity.ProviderValidateEvent
 import com.android.nextai.viewmodel.provider.entity.ProviderValidateState
@@ -71,10 +71,11 @@ fun QwenProviderScreen(
     var model by remember(provider) { mutableStateOf(initialModel) }
     var isOK by remember { mutableStateOf(false) }
     val hasChanges by remember(
-        apiUrl, apiKey, model, initialApiUrl, initialApiKey, initialModel
+        apiUrl, apiKey, model, initialApiUrl, initialApiKey, initialModel, isOK
     ) {
         derivedStateOf {
             apiUrl.trim() != initialApiUrl || apiKey.trim() != initialApiKey || model.trim() != initialModel
+                    || isOK
         }
     }
 
@@ -120,12 +121,14 @@ fun QwenProviderScreen(
         providerViewModel.providerValidateEvent.collect { event ->
             when (event) {
                 ProviderValidateEvent.Success -> {
+                    isOK = true
                     showNoticeBubble(
                         message = "验证成功", type = NoticeType.SUCCESS
                     )
                 }
 
                 is ProviderValidateEvent.Error -> {
+                    isOK = false
                     showNoticeBubble(
                         message = event.message, type = NoticeType.ERROR
                     )
@@ -204,7 +207,7 @@ fun QwenProviderScreen(
                         apiUrl = apiUrl,
                         apiToken = apiKey,
                         customModelName = model,
-                        configured = isOK,
+                        isValid = isOK,
                         isValidating = providerValidateState is ProviderValidateState.Validating,
                         passwordVisible = passwordVisible,
                         onApiUrlChange = { apiUrl = it },
@@ -224,7 +227,7 @@ fun QwenProviderScreen(
                 }
 
                 ModelSelectSectionView(
-                    title = "选择模型",
+                    title = "模型列表",
                     modelSeries = modelSeries,
                     selectedModel = selectedModel,
                     onModelSelected = { selectedModel = it.modelName })
@@ -289,7 +292,7 @@ private fun BottomBar(
                 onClick = onSetModelClick,
             ) {
                 Text(
-                    text = "设为默认模型",
+                    text = "设置模型",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )

@@ -5,9 +5,11 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import com.android.nextai.domain.database.datastore.PreferenceKeys
 import com.android.nextai.domain.database.datastore.entity.ProviderEntity
-import com.android.nextai.domain.database.datastore.entity.ProvidersEntity
 import com.android.nextai.domain.database.datastore.entity.ProviderType
+import com.android.nextai.domain.database.datastore.entity.ProvidersEntity
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -21,102 +23,197 @@ class ProviderRepository @Inject constructor(
         ignoreUnknownKeys = true
         encodeDefaults = true
     }
-    //Memory cache
-    private var settingsCache = ProvidersEntity()
-    private var initialized = false
 
+    /**
+     * Single Source Of Truth
+     */
+    val settingsFlow: Flow<ProvidersEntity> =
+        dataStore.data.map { preferences ->
 
-    suspend fun initialize() {
-        if (initialized) { return }
-        val preferences = dataStore.data.first()
-        val settingsJson = preferences[PreferenceKeys.PROVIDER_SETTINGS]
-        settingsCache =
+            val settingsJson =
+                preferences[PreferenceKeys.PROVIDER_SETTINGS]
+
             if (settingsJson.isNullOrEmpty()) {
                 ProvidersEntity()
             } else {
-                json.decodeFromString(settingsJson)
+                runCatching {
+                    json.decodeFromString<ProvidersEntity>(settingsJson)
+                }.getOrElse {
+                    ProvidersEntity()
+                }
             }
-        initialized = true
-    }
+        }
 
     /**
-     * Get all settings
+     * Get settings
      */
     suspend fun getSettings(): ProvidersEntity {
-        initialize()
-        return settingsCache
+        return settingsFlow.first()
+    }
+
+
+    /**
+     * Observe providers
+     */
+    val providersFlow = settingsFlow.map { it.providers }
+
+    /**
+     * Observe default provider
+     */
+    val defaultProviderFlow =
+        settingsFlow.map { settings ->
+
+            settings.providers.find {
+                it.id == settings.defaultProviderId
+            } ?: settings.providers.firstOrNull {
+                it.isOK
+            }
+        }
+
+    /**
+     * Update helper
+     */
+    private suspend fun updateSettings(
+        transform: (ProvidersEntity) -> ProvidersEntity
+    ) {
+
+        dataStore.edit { preferences ->
+
+            val current =
+                preferences[PreferenceKeys.PROVIDER_SETTINGS]
+                    ?.let {
+                        runCatching {
+                            json.decodeFromString<ProvidersEntity>(it)
+                        }.getOrNull()
+                    }
+                    ?: ProvidersEntity()
+
+            val updated = transform(current)
+
+            preferences[PreferenceKeys.PROVIDER_SETTINGS] =
+                json.encodeToString(updated)
+        }
     }
 
     /**
-     * Get Providers
+     * Get providers
      */
     suspend fun getProviders(): List<ProviderEntity> {
-        initialize()
-        return settingsCache.providers
+        return getSettings().providers
     }
 
-
     /**
-     * Get Provider by id
+     * Get provider by id
      */
     suspend fun getProviderById(
         providerId: String,
     ): ProviderEntity? {
-        initialize()
-        return settingsCache.providers.find { it.id == providerId }
+        return getSettings()
+            .providers
+            .find { it.id == providerId }
     }
 
     /**
-     * Add Provider
+     * Add provider
      */
     suspend fun addProvider(
         provider: ProviderEntity,
     ) {
-        initialize()
-        settingsCache = settingsCache.copy(providers = settingsCache.providers + provider)
-        persist()
+
+        updateSettings { settings ->
+
+            settings.copy(
+                providers = settings.providers + provider
+            )
+        }
     }
 
     /**
-     * Update Provider
+     * Update provider
      */
     suspend fun updateProvider(
         provider: ProviderEntity,
     ) {
-        initialize()
-        settingsCache = settingsCache.copy(
-            providers = settingsCache.providers.map {
-                if (it.id == provider.id) {
-                    provider
-                } else {
-                    it
+
+        updateSettings { settings ->
+
+            val updatedProviders =
+                settings.providers.map {
+                    if (it.id == provider.id) provider
+                    else it
                 }
-            }
-        )
-        persist()
+
+            settings.copy(
+                providers = updatedProviders
+            )
+        }
     }
 
     /**
-     * Delete Provider
+     * Delete provider
      */
     suspend fun deleteProvider(
         providerId: String,
     ) {
-        initialize()
-        val updatedProviders = settingsCache.providers.filterNot { it.id == providerId }
-        settingsCache = settingsCache.copy(providers = updatedProviders)
-        persist()
+
+        updateSettings { settings ->
+
+            val updatedProviders =
+                settings.providers.filterNot {
+                    it.id == providerId
+                }
+
+            val updatedDefaultProviderId =
+                if (settings.defaultProviderId == providerId) {
+                    updatedProviders
+                        .firstOrNull { it.isOK }
+                        ?.id
+                } else {
+                    settings.defaultProviderId
+                }
+
+            settings.copy(
+                providers = updatedProviders,
+                defaultProviderId = updatedDefaultProviderId
+            )
+        }
     }
 
     /**
-     * Ensure the Provider exists
+     * Set default provider
+     */
+    suspend fun setDefaultProvider(
+        providerId: String,
+    ) {
+
+        updateSettings { settings ->
+
+            val exists =
+                settings.providers.any {
+                    it.id == providerId
+                }
+
+            if (!exists) {
+                settings
+            } else {
+                settings.copy(
+                    defaultProviderId = providerId
+                )
+            }
+        }
+    }
+
+    /**
+     * Ensure provider exists
      */
     suspend fun ensureProviderExists(
         type: ProviderType
     ) {
-        initialize()
-        val exists = settingsCache.providers.any { it.type == type }
-        if (exists) { return }
+
+        val exists =
+            getProviders().any { it.type == type }
+
+        if (exists) return
 
         val provider = when (type) {
 
@@ -157,14 +254,5 @@ class ProviderRepository @Inject constructor(
         }
 
         addProvider(provider)
-    }
-
-    /**
-     * Persistence
-     */
-    private suspend fun persist() {
-        dataStore.edit { preferences ->
-            preferences[PreferenceKeys.PROVIDER_SETTINGS] = json.encodeToString(settingsCache)
-        }
     }
 }

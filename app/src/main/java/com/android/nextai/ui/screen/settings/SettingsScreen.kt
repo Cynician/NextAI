@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.button.ActionButton
 import com.android.nextai.ui.icon.SettingsIcon
+import com.android.nextai.ui.screen.settings.sections.DefaultModelProviderSectionView
 import com.android.nextai.ui.screen.settings.sections.ModelProviderSectionView
 import com.android.nextai.viewmodel.provider.ProviderViewModel
 
@@ -60,8 +61,17 @@ fun SettingsScreen(
 
             item {
                 ModelProviderSectionView(
+                    title = "模型提供商",
                     providerViewModel = providerViewModel,
                     onQwenClick = { onNavigateToQwenProvider() }
+                )
+            }
+
+            item{
+                DefaultModelProviderSectionView(
+                    title = "模型偏好",
+                    providerViewModel = providerViewModel,
+                    onClick = {  }
                 )
             }
         }

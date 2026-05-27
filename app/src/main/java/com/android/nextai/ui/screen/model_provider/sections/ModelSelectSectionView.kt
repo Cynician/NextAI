@@ -1,4 +1,4 @@
-package com.android.nextai.ui.screen.model_setting.sections
+package com.android.nextai.ui.screen.model_provider.sections
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background

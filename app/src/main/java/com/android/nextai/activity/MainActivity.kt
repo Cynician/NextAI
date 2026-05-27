@@ -12,7 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.android.nextai.ui.screen.home.HomeScreen
-import com.android.nextai.ui.screen.model_setting.QwenProviderScreen
+import com.android.nextai.ui.screen.model_provider.QwenProviderScreen
 import com.android.nextai.ui.screen.settings.SettingsScreen
 import com.android.nextai.ui.theme.NeuronVerseTheme
 import com.android.nextai.viewmodel.provider.ProviderViewModel

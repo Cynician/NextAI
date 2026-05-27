@@ -26,17 +26,16 @@ class ProviderViewModel @Inject constructor(
             repository.ensureProviderExists(
                 type = ProviderType.QWEN
             )
-            _providers.value = repository.getProviders()
         }
     }
 
     /**
      * Info
      */
-    private val _providers = MutableStateFlow<List<ProviderEntity>>(emptyList())
     private val _curProvider = MutableStateFlow<ProviderEntity?>(null)
 
-    val providers = _providers.asStateFlow()
+    val providers = repository.providersFlow
+    val defaultProvider = repository.defaultProviderFlow
     val curProvider = _curProvider.asStateFlow()
 
     /**
@@ -61,7 +60,6 @@ class ProviderViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             repository.addProvider(provider)
-            _providers.value = repository.getProviders()
         }
     }
 
@@ -78,7 +76,6 @@ class ProviderViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             repository.deleteProvider(providerId)
-            _providers.value = repository.getProviders()
         }
     }
 
@@ -99,7 +96,6 @@ class ProviderViewModel @Inject constructor(
                 updatedProvider?.let {
                     _curProvider.value = it
                     repository.updateProvider(it)
-                    _providers.value = repository.getProviders()
                 }
             }.onSuccess {
                 _saveProviderState.emit(Result.success(Unit))

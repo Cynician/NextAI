@@ -25,5 +25,6 @@ data class ProviderEntity(
 
 @Serializable
 data class ProvidersEntity(
+    val defaultProviderId: String? = null,
     val providers: List<ProviderEntity> = emptyList()
 )

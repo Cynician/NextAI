@@ -37,13 +37,14 @@ import com.android.nextai.viewmodel.provider.ProviderViewModel
 
 @Composable
 fun ModelProviderSectionView(
+    title: String,
     providerViewModel: ProviderViewModel,
     onQwenClick: () -> Unit,
 ) {
 
     val providers by providerViewModel.providers.collectAsStateWithLifecycle(emptyList())
 
-    SectionHeader(title = "模型提供商")
+    SectionHeader(title = title)
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
