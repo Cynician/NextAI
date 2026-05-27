@@ -1,11 +1,12 @@
 package com.android.nextai.domain.repository
 
 import android.util.Log
+import com.android.nextai.domain.database.datastore.entity.ProviderEntity
 import com.android.nextai.domain.database.sqlite.entity.MessageEntity
 import com.android.nextai.domain.remote.AIFactory
 import com.android.nextai.domain.remote.Model
-import com.android.nextai.domain.remote.utils.StreamBuffer
 import com.android.nextai.domain.remote.entity.GenerationEvent
+import com.android.nextai.domain.remote.utils.StreamBuffer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
@@ -32,12 +33,17 @@ class ChatRemoteRepository @Inject constructor() {
     suspend fun getAIStreamingAnswer(
         model: Model,
         messageList: List<MessageEntity>,
+        provider: ProviderEntity,
         callback: (GenerationEvent) -> Unit,
     ) = withContext(Dispatchers.IO) {
-        AIFactory.createAIModel(model).getAIStreamingAnswer(messageList, callback)
+        AIFactory.createAIModel(model).getAIStreamingAnswer(messageList, provider, callback)
     }
 
-    fun streamingGen(model: Model, messageList: List<MessageEntity>): Flow<GenerationEvent> =
+    fun streamingGen(
+        model: Model,
+        messageList: List<MessageEntity>,
+        provider: ProviderEntity
+    ): Flow<GenerationEvent> =
         callbackFlow<GenerationEvent> {
             val mdBuffer = StreamBuffer()
             val callback: (GenerationEvent) -> Unit = { event ->
@@ -56,6 +62,7 @@ class ChatRemoteRepository @Inject constructor() {
                         -> {
                         if (mdBuffer.holdBuffer.isNotEmpty()) {
                             trySend(GenerationEvent.Word(mdBuffer.holdBuffer.toString()))
+                            mdBuffer.holdBuffer.clear()
                         }
                         trySend(event)
                         close()
@@ -64,7 +71,7 @@ class ChatRemoteRepository @Inject constructor() {
             }
             try {
                 Log.d(TAG, "[streamingGen] start to steaming...")
-                getAIStreamingAnswer(model, messageList, callback)
+                getAIStreamingAnswer(model, messageList, provider, callback)
             } catch (e: Exception) {
                 trySend(GenerationEvent.Error("fail to streaming：${e.message}"))
                 close()
@@ -72,5 +79,5 @@ class ChatRemoteRepository @Inject constructor() {
             awaitClose {
                 Log.d(TAG, "[streamingGen] close...")
             }
-        }.buffer(Channel.UNLIMITED).onEach { delay(5) }.flowOn(Dispatchers.IO)
+        }.buffer(Channel.UNLIMITED).onEach { delay(3) }.flowOn(Dispatchers.IO)
 }

@@ -1,6 +1,7 @@
 package com.android.nextai.domain.remote.test
 
 import android.util.Log
+import com.android.nextai.domain.database.datastore.entity.ProviderEntity
 import com.android.nextai.domain.database.sqlite.entity.MessageEntity
 import com.android.nextai.domain.remote.AIModelDataSource
 import com.android.nextai.domain.remote.entity.GenerationEvent
@@ -22,6 +23,7 @@ object TestRemoteDataSource : AIModelDataSource {
 
     override suspend fun getAIStreamingAnswer(
         messageList: List<MessageEntity>,
+        provider: ProviderEntity,
         callback: (GenerationEvent) -> Unit,
     ) {
         val testData = TestData.getData()

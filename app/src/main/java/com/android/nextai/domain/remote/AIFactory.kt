@@ -1,11 +1,9 @@
 package com.android.nextai.domain.remote
 
-import com.android.nextai.domain.remote.doubao.DoubaoRemoteDataSource
 import com.android.nextai.domain.remote.qianwen.QianwenRemoteDataSource
 import com.android.nextai.domain.remote.test.TestRemoteDataSource
 
 enum class Model{
-    DOUBAO,
     QIANWEN,
     TEST
 }
@@ -13,7 +11,6 @@ enum class Model{
 object AIFactory {
     fun createAIModel(model: Model): AIModelDataSource{
         return when(model){
-            Model.DOUBAO -> DoubaoRemoteDataSource
             Model.QIANWEN -> QianwenRemoteDataSource
             Model.TEST -> TestRemoteDataSource
         }

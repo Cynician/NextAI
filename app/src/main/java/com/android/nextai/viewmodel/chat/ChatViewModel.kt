@@ -3,6 +3,7 @@ package com.android.nextai.viewmodel.chat
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.nextai.domain.database.datastore.entity.ProviderEntity
 import com.android.nextai.domain.database.sqlite.entity.MessageEntity
 import com.android.nextai.domain.remote.Model
 import com.android.nextai.domain.remote.entity.GenerationEvent
@@ -43,9 +44,11 @@ class ChatViewModel @Inject constructor(
     /**
      * Get ai response
      */
-    fun sendUserQuery(query: String) {
+    fun sendUserQuery(
+        query: String,
+        provider: ProviderEntity
+    ) {
         val isSportStreamingGen = true
-        val query = query.trim()
         generationJob?.cancel()
         generationJob = viewModelScope.launch {
             try {
@@ -73,7 +76,7 @@ class ChatViewModel @Inject constructor(
                 messageHolder.emitScrollToLatestMessageEvent()
                 // Core process
                 if (isSportStreamingGen) {
-                    startStreamingGen()
+                    startStreamingGen(provider)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "error: $e")
@@ -83,7 +86,9 @@ class ChatViewModel @Inject constructor(
     }
 
     // Get ai response in stream way
-    private suspend fun startStreamingGen() {
+    private suspend fun startStreamingGen(
+        provider: ProviderEntity
+    ) {
         Log.d(TAG, "startStreamingGen# get ai response")
         messageHolder.updateIsTextStreaming(true)
         val assistantMessage = chatDatabaseRepository.createMessage(
@@ -93,8 +98,9 @@ class ChatViewModel @Inject constructor(
         )
         messageHolder.addMessage(assistantMessage)
         chatRemoteRepository.streamingGen(
-            model = Model.TEST,
-            messageList = messageHolder.messageList
+            model = Model.QIANWEN,
+            messageList = messageHolder.messageList,
+            provider,
         )
             .collect { event ->
                 when (event) {

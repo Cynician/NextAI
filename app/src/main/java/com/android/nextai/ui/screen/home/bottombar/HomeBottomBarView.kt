@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,14 +29,21 @@ import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.button.ActionButton
 import com.android.nextai.ui.icon.HomeIcon
 import com.android.nextai.viewmodel.chat.ChatViewModel
+import com.android.nextai.viewmodel.provider.ProviderViewModel
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @Composable
 internal fun HomeBottomBar(
-    chatViewModel: ChatViewModel
+    chatViewModel: ChatViewModel,
+    providerViewModel: ProviderViewModel,
 ) {
+    val provider by providerViewModel.defaultProvider.collectAsState(null)
+
     var query by remember { mutableStateOf("") }
 
+    val canSend = query.isNotBlank()
+                && provider != null
+                && chatViewModel.generationJob?.isActive != true
     Box(
         Modifier
             .fillMaxWidth()
@@ -73,6 +81,7 @@ internal fun HomeBottomBar(
                         cursorColor = MaterialTheme.colorScheme.primary
                     )
                 )
+
                 ActionButton(
                     modifier = Modifier
                         .padding(end = 12.dp)
@@ -84,13 +93,13 @@ internal fun HomeBottomBar(
                         contentColor = MaterialTheme.colorScheme.primary
                     ),
                     onClickListener = {
-                        if(query.isNotEmpty() &&
-                            (chatViewModel.generationJob == null ||
-                                    chatViewModel.generationJob?.isActive == false))
-                        {
-                            chatViewModel.sendUserQuery(query)
-                            query = ""
-                        }
+                        val currentProvider = provider ?: return@ActionButton
+                        if(!canSend) return@ActionButton
+                        chatViewModel.sendUserQuery(
+                            query.trim(),
+                            currentProvider
+                        )
+                        query = ""
                     },
                 )
             }

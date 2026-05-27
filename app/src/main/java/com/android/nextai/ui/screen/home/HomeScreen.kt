@@ -17,12 +17,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.android.nextai.ui.screen.home.body.HomeBodyView
 import com.android.nextai.ui.screen.home.bottombar.HomeBottomBar
 import com.android.nextai.ui.screen.home.drawer.HomeDrawerView
 import com.android.nextai.ui.screen.home.topbar.HomeTopBarView
 import com.android.nextai.viewmodel.chat.ChatViewModel
+import com.android.nextai.viewmodel.provider.ProviderViewModel
 import kotlinx.coroutines.launch
 
 
@@ -30,8 +30,9 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun HomeScreen(
-    chatViewModel: ChatViewModel = hiltViewModel(),
-    onNavigateToSettings: () -> Unit
+    chatViewModel: ChatViewModel,
+    providerViewModel: ProviderViewModel,
+    onNavigateToSettings: () -> Unit,
 ) {
     // Drawer
     val scope = rememberCoroutineScope()
@@ -81,12 +82,16 @@ fun HomeScreen(
                 )
             },
             bottomBar = {
-                HomeBottomBar(chatViewModel = chatViewModel)
+                HomeBottomBar(
+                    chatViewModel = chatViewModel,
+                    providerViewModel = providerViewModel,
+                )
             }
         ) { paddingValues ->
             HomeBodyView(
                 paddingValues = paddingValues,
-                chatViewModel = chatViewModel
+                chatViewModel = chatViewModel,
+
             )
         }
     }

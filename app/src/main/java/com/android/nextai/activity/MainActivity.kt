@@ -15,6 +15,7 @@ import com.android.nextai.ui.screen.home.HomeScreen
 import com.android.nextai.ui.screen.model_provider.QwenProviderScreen
 import com.android.nextai.ui.screen.settings.SettingsScreen
 import com.android.nextai.ui.theme.NeuronVerseTheme
+import com.android.nextai.viewmodel.chat.ChatViewModel
 import com.android.nextai.viewmodel.provider.ProviderViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -39,6 +40,8 @@ fun AppNavHost() {
 
     val navController = rememberNavController()
     val providerViewModel: ProviderViewModel = hiltViewModel()
+    val chatViewModel: ChatViewModel = hiltViewModel()
+
     NavHost(
         navController = navController,
         startDestination = AppRoute.HOME
@@ -47,6 +50,8 @@ fun AppNavHost() {
         composable(AppRoute.HOME) {
 
             HomeScreen(
+                chatViewModel = chatViewModel,
+                providerViewModel = providerViewModel,
                 onNavigateToSettings  = {
                     navController.navigate(AppRoute.SETTINGS)
                 }

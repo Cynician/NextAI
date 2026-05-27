@@ -1,11 +1,12 @@
 package com.android.nextai.domain.remote.qianwen
 
 import android.util.Log
+import com.android.nextai.domain.database.datastore.entity.ProviderEntity
 import com.android.nextai.domain.database.sqlite.entity.MessageEntity
 import com.android.nextai.domain.remote.AIModelDataSource
+import com.android.nextai.domain.remote.utils.OpenAIClientPool
 import com.android.nextai.domain.remote.entity.GenerationEvent
 import com.android.nextai.viewmodel.chat.entity.Role
-import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import com.openai.models.chat.completions.ChatCompletionStreamOptions
@@ -15,25 +16,15 @@ import com.openai.models.chat.completions.ChatCompletionUserMessageParam
 
 object QianwenRemoteDataSource : AIModelDataSource {
     private const val TAG = "QianwenRemoteDataSource"
-    private const val BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    private const val API_KEY = "sk-xxxxxxxxxxxxxxxxxx"
-    private const val MODEL = "qwen3-max-2026-01-23"
 
-    val openAIClient by lazy {
-        OpenAIOkHttpClient.builder()
-            .apiKey(API_KEY)
-            .baseUrl(BASE_URL)
-            .build()
-    }
 
     override suspend fun getAIAnswer(messageList: List<MessageEntity>): String {
         val systemMessage = ChatCompletionSystemMessageParam.builder()
             .content("解答用户问题")
             .build()
         val paramsBuilder = ChatCompletionCreateParams.builder()
-            .model(MODEL)
+            .model("")
             .addMessage(systemMessage)
-
         messageList.forEach {
             when (it.role) {
                 Role.User.name -> {
@@ -54,11 +45,11 @@ object QianwenRemoteDataSource : AIModelDataSource {
         val params = paramsBuilder.build()
 
         try {
-            val create = openAIClient.chat().completions().create(params)
-            val choices = create.choices()
-            choices.forEach {
-                return it.message().content().get()
-            }
+//            val create = openAIClient.chat().completions().create(params)
+//            val choices = create.choices()
+//            choices.forEach {
+//                return it.message().content().get()
+//            }
         } catch (e: Exception) {
             Log.e(TAG, "getAIAnswer# error:${e}")
             return ""
@@ -68,8 +59,14 @@ object QianwenRemoteDataSource : AIModelDataSource {
 
     override suspend fun getAIStreamingAnswer(
         messageList: List<MessageEntity>,
+        provider: ProviderEntity,
         callback: (GenerationEvent) -> Unit,
     ) {
+        val apiUrl = provider.apiUrl
+        val apiKey = provider.apiKey
+        val model = provider.model
+
+        val openAIClient = OpenAIClientPool.getClient(apiUrl, apiKey)
         val systemMessage = ChatCompletionSystemMessageParam.builder()
             .content("解答用户问题")
             .build()
@@ -77,7 +74,7 @@ object QianwenRemoteDataSource : AIModelDataSource {
             .includeUsage(true)
             .build()
         val paramsBuilder = ChatCompletionCreateParams.builder()
-            .model(MODEL)
+            .model(model)
             .addMessage(systemMessage)
             .streamOptions(streamOptions)
 
@@ -112,11 +109,16 @@ object QianwenRemoteDataSource : AIModelDataSource {
 
             // 2. collect flow and send to callback
             streamFlow.stream().forEach { chunk ->
-                if(chunk.choices().isNotEmpty()) {
-                    val content = chunk.choices().first().delta().content().get()
-                    callback(GenerationEvent.Word(content))
-                }else {
-                    callback(GenerationEvent.Done)
+                chunk.choices().firstOrNull()?.also { choice ->
+                    choice.delta()
+                        .content()
+                        .ifPresent {
+                            callback(GenerationEvent.Word(it))
+                        }
+
+                    choice.finishReason().ifPresent {
+                            callback(GenerationEvent.Done)
+                        }
                 }
             }
         } catch (e: Exception) {
