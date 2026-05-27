@@ -22,7 +22,7 @@ internal fun UserBubbleView(content: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.End
     ) {
 

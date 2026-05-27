@@ -1,5 +1,6 @@
 package com.android.nextai.ui.screen.home.body
 
+import com.android.nextai.ui.component.loading.SequentialJumpingDots
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.fadeIn
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -138,19 +140,20 @@ fun HomeBodyView(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
+            .background(MaterialTheme.colorScheme.background),
+        ) {
         if (messageList.isNotEmpty()) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .nestedScroll(nestedScrollConnection),
+                    .nestedScroll(nestedScrollConnection)
+                    .padding(12.dp),
                 contentPadding = PaddingValues(
                     top = paddingValues.calculateTopPadding() + 8.dp,
                     bottom = paddingValues.calculateBottomPadding() + 8.dp
                 ),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 itemsIndexed(
                     items = messageList,
@@ -165,6 +168,7 @@ fun HomeBodyView(
                             UserBubbleView(message.content)
                         }
                         Role.Assistant.name -> {
+                            if(message.content.isEmpty()) return@itemsIndexed
                             AssistantBubbleView(
                                 messageId = message.id,
                                 content = message.content,
@@ -173,6 +177,9 @@ fun HomeBodyView(
                         }
                         Role.None.name -> {}
                     }
+                }
+                if(isGenerating && messageList.last().content.isEmpty()){
+                    item{ SequentialJumpingDots() }
                 }
             }
         } else {

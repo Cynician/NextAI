@@ -20,6 +20,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+/**
+ * Three dots flashing from left to right
+ */
 @Composable
 fun LoadingDots(
     dotsColor: Color = MaterialTheme.colorScheme.primary

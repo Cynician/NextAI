@@ -72,7 +72,6 @@ internal fun AssistantBlockItem(node: MarkdownNode) {
     Box(
         modifier = Modifier
             .padding(vertical = 4.dp)
-            .padding(horizontal = 12.dp)
     ) {
         MarkdownNodeView(node)
     }
