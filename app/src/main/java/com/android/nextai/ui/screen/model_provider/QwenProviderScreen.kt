@@ -179,6 +179,7 @@ fun QwenProviderScreen(
                                     model = initialModel,
                                     isOK = isOK
                                 )
+                                isOK = false
                                 focusManager.clearFocus()
                             }
                         )
