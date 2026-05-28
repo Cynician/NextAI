@@ -12,8 +12,10 @@ import com.android.nextai.domain.repository.ChatRemoteRepository
 import com.android.nextai.viewmodel.chat.entity.Role
 import com.android.nextai.viewmodel.chat.holder.ChatMessageHolder
 import com.android.nextai.viewmodel.chat.holder.ChatSessionHolder
+import com.android.nextai.viewmodel.chat.holder.MarkdownCacheHolder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,6 +23,7 @@ import javax.inject.Inject
 class ChatViewModel @Inject constructor(
     val messageHolder: ChatMessageHolder,
     val sessionHolder: ChatSessionHolder,
+    val markdownCacheHolder: MarkdownCacheHolder,
     val chatRemoteRepository: ChatRemoteRepository,
     val chatDatabaseRepository: ChatDatabaseRepository,
 ) : ViewModel() {
@@ -96,22 +99,24 @@ class ChatViewModel @Inject constructor(
             content = messageHolder.getCurResponse(),
             role = Role.Assistant
         )
+        val parser = markdownCacheHolder.getOrCreate(assistantMessage.id)
         messageHolder.addMessage(assistantMessage)
         chatRemoteRepository.streamingGen(
             model = Model.QIANWEN,
-            messageList = messageHolder.messageList,
+            messageList = messageHolder.getMessages(),
             provider,
         )
             .collect { event ->
                 when (event) {
                     is GenerationEvent.Word -> {
                         messageHolder.updateCurResponse(content = event.content)
-                        messageHolder.updateLastMessage(
-                            assistantMessage.copy(content = messageHolder.getCurResponse())
-                        )
+                        val content = messageHolder.getCurResponse()
+                        parser.append(content)
+                        messageHolder.updateLastMessage(assistantMessage.copy(content = content))
                     }
 
                     is GenerationEvent.Done -> {
+                        parser.complete()
                         chatDatabaseRepository.updateMessageContent(
                             sessionId = sessionHolder.getCurSessionId(),
                             msgId = assistantMessage.id,
@@ -131,12 +136,10 @@ class ChatViewModel @Inject constructor(
 
     /**
      * Session init
-     *
-     * The initialization method when creating a new session or selecting a different session
      */
-    fun createSessionInit() {
-        messageHolder.createSessionInit()
-        sessionHolder.createSessionInit()
+    fun initSession() {
+        messageHolder.initSession()
+        sessionHolder.initSession()
     }
 
     /**
@@ -145,7 +148,7 @@ class ChatViewModel @Inject constructor(
     fun batchDeleteSessions(idList: List<Long>) {
         viewModelScope.launch {
             if (idList.contains(sessionHolder.getCurSessionId())) {
-                createSessionInit()
+                initSession()
             }
             sessionHolder.batchDeleteSessions(idList)
         }
@@ -166,7 +169,11 @@ class ChatViewModel @Inject constructor(
     /**
      * Load messages
      */
-    fun loadMessages(sessionId: Long, callBack: (() -> Unit)? = null) {
+    fun loadMessages(
+        sessionId: Long,
+        callBack: (() -> Unit)? = null,
+        isLoadingFirst: Boolean
+    ) {
         loadMessagesJob?.cancel()
         loadMessagesJob = viewModelScope.launch {
             try {
@@ -175,8 +182,23 @@ class ChatViewModel @Inject constructor(
                     minMsgId = messageHolder.curMessagesMinId
                 ).reversed()
                 if (messageList.isNotEmpty()) {
+                     // Parse only once
+                    messageList.forEach { message ->
+                        if (message.role == Role.Assistant.name) {
+                            val cached = markdownCacheHolder.get(message.id)
+                            // Already parsed
+                            if (cached == null) {
+                                val parser = markdownCacheHolder.getOrCreate(message.id)
+                                parser.setContent(message.content)
+                            }
+                        }
+                    }
                     messageHolder.updateCurMessagesMinId(id = messageList.first().id)
-                    messageHolder.addMessagesToHead(messageList)
+                    if(isLoadingFirst){
+                        messageHolder.setMessages(messageList)
+                    }else{
+                        messageHolder.addMessagesToHead(messageList)
+                    }
                     Log.d(TAG, "loadMessages# size:${messageList.size}")
                 } else {
                     messageHolder.updateHasMoreMessages(false)
@@ -190,37 +212,47 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    fun loadMessagesInit(sessionId: Long) {
+    suspend fun loadFirstPageMessages(sessionId: Long) {
+
         sessionHolder.loadMessagesInit(sessionId)
         messageHolder.loadMessagesInit()
+
+        // Wait for loading animation finish
+        kotlinx.coroutines.yield()
+        awaitFrame()
+
         loadMessages(
             sessionId = sessionId,
             callBack = {
-                messageHolder.updateIsFirstLoadMessages(false)
-                messageHolder.emitScrollToLatestMessageEvent()
-            }
+                viewModelScope.launch {
+                    messageHolder.updateIsFirstLoadMessages(false)
+                    messageHolder.emitScrollToLatestMessageEvent()
+                }
+            },
+            isLoadingFirst = true
         )
     }
 
-    fun loadMoreMessages() {
+    fun loadNextPageMessages() {
         if (
             !messageHolder.hasMoreMessages ||
             messageHolder.isLoadingMore ||
-            messageHolder.isFirstLoadMessages ||
+            messageHolder.getIsLoadingFirst() ||
             !sessionHolder.isInSession
         ) {
-            Log.d(TAG, "loadMoreMessages# skip to load messages")
+            Log.d(TAG, "loadNextPageMessages# skip to load messages")
             return
         }
 
-        Log.d(TAG, "loadMoreMessages# load more messages")
+        Log.d(TAG, "loadNextPageMessages# load next page")
         messageHolder.updateIsLoadingMore(true)
         loadMessages(
             sessionId = sessionHolder.getCurSessionId(),
             callBack = {
                 messageHolder.updateIsLoadingMore(false)
-                Log.d(TAG, "loadMoreMessages# success")
-            }
+                Log.d(TAG, "loadNextPageMessages# success")
+            },
+            isLoadingFirst = false
         )
     }
 }

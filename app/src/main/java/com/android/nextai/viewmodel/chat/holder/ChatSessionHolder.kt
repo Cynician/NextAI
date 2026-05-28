@@ -113,7 +113,7 @@ class ChatSessionHolder @Inject constructor(
     /**
      * Init for creating a new session
      */
-    fun createSessionInit() {
+    fun initSession() {
         _isInSession.value = false
         _curSessionId.value = -1L
     }

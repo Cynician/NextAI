@@ -30,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -43,6 +44,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.icon.HomeIcon
 import com.android.nextai.ui.screen.home.body.views.AssistantBubbleView
+import com.android.nextai.ui.component.loading.LoadingOverlayView
 import com.android.nextai.ui.screen.home.body.views.UserBubbleView
 import com.android.nextai.ui.theme.Animation
 import com.android.nextai.viewmodel.chat.ChatViewModel
@@ -58,12 +60,13 @@ fun HomeBodyView(
     chatViewModel: ChatViewModel,
 ) {
     val isGenerating by chatViewModel.messageHolder.isGenerating.collectAsState(initial = false)
-    val messageList = chatViewModel.messageHolder.messageList
+    val messageList by chatViewModel.messageHolder.messageList.collectAsState()
     val listState = rememberLazyListState()
 
     /**
      * Load messages
      */
+    val isChangingSession by chatViewModel.messageHolder.isLoadingFirst.collectAsState()
     LaunchedEffect(listState) {
         snapshotFlow {
             val layoutInfo = listState.layoutInfo
@@ -73,7 +76,7 @@ fun HomeBodyView(
             .distinctUntilChanged()
             .collect { index ->
                 if (index <= 2) {
-                    chatViewModel.loadMoreMessages()
+                    chatViewModel.loadNextPageMessages()
                 }
             }
     }
@@ -81,17 +84,21 @@ fun HomeBodyView(
     /**
      * Scroll logic
      */
-    var shouldAutoScroll by remember { mutableStateOf(true) }
+    var shouldAutoScroll by rememberSaveable { mutableStateOf(true) }
     var isUserScrolling by remember { mutableStateOf(false) }
-    val scrollToLatestMessageEvent by chatViewModel.messageHolder.scrollToLatestMessageEvent.collectAsState()
     // Scroll to the latest user message
-    LaunchedEffect(scrollToLatestMessageEvent) {
-        if (messageList.isEmpty()) return@LaunchedEffect
-        val lastIndex = messageList.lastIndex
-        listState.scrollToItem(lastIndex, Int.MAX_VALUE)
-        awaitFrame()
-        isUserScrolling = false
-        shouldAutoScroll = true
+    LaunchedEffect(Unit) {
+        chatViewModel
+            .messageHolder
+            .scrollToLatestMessageEvent
+            .collect {
+                if (messageList.isEmpty()) {
+                    return@collect
+                }
+                listState.scrollToItem(messageList.lastIndex, Int.MAX_VALUE)
+                isUserScrolling = false
+                shouldAutoScroll = true
+            }
     }
     // User actively triggers scrolling
     val nestedScrollConnection = remember {
@@ -142,6 +149,9 @@ fun HomeBodyView(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
         ) {
+
+        LoadingOverlayView(isChangingSession)
+
         if (messageList.isNotEmpty()) {
             LazyColumn(
                 state = listState,
@@ -159,10 +169,6 @@ fun HomeBodyView(
                     items = messageList,
                     key = { _, item -> item.id }
                 ) { index, message ->
-
-                    val isLastAssistant =
-                        index == messageList.lastIndex &&
-                                message.role == Role.Assistant.name
                     when (message.role) {
                         Role.User.name -> {
                             UserBubbleView(message.content)
@@ -170,9 +176,7 @@ fun HomeBodyView(
                         Role.Assistant.name -> {
                             if(message.content.isEmpty()) return@itemsIndexed
                             AssistantBubbleView(
-                                messageId = message.id,
-                                content = message.content,
-                                isStreaming = isGenerating && isLastAssistant
+                                parser = chatViewModel.markdownCacheHolder.getOrCreate(message.id)
                             )
                         }
                         Role.None.name -> {}
@@ -185,6 +189,7 @@ fun HomeBodyView(
         } else {
             EmptyMessageView()
         }
+
         MaskView()
     }
 

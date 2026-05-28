@@ -5,9 +5,13 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
-import com.android.nextai.ui.component.markdown.utils.MarkdownNodeUtils.parseMarkDown
 
-class IncrementalMarkdownParser {
+/**
+ * Used for incremental parsing in Markdown documents,
+ * for each long text with long text or streaming output,
+ * it can be parsed as stable nodes or a node in parsing.
+ */
+class MarkdownParser {
 
     /**
      * Stable nodes
@@ -15,11 +19,14 @@ class IncrementalMarkdownParser {
     val stableNodes = mutableStateListOf<MarkdownNode>()
 
     /**
-     * Current streaming node
+     * Streaming node
      */
     var pendingNodes by mutableStateOf<List<MarkdownNode>>(emptyList())
         private set
 
+    /**
+     * Incremental parsing index
+     */
     private var parsedIndex = 0
 
     /**
@@ -27,36 +34,45 @@ class IncrementalMarkdownParser {
      */
     private val pendingBuffer = StringBuilder()
 
-    fun update(content: String) {
-        if (content.length < parsedIndex) {
+    /**
+     * Full parse
+     *
+     * Used for:
+     * - history messages
+     * - database restore
+     */
+    fun setContent(content: String) {
+        reset()
+        if (content.isEmpty()) { return }
+
+        val result = MarkdownNodeUtils.parseMarkDown(content)
+        stableNodes.addAll(result.nodes)
+        parsedIndex = content.length
+    }
+
+    // Incremental update, used for: streaming response
+    fun append(fullContent: String) {
+
+        if (fullContent.length < parsedIndex) {
             reset()
         }
-        // Incremental part
-        val delta = content.substring(parsedIndex)
-        if (delta.isEmpty()) {
-            return
-        }
-        parsedIndex = content.length
+        val delta = fullContent.substring(parsedIndex)
+        if (delta.isEmpty()) { return }
+        parsedIndex = fullContent.length
         pendingBuffer.append(delta)
-
-        // Incremental parsing
-        val result = parseMarkDown(md = pendingBuffer.toString())
+        val result = MarkdownNodeUtils.parseMarkDown(
+            md = pendingBuffer.toString()
+        )
         val nodes = result.nodes
         if (nodes.isEmpty()) {
             return
         }
 
-        /**
-         * Multi-node, means：
-         *
-         * Front nodes are stable
-         */
+        // Multiple nodes: front nodes are stable
         if (nodes.size > 1) {
-
             val stablePart = nodes.dropLast(1)
             stableNodes.addAll(stablePart)
             pendingNodes = listOf(nodes.last())
-            // Delete the consumed portion
             pendingBuffer.delete(0, result.parsedLength)
         } else {
             pendingNodes = nodes
@@ -64,29 +80,18 @@ class IncrementalMarkdownParser {
     }
 
     /**
-     * Stream completed
-     *
-     * Flush all remaining content.
+     * Flush streaming buffer
      */
     fun complete() {
 
-        if (pendingBuffer.isEmpty()) {
-            return
-        }
+        if (pendingBuffer.isEmpty()) { return }
 
-        val result = parseMarkDown(
-            md = pendingBuffer.toString()
-        )
-
+        val result = MarkdownNodeUtils.parseMarkDown(md = pendingBuffer.toString())
         val nodes = result.nodes
-
         if (nodes.isNotEmpty()) {
-
             stableNodes.addAll(nodes)
-
             pendingNodes = emptyList()
         }
-
         pendingBuffer.clear()
     }
 

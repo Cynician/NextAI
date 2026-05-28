@@ -1,12 +1,12 @@
 package com.android.nextai.viewmodel.chat.holder
 
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.android.nextai.domain.database.sqlite.entity.MessageEntity
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
@@ -64,41 +64,63 @@ class ChatMessageHolder @Inject constructor() {
      * Message list scrolling logic
      */
 
-    private val _scrollToLatestMessageEvent = MutableStateFlow(0)
+    private val _scrollToLatestMessageEvent = MutableSharedFlow<Unit>()
 
-    val scrollToLatestMessageEvent = _scrollToLatestMessageEvent.asStateFlow()
+    val scrollToLatestMessageEvent = _scrollToLatestMessageEvent.asSharedFlow()
 
-    fun emitScrollToLatestMessageEvent() {
-        _scrollToLatestMessageEvent.update { it + 1 }
+    suspend fun emitScrollToLatestMessageEvent() {
+        _scrollToLatestMessageEvent.emit(Unit)
     }
 
     /**
      * Record messages info in a session
      */
-    private val _messageList = mutableStateListOf<MessageEntity>()
+    private val _messageList = MutableStateFlow<List<MessageEntity>>(emptyList())
 
-    val messageList: SnapshotStateList<MessageEntity> = _messageList
+    val messageList = _messageList.asStateFlow()
+
+    fun setMessages(
+        messages: List<MessageEntity>
+    ) {
+        _messageList.value = messages
+    }
+
+    fun getMessages():List<MessageEntity>{
+        return _messageList.value
+    }
 
     fun addMessage(newM: MessageEntity) {
-        _messageList.add(newM)
+        _messageList.update {
+            it + newM
+        }
     }
 
     fun updateLastMessage(newM: MessageEntity) {
-        _messageList[_messageList.lastIndex] = newM
+        _messageList.update { list ->
+            if (list.isEmpty()) {
+                list
+            } else {
+                list.toMutableList().apply {
+                    this[lastIndex] = newM
+                }
+            }
+        }
     }
 
     fun addMessagesToHead(
         newMessages: List<MessageEntity>
     ) {
-        _messageList.addAll(index = 0, elements = newMessages)
+        _messageList.update {
+            newMessages + it
+        }
     }
 
     /**
-     * Init for creating a new session
+     * Init for creating/switching a new session
      */
-    fun createSessionInit() {
+    fun initSession() {
         _isTextStreaming.value = false
-        _messageList.clear()
+        _messageList.value = emptyList()
         _curQuery.value = ""
         _curResponse.value = ""
         _curMessagesMinId.value = Long.MAX_VALUE
@@ -108,16 +130,19 @@ class ChatMessageHolder @Inject constructor() {
      * Load messages
      *
      */
-    private val _isFirstLoadMessages = MutableStateFlow(false)
+    private val _isLoadingFirst = MutableStateFlow(false)
     private val _isLoadingMore = MutableStateFlow(false)
     private val _hasMoreMessages = MutableStateFlow(true)
     private val _curMessagesMinId = MutableStateFlow(Long.MAX_VALUE)
 
-
-    val isFirstLoadMessages: Boolean get() = _isFirstLoadMessages.value
+    val isLoadingFirst = _isLoadingFirst.asStateFlow()
     val isLoadingMore: Boolean get() = _isLoadingMore.value
     val hasMoreMessages:Boolean get() = _hasMoreMessages.value
     val curMessagesMinId: Long get() = _curMessagesMinId.value
+
+    fun getIsLoadingFirst(): Boolean{
+        return _isLoadingFirst.value
+    }
 
     fun updateHasMoreMessages(
         value: Boolean
@@ -126,7 +151,7 @@ class ChatMessageHolder @Inject constructor() {
     }
 
     fun updateIsFirstLoadMessages(state: Boolean){
-        _isFirstLoadMessages.value = state
+        _isLoadingFirst.value = state
     }
 
     fun updateIsLoadingMore(state: Boolean){
@@ -139,12 +164,10 @@ class ChatMessageHolder @Inject constructor() {
 
     fun loadMessagesInit() {
         _isTextStreaming.value = false
-        _isImageGenerating.value = false
         _curQuery.value = ""
         _curResponse.value = ""
-        _messageList.clear()
         _curMessagesMinId.value = Long.MAX_VALUE
-        _isFirstLoadMessages.value = true
+        _isLoadingFirst.value = true
         _isLoadingMore.value = false
         _hasMoreMessages.value = true
     }

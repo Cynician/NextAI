@@ -42,6 +42,8 @@ fun HomeScreen(
     BackHandler(drawerState.isOpen && !isSelectMode) {
         scope.launch {
             drawerState.close()
+            // WAIT animation finish
+            kotlinx.coroutines.yield()
         }
     }
 
@@ -50,18 +52,22 @@ fun HomeScreen(
             ModalDrawerSheet(modifier = Modifier.fillMaxWidth(0.85f)) {
                 HomeDrawerView(
                     onStartNewSession = {
-                        chatViewModel.createSessionInit()
                         scope.launch {
                             drawerState.close()
+                            // WAIT animation finish
+                            kotlinx.coroutines.yield()
+                            chatViewModel.initSession()
                         }
                     },
                     onSessionItemClick = {
                         if (isSelectMode) {
                             chatViewModel.sessionHolder.toggleItemSelect(it)
                         } else {
-                            chatViewModel.loadMessagesInit(sessionId = it)
                             scope.launch {
                                 drawerState.close()
+                                // WAIT animation finish
+                                kotlinx.coroutines.yield()
+                                chatViewModel.loadFirstPageMessages(sessionId = it)
                             }
                         }
                     },
