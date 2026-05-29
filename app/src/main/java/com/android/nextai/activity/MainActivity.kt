@@ -6,6 +6,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -43,24 +46,42 @@ fun AppNavHost() {
     val providerViewModel: ProviderViewModel = hiltViewModel()
     val chatViewModel: ChatViewModel = hiltViewModel()
 
-    fun NavHostController.safePop(): Boolean {
-        return if (previousBackStackEntry != null) {
-            popBackStack()
-            true
-        } else false
-    }
+    val animationDuration = 350
 
     NavHost(
         navController = navController,
-        startDestination = AppRoute.HOME
+        startDestination = AppRoute.HOME,
+        enterTransition = {
+            slideIntoContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                animationSpec = tween(animationDuration,easing = FastOutSlowInEasing)
+            )
+        },
+        exitTransition = {
+            slideOutOfContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                animationSpec = tween(animationDuration,easing = FastOutSlowInEasing)
+            )
+        },
+        popEnterTransition = {
+            slideIntoContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                animationSpec = tween(animationDuration,easing = FastOutSlowInEasing)
+            )
+        },
+        popExitTransition = {
+            slideOutOfContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                animationSpec = tween(animationDuration,easing = FastOutSlowInEasing)
+            )
+        }
     ) {
 
-        composable(AppRoute.HOME) {
-
+        composable(AppRoute.HOME){
             HomeScreen(
                 chatViewModel = chatViewModel,
                 providerViewModel = providerViewModel,
-                onNavigateToSettings  = {
+                onNavigateToSettings = {
                     navController.navigate(AppRoute.SETTINGS)
                 }
             )
@@ -86,6 +107,13 @@ fun AppNavHost() {
             )
         }
     }
+}
+
+fun NavHostController.safePop(): Boolean {
+    return if (previousBackStackEntry != null) {
+        popBackStack()
+        true
+    } else false
 }
 
 /**
