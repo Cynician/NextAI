@@ -218,7 +218,6 @@ class ChatViewModel @Inject constructor(
         messageHolder.loadMessagesInit()
 
         // Wait for loading animation finish
-        kotlinx.coroutines.yield()
         awaitFrame()
 
         loadMessages(

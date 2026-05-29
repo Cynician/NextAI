@@ -42,20 +42,19 @@ fun HomeScreen(
     BackHandler(drawerState.isOpen && !isSelectMode) {
         scope.launch {
             drawerState.close()
-            // WAIT animation finish
-            kotlinx.coroutines.yield()
         }
     }
 
     ModalNavigationDrawer(
-        drawerState = drawerState, drawerContent = {
-            ModalDrawerSheet(modifier = Modifier.fillMaxWidth(0.85f)) {
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                modifier = Modifier.fillMaxWidth(0.85f)
+            ) {
                 HomeDrawerView(
                     onStartNewSession = {
                         scope.launch {
                             drawerState.close()
-                            // WAIT animation finish
-                            kotlinx.coroutines.yield()
                             chatViewModel.initSession()
                         }
                     },
@@ -65,8 +64,6 @@ fun HomeScreen(
                         } else {
                             scope.launch {
                                 drawerState.close()
-                                // WAIT animation finish
-                                kotlinx.coroutines.yield()
                                 chatViewModel.loadFirstPageMessages(sessionId = it)
                             }
                         }
