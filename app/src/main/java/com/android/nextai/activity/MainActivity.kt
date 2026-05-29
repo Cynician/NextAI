@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -42,6 +43,13 @@ fun AppNavHost() {
     val providerViewModel: ProviderViewModel = hiltViewModel()
     val chatViewModel: ChatViewModel = hiltViewModel()
 
+    fun NavHostController.safePop(): Boolean {
+        return if (previousBackStackEntry != null) {
+            popBackStack()
+            true
+        } else false
+    }
+
     NavHost(
         navController = navController,
         startDestination = AppRoute.HOME
@@ -62,7 +70,7 @@ fun AppNavHost() {
             SettingsScreen(
                 providerViewModel = providerViewModel,
                 onBackClick = {
-                    navController.popBackStack()
+                    navController.safePop()
                 },
                 onNavigateToQwenProvider = {
                     navController.navigate(AppRoute.QWEN_PROVIDER)
@@ -73,7 +81,7 @@ fun AppNavHost() {
             QwenProviderScreen(
                 providerViewModel = providerViewModel,
                 onBackClick = {
-                    navController.popBackStack()
+                    navController.safePop()
                 }
             )
         }
