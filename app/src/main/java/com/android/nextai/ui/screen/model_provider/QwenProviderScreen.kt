@@ -14,9 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -35,13 +32,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.nextai.domain.database.data.QwenModels
 import com.android.nextai.ui.component.button.ActionButton
+import com.android.nextai.ui.component.button.SettingButton
 import com.android.nextai.ui.component.other.NoticeBubble
 import com.android.nextai.ui.component.other.NoticeBubbleData
 import com.android.nextai.ui.component.other.NoticeType
@@ -279,23 +276,11 @@ private fun BottomBar(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
 
-            Button(
-                modifier = Modifier
-                    .height(48.dp)
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                ),
-                onClick = onSetModelClick,
-            ) {
-                Text(
-                    text = "设置模型",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+            SettingButton(
+                text = "设置模型",
+                icon = null,
+                onClick = onSetModelClick
+            )
         }
     }
 }

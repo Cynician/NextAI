@@ -118,16 +118,17 @@ private fun ProviderValidateButton(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        )
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ),
     ) {
-        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSecondaryContainer) {
+        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onPrimary) {
             if (isValidating) {
                 LoadingDots(dotsColor = LocalContentColor.current)
             } else {
                 Text(
                     text = "验       证",
+                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
             }
