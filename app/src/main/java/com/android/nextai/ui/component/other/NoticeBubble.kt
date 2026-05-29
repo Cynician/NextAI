@@ -9,16 +9,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.icon.SettingsIcon
@@ -36,10 +34,26 @@ data class NoticeBubbleData(
 
 @Composable
 fun NoticeBubble(
-    visible:  Boolean,
+    visible: Boolean,
     data: NoticeBubbleData?,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
+    val (bg, fg, icon) = when (data?.type) {
+        NoticeType.ERROR -> Triple(
+            colorScheme.errorContainer,
+            colorScheme.onErrorContainer,
+            colorScheme.error
+        )
+
+        else -> Triple(
+            colorScheme.primaryContainer,
+            colorScheme.onPrimaryFixed,
+            colorScheme.onPrimaryFixed
+        )
+    }
+
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn() + slideInVertically { it / 2 },
@@ -49,76 +63,29 @@ fun NoticeBubble(
             .padding(bottom = 96.dp)
     ) {
         Surface(
-            modifier = Modifier.wrapContentWidth(),
-            shape = RoundedCornerShape(8.dp),
-            color = when (data?.type) {
-
-                NoticeType.SUCCESS -> {
-                    Color(0xFFE9F8F2)
-                }
-
-                NoticeType.ERROR -> {
-                    Color(0xFFFDECEC)
-                }
-
-                else -> {
-                    Color(0xFFEAF4FF)
-                }
-            },
-
+            shape = RoundedCornerShape(10.dp),
+            color = bg,
             shadowElevation = 2.dp
         ) {
-
             Row(
-                modifier = Modifier.padding(
-                    horizontal = 16.dp,
-                    vertical = 12.dp
-                ),
-
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
                 Icon(
                     imageVector = when (data?.type) {
-
-                        NoticeType.SUCCESS -> {
-                            SettingsIcon.Success
-                        }
-
-                        NoticeType.ERROR -> {
-                            SettingsIcon.Error
-                        }
-
-                        else -> {
-                            SettingsIcon.Info
-                        }
+                        NoticeType.SUCCESS -> SettingsIcon.Success
+                        NoticeType.ERROR -> SettingsIcon.Error
+                        else -> SettingsIcon.Info
                     },
-
                     contentDescription = null,
-
-                    tint = Color.Unspecified
+                    tint = icon
                 )
 
                 Text(
-                    text = data?.message ?: "",
-
-                    color = when (data?.type) {
-
-                        NoticeType.SUCCESS -> {
-                            Color(0xFF048764)
-                        }
-
-                        NoticeType.ERROR -> {
-                            Color(0xFFB93838)
-                        }
-
-                        else -> {
-                            Color(0xFF0D6EBA)
-                        }
-                    },
-
+                    text = data?.message.orEmpty(),
+                    color = fg,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
                 )

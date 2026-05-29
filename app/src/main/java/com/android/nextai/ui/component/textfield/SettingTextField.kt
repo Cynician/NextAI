@@ -26,6 +26,8 @@ fun SettingTextField(
     onValueChange: (String) -> Unit,
 ) {
 
+    val colorScheme = MaterialTheme.colorScheme
+
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -35,6 +37,7 @@ fun SettingTextField(
                 text = title,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
+                color = colorScheme.onSurface
             )
         }
 
@@ -45,20 +48,27 @@ fun SettingTextField(
                 .fillMaxWidth(),
             shape = RoundedCornerShape(8.dp),
             textStyle = TextStyle(
-                fontSize = 12.sp
+                fontSize = 12.sp,
+                color = colorScheme.onSurface
             ),
             placeholder = {
                 Text(
                     text = placeholder,
-                    fontSize = 12.sp
+                    fontSize = 12.sp,
+                    color = colorScheme.onSurfaceVariant
                 )
             },
             colors = TextFieldDefaults.colors(
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent,
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White
+
+                focusedContainerColor = colorScheme.surfaceContainerLowest,
+                unfocusedContainerColor = colorScheme.surfaceContainerLowest,
+                disabledContainerColor = colorScheme.surfaceContainerLowest,
+
+                focusedTextColor = colorScheme.onSurface,
+                unfocusedTextColor = colorScheme.onSurface,
             ),
         )
     }

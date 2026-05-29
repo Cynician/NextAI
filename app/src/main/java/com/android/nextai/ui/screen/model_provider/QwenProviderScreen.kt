@@ -189,7 +189,6 @@ fun QwenProviderScreen(
             bottomBar = {
                 BottomBar(
                     onSetModelClick = { model = selectedModel },
-                    onModelDetailsClick = {}
                 )
             },
         ) { padding ->
@@ -268,7 +267,6 @@ private fun SaveButton(
 @Composable
 private fun BottomBar(
     onSetModelClick: () -> Unit,
-    onModelDetailsClick: () -> Unit,
 ) {
 
     Surface(
@@ -287,32 +285,14 @@ private fun BottomBar(
                     .fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                 ),
                 onClick = onSetModelClick,
             ) {
                 Text(
                     text = "设置模型",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                ),
-                onClick = onModelDetailsClick,
-            ) {
-                Text(
-                    text = "查看模型详情",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold
                 )
             }
