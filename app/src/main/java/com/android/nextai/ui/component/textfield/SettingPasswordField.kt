@@ -1,8 +1,8 @@
 package com.android.nextai.ui.component.textfield
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -17,7 +17,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.nextai.ui.icon.SettingsIcon
@@ -33,48 +32,49 @@ fun SettingPasswordField(
     placeholder: String = "",
 ) {
 
+    val colorScheme = MaterialTheme.colorScheme
+
     Column(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
 
         Text(
             text = title,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = 6.dp)
+            color = colorScheme.onSurface
         )
 
         TextField(
             value = value,
             onValueChange = onValueChange,
-
             modifier = Modifier.fillMaxWidth(),
-
             shape = RoundedCornerShape(8.dp),
-
             textStyle = TextStyle(
-                fontSize = 12.sp
+                fontSize = 12.sp,
+                color = colorScheme.onSurface
             ),
 
             placeholder = {
                 Text(
                     text = placeholder,
-                    fontSize = 12.sp
+                    fontSize = 12.sp,
+                    color = colorScheme.onSurfaceVariant
                 )
             },
 
-            visualTransformation = if (passwordVisible) {
-                VisualTransformation.None
-            } else {
-                PasswordVisualTransformation()
-            },
+            visualTransformation =
+                if (passwordVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
 
             trailingIcon = {
-
                 IconButton(
                     onClick = onPasswordVisibleChange
                 ) {
-
                     Icon(
                         imageVector = if (passwordVisible) {
                             SettingsIcon.VisibilityOff
@@ -91,24 +91,15 @@ fun SettingPasswordField(
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent,
 
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White
+                focusedContainerColor = colorScheme.surfaceContainerLowest,
+                unfocusedContainerColor = colorScheme.surfaceContainerLowest,
+                disabledContainerColor = colorScheme.surfaceContainerLowest,
+
+                focusedTextColor = colorScheme.onSurface,
+                unfocusedTextColor = colorScheme.onSurface,
             ),
 
             singleLine = true
         )
     }
-}
-
-@Preview
-@Composable
-fun ShowSettingPasswordField() {
-    SettingPasswordField(
-        title = "test",
-        value = "",
-        onValueChange = {},
-        passwordVisible = false,
-        onPasswordVisibleChange = {},
-        placeholder = "",
-    )
 }
