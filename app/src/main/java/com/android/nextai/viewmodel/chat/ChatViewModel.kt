@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.nextai.domain.database.datastore.entity.ProviderEntity
 import com.android.nextai.domain.database.sqlite.entity.MessageEntity
-import com.android.nextai.domain.remote.Model
+import com.android.nextai.domain.remote.ApiType
 import com.android.nextai.domain.remote.entity.GenerationEvent
 import com.android.nextai.domain.repository.ChatDatabaseRepository
 import com.android.nextai.domain.repository.ChatRemoteRepository
@@ -102,7 +102,7 @@ class ChatViewModel @Inject constructor(
         val parser = markdownCacheHolder.getOrCreate(assistantMessage.id)
         messageHolder.addMessage(assistantMessage)
         chatRemoteRepository.streamingGen(
-            model = Model.QIANWEN,
+            apiType = ApiType.OPENAI,
             messageList = messageHolder.getMessages(),
             provider,
         )

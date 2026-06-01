@@ -1,23 +1,24 @@
 package com.android.nextai.ui.screen.settings
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.android.nextai.ui.Standard
 import com.android.nextai.ui.component.button.ActionButton
 import com.android.nextai.ui.icon.SettingsIcon
-import com.android.nextai.ui.screen.settings.sections.DefaultModelProviderSectionView
-import com.android.nextai.ui.screen.settings.sections.ModelProviderSectionView
+import com.android.nextai.ui.screen.settings.sections.ModelConfigSectionView
 import com.android.nextai.viewmodel.provider.ProviderViewModel
 
 
@@ -26,8 +27,11 @@ import com.android.nextai.viewmodel.provider.ProviderViewModel
 fun SettingsScreen(
     providerViewModel: ProviderViewModel,
     onBackClick: () -> Unit,
-    onNavigateToQwenProvider: () -> Unit,
+    onNavigateToModelProviders: () -> Unit,
 ) {
+
+    val defaultProvider by providerViewModel.defaultProvider.collectAsState(null)
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -51,29 +55,19 @@ fun SettingsScreen(
         }
     ) { padding ->
 
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(paddingValues = padding)
+                .padding(Standard.screenContainerPadding),
+            verticalArrangement = Arrangement.spacedBy(Standard.screenSectionSpacing)
         ) {
 
-            item {
-                ModelProviderSectionView(
-                    title = "模型提供商",
-                    providerViewModel = providerViewModel,
-                    onQwenClick = { onNavigateToQwenProvider() }
-                )
-            }
-
-            item{
-                DefaultModelProviderSectionView(
-                    title = "模型偏好",
-                    providerViewModel = providerViewModel,
-                    onClick = {  }
-                )
-            }
+            ModelConfigSectionView(
+                sectionTitle = "模型配置",
+                defaultProvider = defaultProvider,
+                onNavigateToModelProviders = onNavigateToModelProviders,
+            )
         }
     }
 }

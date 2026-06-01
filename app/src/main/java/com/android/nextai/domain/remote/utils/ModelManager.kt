@@ -1,39 +1,45 @@
 package com.android.nextai.domain.remote.utils
 
 import android.util.Log
+import com.android.nextai.domain.database.datastore.entity.ModelEntity
 import com.android.nextai.domain.remote.entity.ApiResult
 import com.openai.client.OpenAIClient
-import com.openai.client.okhttp.OpenAIOkHttpClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.time.Duration
 
 class ModelManager(
     baseUrl: String,
-    apiKey: String
+    apiKey: String,
 ) {
-    companion object{
-        private const val  TAG = "ModelManager"
+    companion object {
+        private const val TAG = "ModelManager"
     }
 
-    private val client: OpenAIClient = OpenAIOkHttpClient.Companion.builder()
-        .apiKey(apiKey)
-        .baseUrl(baseUrl)
-        .timeout(Duration.ofSeconds(15))
-        .build()
+    private val client: OpenAIClient =
+        OpenAIClientPool.getClient(baseUrl = baseUrl, apiKey = apiKey)
 
-    suspend fun checkModelExists(model: String): ApiResult {
+    suspend fun retrievingModels(): ApiResult<List<ModelEntity>> {
         return withContext(Dispatchers.IO) {
             try {
-                client.models().retrieve(model)
-                ApiResult(success = true, message = "")
+                val models = client.models()
+                    .list()
+                    .items()
+                    .map {
+                        ModelEntity(
+                            id = it.id(),
+                            owner = it.ownedBy(),
+                            created = it.created()
+                        )
+                    }
+                Log.d(TAG, "models: $models")
+                ApiResult.Success(models)
+
             } catch (e: Exception) {
-                e.printStackTrace()
-                val errorMsg = e.toString()
-                Log.d(TAG, "error: $errorMsg")
-                ApiResult(success = false, message = errorMsg)
-            } finally {
-                client.close()
+                Log.e(TAG, "error:", e)
+                ApiResult.Error(
+                    message = e.message ?: "Unknown error",
+                    throwable = e
+                )
             }
         }
     }

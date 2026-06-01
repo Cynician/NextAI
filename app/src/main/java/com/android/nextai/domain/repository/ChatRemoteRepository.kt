@@ -4,7 +4,7 @@ import android.util.Log
 import com.android.nextai.domain.database.datastore.entity.ProviderEntity
 import com.android.nextai.domain.database.sqlite.entity.MessageEntity
 import com.android.nextai.domain.remote.AIFactory
-import com.android.nextai.domain.remote.Model
+import com.android.nextai.domain.remote.ApiType
 import com.android.nextai.domain.remote.entity.GenerationEvent
 import com.android.nextai.domain.remote.utils.StreamBuffer
 import kotlinx.coroutines.Dispatchers
@@ -25,22 +25,22 @@ class ChatRemoteRepository @Inject constructor() {
         private const val TAG = "ChatRemoteRepository"
     }
 
-    suspend fun getAIAnswer(model: Model, messageList: List<MessageEntity>): String =
+    suspend fun getAIAnswer(apiType: ApiType, messageList: List<MessageEntity>): String =
         withContext(Dispatchers.IO) {
-            return@withContext AIFactory.createAIModel(model).getAIAnswer(messageList)
+            return@withContext AIFactory.createAIModel(apiType).getAIAnswer(messageList)
         }
 
     suspend fun getAIStreamingAnswer(
-        model: Model,
+        apiType: ApiType,
         messageList: List<MessageEntity>,
         provider: ProviderEntity,
         callback: (GenerationEvent) -> Unit,
     ) = withContext(Dispatchers.IO) {
-        AIFactory.createAIModel(model).getAIStreamingAnswer(messageList, provider, callback)
+        AIFactory.createAIModel(apiType).getAIStreamingAnswer(messageList, provider, callback)
     }
 
     fun streamingGen(
-        model: Model,
+        apiType: ApiType,
         messageList: List<MessageEntity>,
         provider: ProviderEntity
     ): Flow<GenerationEvent> =
@@ -71,7 +71,7 @@ class ChatRemoteRepository @Inject constructor() {
             }
             try {
                 Log.d(TAG, "[streamingGen] start to steaming...")
-                getAIStreamingAnswer(model, messageList, provider, callback)
+                getAIStreamingAnswer(apiType, messageList, provider, callback)
             } catch (e: Exception) {
                 trySend(GenerationEvent.Error("fail to streaming：${e.message}"))
                 close()

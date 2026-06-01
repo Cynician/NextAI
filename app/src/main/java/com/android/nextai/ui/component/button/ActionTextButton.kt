@@ -11,33 +11,38 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun SettingButton(
+fun ActionTextButton(
     modifier: Modifier = Modifier,
-    text:String = "",
+    text: String = "",
     icon: ImageVector?,
+    containerColor: Color = MaterialTheme.colorScheme.primary,
+    contentColor: Color = MaterialTheme.colorScheme.onPrimary,
+    enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     Button(
+        enabled = enabled,
         onClick = { onClick() },
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
+            containerColor = containerColor,
+            contentColor = contentColor,
         ),
     ) {
-        if(icon!= null){
+        if (icon != null) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
             )
         }
-        
+
         Spacer(modifier = Modifier.size(8.dp))
 
         Text(

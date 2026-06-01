@@ -16,7 +16,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.android.nextai.ui.screen.home.HomeScreen
-import com.android.nextai.ui.screen.model_provider.QwenProviderScreen
+import com.android.nextai.ui.screen.model_providers.ModelProvidersScreen
+import com.android.nextai.ui.screen.provider_setting.ProviderSettingScreen
 import com.android.nextai.ui.screen.settings.SettingsScreen
 import com.android.nextai.ui.theme.NeuronVerseTheme
 import com.android.nextai.viewmodel.chat.ChatViewModel
@@ -54,30 +55,30 @@ fun AppNavHost() {
         enterTransition = {
             slideIntoContainer(
                 towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                animationSpec = tween(animationDuration,easing = FastOutSlowInEasing)
+                animationSpec = tween(animationDuration, easing = FastOutSlowInEasing)
             )
         },
         exitTransition = {
             slideOutOfContainer(
                 towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                animationSpec = tween(animationDuration,easing = FastOutSlowInEasing)
+                animationSpec = tween(animationDuration, easing = FastOutSlowInEasing)
             )
         },
         popEnterTransition = {
             slideIntoContainer(
                 towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                animationSpec = tween(animationDuration,easing = FastOutSlowInEasing)
+                animationSpec = tween(animationDuration, easing = FastOutSlowInEasing)
             )
         },
         popExitTransition = {
             slideOutOfContainer(
                 towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                animationSpec = tween(animationDuration,easing = FastOutSlowInEasing)
+                animationSpec = tween(animationDuration, easing = FastOutSlowInEasing)
             )
         }
     ) {
 
-        composable(AppRoute.HOME){
+        composable(AppRoute.HOME) {
             HomeScreen(
                 chatViewModel = chatViewModel,
                 providerViewModel = providerViewModel,
@@ -93,13 +94,27 @@ fun AppNavHost() {
                 onBackClick = {
                     navController.safePop()
                 },
-                onNavigateToQwenProvider = {
-                    navController.navigate(AppRoute.QWEN_PROVIDER)
+                onNavigateToModelProviders = {
+                    navController.navigate(AppRoute.MODEL_PROVIDERS)
                 }
             )
         }
-        composable(AppRoute.QWEN_PROVIDER) {
-            QwenProviderScreen(
+
+
+        composable(AppRoute.MODEL_PROVIDERS) {
+            ModelProvidersScreen(
+                providerViewModel = providerViewModel,
+                onBackClick = {
+                    navController.safePop()
+                },
+                onNavigateToProviderSetting = {
+                    navController.navigate(AppRoute.PROVIDER_SETTING)
+                }
+            )
+        }
+
+        composable(AppRoute.PROVIDER_SETTING) {
+            ProviderSettingScreen(
                 providerViewModel = providerViewModel,
                 onBackClick = {
                     navController.safePop()
@@ -125,5 +140,6 @@ object AppRoute {
     const val SETTINGS = "settings"
 
     // Provider Config
-    const val QWEN_PROVIDER = "qwen_provider"
+    const val MODEL_PROVIDERS = "model_providers"
+    const val PROVIDER_SETTING = "provider_setting"
 }

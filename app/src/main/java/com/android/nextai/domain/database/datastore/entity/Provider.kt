@@ -7,7 +7,7 @@ import java.util.UUID
 enum class ProviderType {
     QWEN,
     OPENAI,
-    CUSTOM,
+    OTHER,
     CLAUDE,
 }
 
@@ -15,11 +15,11 @@ enum class ProviderType {
 data class ProviderEntity(
     val id: String = UUID.randomUUID().toString(),
     val name: String,
-    val type: ProviderType,
+    val desc: String = "",
+    val type: ProviderType = ProviderType.OTHER,
     val apiUrl: String = "",
     val apiKey: String = "",
-    val model: String = "",
-    val desc: String = "",
+    val models: List<ModelEntity> = emptyList(),
     val isOK: Boolean = false
 )
 

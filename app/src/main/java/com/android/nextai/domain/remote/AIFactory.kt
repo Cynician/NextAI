@@ -1,18 +1,18 @@
 package com.android.nextai.domain.remote
 
-import com.android.nextai.domain.remote.qianwen.QianwenRemoteDataSource
+import com.android.nextai.domain.remote.qianwen.OpenAIRemoteDataSource
 import com.android.nextai.domain.remote.test.TestRemoteDataSource
 
-enum class Model{
-    QIANWEN,
+enum class ApiType{
+    OPENAI,
     TEST
 }
 
 object AIFactory {
-    fun createAIModel(model: Model): AIModelDataSource{
-        return when(model){
-            Model.QIANWEN -> QianwenRemoteDataSource
-            Model.TEST -> TestRemoteDataSource
+    fun createAIModel(apiType: ApiType): AIModelDataSource{
+        return when(apiType){
+            ApiType.OPENAI -> OpenAIRemoteDataSource
+            ApiType.TEST -> TestRemoteDataSource
         }
     }
 }

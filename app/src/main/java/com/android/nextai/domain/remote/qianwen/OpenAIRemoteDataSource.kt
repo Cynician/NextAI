@@ -14,9 +14,9 @@ import com.openai.models.chat.completions.ChatCompletionSystemMessageParam
 import com.openai.models.chat.completions.ChatCompletionUserMessageParam
 
 
-object QianwenRemoteDataSource : AIModelDataSource {
-    private const val TAG = "QianwenRemoteDataSource"
+object OpenAIRemoteDataSource : AIModelDataSource {
 
+    private const val TAG = "OpenAIRemoteDataSource"
 
     override suspend fun getAIAnswer(messageList: List<MessageEntity>): String {
         val systemMessage = ChatCompletionSystemMessageParam.builder()
@@ -64,7 +64,7 @@ object QianwenRemoteDataSource : AIModelDataSource {
     ) {
         val apiUrl = provider.apiUrl
         val apiKey = provider.apiKey
-        val model = provider.model
+        val models = provider.models
 
         val openAIClient = OpenAIClientPool.getClient(apiUrl, apiKey)
         val systemMessage = ChatCompletionSystemMessageParam.builder()
@@ -74,7 +74,7 @@ object QianwenRemoteDataSource : AIModelDataSource {
             .includeUsage(true)
             .build()
         val paramsBuilder = ChatCompletionCreateParams.builder()
-            .model(model)
+            .model(models.first().id)
             .addMessage(systemMessage)
             .streamOptions(streamOptions)
 

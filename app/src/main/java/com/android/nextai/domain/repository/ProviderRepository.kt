@@ -134,18 +134,13 @@ class ProviderRepository @Inject constructor(
     suspend fun updateProvider(
         provider: ProviderEntity,
     ) {
-
         updateSettings { settings ->
-
             val updatedProviders =
                 settings.providers.map {
                     if (it.id == provider.id) provider
                     else it
                 }
-
-            settings.copy(
-                providers = updatedProviders
-            )
+            settings.copy(providers = updatedProviders)
         }
     }
 
@@ -185,9 +180,7 @@ class ProviderRepository @Inject constructor(
     suspend fun setDefaultProvider(
         providerId: String,
     ) {
-
         updateSettings { settings ->
-
             val exists =
                 settings.providers.any {
                     it.id == providerId
@@ -210,8 +203,7 @@ class ProviderRepository @Inject constructor(
         type: ProviderType
     ) {
 
-        val exists =
-            getProviders().any { it.type == type }
+        val exists = getProviders().any { it.type == type }
 
         if (exists) return
 
@@ -221,7 +213,7 @@ class ProviderRepository @Inject constructor(
                 ProviderEntity(
                     name = "通义千问",
                     type = type,
-                    model = "qwen-max",
+                    models = emptyList(),
                     apiUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1",
                     desc = "阿里巴巴通义大模型系列"
                 )
@@ -231,7 +223,7 @@ class ProviderRepository @Inject constructor(
                 ProviderEntity(
                     name = "OpenAI",
                     type = type,
-                    model = "gpt-4o",
+                    models = emptyList(),
                     apiUrl = "https://api.openai.com/v1"
                 )
             }
@@ -240,7 +232,7 @@ class ProviderRepository @Inject constructor(
                 ProviderEntity(
                     name = "Claude",
                     type = type,
-                    model = "claude-sonnet-4-0",
+                    models = emptyList(),
                     apiUrl = "https://api.anthropic.com"
                 )
             }
