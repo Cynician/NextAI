@@ -101,11 +101,13 @@ fun ProviderSettingSectionView(
                 )
 
                 RetrieveModelsButton(
+                    enabled = providerSettingState.apiUrl.trim().isNotEmpty()
+                            && providerSettingState.apiKey.trim().isNotEmpty(),
                     isRetrieving = retrieveModelsState is ProviderState.RetrievingModels,
                     onClick = {
                         providerViewModel.retrieveModels(
-                            apiUrl = providerSettingState.apiUrl,
-                            apiKey = providerSettingState.apiKey,
+                            apiUrl = providerSettingState.apiUrl.trim(),
+                            apiKey = providerSettingState.apiKey.trim(),
                         )
                     }
                 )
@@ -116,10 +118,12 @@ fun ProviderSettingSectionView(
 
 @Composable
 private fun RetrieveModelsButton(
+    enabled: Boolean = true,
     isRetrieving: Boolean = false,
     onClick: () -> Unit,
 ) {
     Button(
+        enabled = enabled,
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
@@ -133,7 +137,7 @@ private fun RetrieveModelsButton(
                 LoadingDots(dotsColor = LocalContentColor.current)
             } else {
                 Text(
-                    text = "获取可用模型列表",
+                    text = "获取可选模型列表",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
