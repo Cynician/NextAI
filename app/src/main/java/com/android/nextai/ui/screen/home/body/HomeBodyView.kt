@@ -37,14 +37,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import com.android.nextai.R
 import com.android.nextai.ui.component.loading.LoadingOverlayView
 import com.android.nextai.ui.component.loading.SequentialJumpingDots
-import com.android.nextai.ui.icon.HomeIcon
 import com.android.nextai.ui.screen.home.body.views.AssistantBubbleView
 import com.android.nextai.ui.screen.home.body.views.UserBubbleView
 import com.android.nextai.ui.theme.Animation
@@ -210,7 +212,7 @@ internal fun EmptyMessageView() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
-                imageVector = HomeIcon.User,
+                imageVector =  ImageVector.vectorResource(R.drawable.ic_nextai_logo_foreground_original),
                 contentDescription = null,
                 modifier = Modifier.size(64.dp),
                 tint = MaterialTheme.colorScheme.primary.copy(0.4f)
