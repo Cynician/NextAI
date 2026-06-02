@@ -2,7 +2,6 @@ package com.android.nextai.viewmodel.provider
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.nextai.domain.database.datastore.entity.ModelEntity
 import com.android.nextai.domain.database.datastore.entity.ProviderEntity
 import com.android.nextai.domain.database.datastore.entity.ProviderType
 import com.android.nextai.domain.remote.entity.ApiResult
@@ -23,6 +22,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 
@@ -56,7 +56,6 @@ class ProviderViewModel @Inject constructor(
     /**
      * State
      */
-    private val _saveProviderState = MutableSharedFlow<Result<Unit>>()
     private val _retrieveModelsState = MutableStateFlow<ProviderState>(ProviderState.Idle)
     //The items when setting the provider
     private val _providerSettingState = MutableStateFlow(ProviderSettingState())
@@ -101,13 +100,6 @@ class ProviderViewModel @Inject constructor(
      */
     private val _providerEvent = MutableSharedFlow<ProviderEvent>()
 
-    fun addProvider(
-        provider: ProviderEntity,
-    ) {
-        viewModelScope.launch {
-            repository.addProvider(provider)
-        }
-    }
 
     fun setCurrentProvider(
         providerId: String,
@@ -143,34 +135,6 @@ class ProviderViewModel @Inject constructor(
         }
     }
 
-    fun updateProvider(
-        name: String,
-        desc: String,
-        apiUrl: String,
-        apiKey: String,
-        models: List<ModelEntity>,
-    ) {
-        viewModelScope.launch {
-            runCatching {
-                val updatedProvider = _curProvider.value?.copy(
-                    name = name,
-                    desc = desc,
-                    apiUrl = apiUrl,
-                    apiKey = apiKey,
-                    models = models,
-                    isOK = models.isNotEmpty()
-                )
-                updatedProvider?.let {
-                    _curProvider.value = it
-                    repository.updateProvider(it)
-                }
-            }.onSuccess {
-                _saveProviderState.emit(Result.success(Unit))
-            }.onFailure {
-                _saveProviderState.emit(Result.failure(it))
-            }
-        }
-    }
 
     fun retrieveModels(
         apiUrl: String,
@@ -228,30 +192,23 @@ class ProviderViewModel @Inject constructor(
 
     fun saveProviderSetting() {
         viewModelScope.launch {
-            val name = _providerSettingState.value.name
-            val desc = _providerSettingState.value.desc
-            val apiUrl = _providerSettingState.value.apiUrl
-            val apiKey = _providerSettingState.value.apiKey
-            val models = _providerModelsState.value.selectedModels
-            if (_curProvider.value == null) {
-                addProvider(
-                    ProviderEntity(
-                        name = name,
-                        desc = desc,
-                        apiUrl = apiUrl,
-                        apiKey = apiKey,
-                        models = models,
-                        isOK = models.isNotEmpty()
-                    )
-                )
-            }
-            updateProvider(
-                name = name,
-                desc = desc,
-                apiUrl = apiUrl,
-                apiKey = apiKey,
-                models = models,
+            val provider = ProviderEntity(
+                id = _curProvider.value?.id ?: UUID.randomUUID().toString(),
+                type = _curProvider.value?.type ?: ProviderType.OTHER,
+                name = _providerSettingState.value.name,
+                desc = _providerSettingState.value.desc,
+                apiUrl = _providerSettingState.value.apiUrl,
+                apiKey = _providerSettingState.value.apiKey,
+                models = _providerModelsState.value.selectedModels,
+                isOK = _providerModelsState.value.selectedModels.isNotEmpty()
             )
+            if (_curProvider.value == null) {
+                repository.addProvider(provider)
+            } else {
+                repository.updateProvider(provider)
+            }
+
+            _curProvider.value = provider
         }
     }
 
