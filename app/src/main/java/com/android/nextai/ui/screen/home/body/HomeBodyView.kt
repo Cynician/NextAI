@@ -1,6 +1,5 @@
 package com.android.nextai.ui.screen.home.body
 
-import com.android.nextai.ui.component.loading.SequentialJumpingDots
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.fadeIn
@@ -42,9 +41,10 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.android.nextai.ui.component.loading.LoadingOverlayView
+import com.android.nextai.ui.component.loading.SequentialJumpingDots
 import com.android.nextai.ui.icon.HomeIcon
 import com.android.nextai.ui.screen.home.body.views.AssistantBubbleView
-import com.android.nextai.ui.component.loading.LoadingOverlayView
 import com.android.nextai.ui.screen.home.body.views.UserBubbleView
 import com.android.nextai.ui.theme.Animation
 import com.android.nextai.viewmodel.chat.ChatViewModel
@@ -122,23 +122,27 @@ fun HomeBodyView(
             paddingValues.calculateBottomPadding().toPx()
         }
     }
+    fun isAtBottom(): Boolean {
+        val layoutInfo = listState.layoutInfo
+        val lastItem = layoutInfo.visibleItemsInfo.lastOrNull() ?: return false
+        val visibleBottom = layoutInfo.viewportEndOffset - bottomPaddingPx
+        return lastItem.index == messageList.lastIndex &&
+                lastItem.offset + lastItem.size <= visibleBottom
+    }
     LaunchedEffect(Unit) {
-        snapshotFlow {
-            messageList.lastOrNull()?.content
-        }.collect {
-            while (shouldAutoScroll && !isUserScrolling) {
-                val layoutInfo = listState.layoutInfo
-                val lastItem = layoutInfo.visibleItemsInfo.lastOrNull()
-                if (lastItem == null) break
-                val visibleBottom = layoutInfo.viewportEndOffset - bottomPaddingPx
-                val isBottomReached =
-                    lastItem.index == messageList.lastIndex &&
-                            lastItem.offset + lastItem.size <= visibleBottom
-                if (isBottomReached) { break }
-                listState.scrollBy(12f)
-                awaitFrame()
+        snapshotFlow { messageList.lastOrNull()?.content }
+            .distinctUntilChanged()
+            .collect {
+                if (isAtBottom() && isGenerating) {
+                    shouldAutoScroll = true
+                    isUserScrolling = false
+                }
+                while (shouldAutoScroll && !isUserScrolling) {
+                    if (isAtBottom() && !isGenerating) { break }
+                    listState.scrollBy(12f)
+                    awaitFrame()
+                }
             }
-        }
     }
 
     /**
