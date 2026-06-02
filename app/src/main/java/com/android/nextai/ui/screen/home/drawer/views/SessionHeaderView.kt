@@ -21,7 +21,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -80,7 +79,7 @@ fun SessionHeaderView(
             modifier = Modifier
                 .size(16.dp)
                 .rotate(rotation),
-            tint = Color.Unspecified
+            tint = MaterialTheme.colorScheme.onSurface
         )
 
         Box(
