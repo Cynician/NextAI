@@ -233,15 +233,7 @@ class ProviderViewModel @Inject constructor(
             val apiUrl = _providerSettingState.value.apiUrl
             val apiKey = _providerSettingState.value.apiKey
             val models = _providerModelsState.value.selectedModels
-            if (_curProvider.value != null) {
-                updateProvider(
-                    name = name,
-                    desc = desc,
-                    apiUrl = apiUrl,
-                    apiKey = apiKey,
-                    models = models,
-                )
-            } else {
+            if (_curProvider.value == null) {
                 addProvider(
                     ProviderEntity(
                         name = name,
@@ -252,6 +244,29 @@ class ProviderViewModel @Inject constructor(
                         isOK = models.isNotEmpty()
                     )
                 )
+            }
+            updateProvider(
+                name = name,
+                desc = desc,
+                apiUrl = apiUrl,
+                apiKey = apiKey,
+                models = models,
+            )
+        }
+    }
+
+    fun resetProviderSetting() {
+        viewModelScope.launch {
+            _providerSettingState.update {
+                it.copy(
+                    name = _curProvider.value?.name ?: "",
+                    desc = _curProvider.value?.desc ?: "",
+                    apiUrl = _curProvider.value?.apiUrl ?: "",
+                    apiKey = _curProvider.value?.apiKey ?: "",
+                )
+            }
+            _providerModelsState.update {
+                it.copy(selectedModels = _curProvider.value?.models ?: emptyList())
             }
         }
     }
