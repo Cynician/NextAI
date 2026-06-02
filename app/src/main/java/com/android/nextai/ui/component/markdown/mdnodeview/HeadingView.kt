@@ -27,38 +27,20 @@ fun HeadingView(node: MarkdownNode.Heading, colors: InlineColors) {
         )
 
         2 -> TextStyle(
-            fontSize = 26.sp,
+            fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = LocalContentColor.current.copy(alpha = 1f)
         )
 
         3 -> TextStyle(
-            fontSize = 24.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = LocalContentColor.current.copy(alpha = 1f)
-        )
-
-        4 -> TextStyle(
-            fontSize = 22.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = LocalContentColor.current.copy(alpha = 1f)
-        )
-
-        5 -> TextStyle(
             fontSize = 20.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = LocalContentColor.current.copy(alpha = 1f)
-        )
-
-        6 -> TextStyle(
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
             color = LocalContentColor.current.copy(alpha = 1f)
         )
 
         else -> TextStyle(
             fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
             color = LocalContentColor.current.copy(alpha = 1f)
         )
     }
@@ -73,7 +55,7 @@ fun HeadingView(node: MarkdownNode.Heading, colors: InlineColors) {
                 fontSize = textStyle.fontSize,
                 fontWeight = textStyle.fontWeight,
                 color = textStyle.color,
-                modifier = Modifier.padding(vertical = 2.dp)
+                modifier = Modifier.padding(top = 16.dp, bottom = 2.dp)
             )
         }
     }

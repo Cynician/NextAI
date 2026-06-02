@@ -159,7 +159,7 @@ fun SessionItemView(
                     }
             ) {
                 CircleCheckbox(
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(16.dp),
                     checked = isSelected,
                     onCheckedChange = {
                         onClick()

@@ -5,12 +5,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.android.nextai.ui.component.markdown.MarkdownNodeView
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 
@@ -51,11 +53,19 @@ fun ListItemView(node: MarkdownNode.ListItem, depth: Int, index: Int, ordered: B
 
         Text(
             text = marker,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
+            style = if(ordered)
+                MaterialTheme.typography.bodyLarge
+            else
+                MaterialTheme.typography.labelLarge,
+            fontWeight = if(ordered)
+                FontWeight.SemiBold
+            else
+                FontWeight.Bold,
+            lineHeight = 20.sp,
             color = MaterialTheme.colorScheme.primary,
+
             modifier = Modifier
-                .alignByBaseline()
+                .alignByBaseline().padding(horizontal = if(ordered) 6.dp else 3.dp)
         )
         Column(
             modifier = Modifier

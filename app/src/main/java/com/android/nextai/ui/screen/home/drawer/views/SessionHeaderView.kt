@@ -95,7 +95,7 @@ fun SessionHeaderView(
             contentAlignment = Alignment.Center
         ) {
             CircleCheckbox(
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(16.dp),
                 checked = allSelected,
                 onCheckedChange = onSelectGroup
             )

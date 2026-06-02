@@ -49,7 +49,7 @@ fun MarkdownNodeView(node: MarkdownNode) {
         is MarkdownNode.Text -> TextView(node)
         is MarkdownNode.FencedCodeBlock -> FencedCodeBlockView(node, true)
         is MarkdownNode.ThematicBreak -> HorizontalDivider(
-            modifier = Modifier.padding(vertical = 4.dp),
+            modifier = Modifier.padding(vertical = 12.dp),
             color = MaterialTheme.colorScheme.outlineVariant
         )
         // Table

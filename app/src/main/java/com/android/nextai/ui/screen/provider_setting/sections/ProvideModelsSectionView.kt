@@ -348,7 +348,11 @@ private fun ModelItem(
                 Icon(
                     modifier = Modifier
                         .size(16.dp)
-                        .clickable(onClick = onClick),
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onClick
+                        ),
                     imageVector = if (isSelected) SettingsIcon.MinusCircle
                     else SettingsIcon.AddCircle,
                     tint = if (isSelected) MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
