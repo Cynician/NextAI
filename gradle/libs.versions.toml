@@ -39,8 +39,8 @@ slf4j-android = "1.7.36"
 xz = "1.12"
 
 # OpenAI
-openai = "4.36.0"
-jackson = "2.21.3"
+openai = "4.37.0"
+jackson = "2.21.4"
 
 # Markdown
 flexmark = "0.64.8"
