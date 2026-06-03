@@ -19,3 +19,36 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Please add these rules to your existing keep rules in order to suppress warnings.
+# This is generated automatically by the Android Gradle plugin.
+-dontwarn aQute.bnd.annotation.baseline.BaselineIgnore
+-dontwarn aQute.bnd.annotation.spi.ServiceConsumer
+-dontwarn aQute.bnd.annotation.spi.ServiceProvider
+-dontwarn edu.umd.cs.findbugs.annotations.Nullable
+-dontwarn edu.umd.cs.findbugs.annotations.SuppressFBWarnings
+-dontwarn org.apache.batik.anim.dom.SAXSVGDocumentFactory
+-dontwarn org.apache.batik.bridge.BridgeContext
+-dontwarn org.apache.batik.bridge.DocumentLoader
+-dontwarn org.apache.batik.bridge.GVTBuilder
+-dontwarn org.apache.batik.bridge.UserAgent
+-dontwarn org.apache.batik.bridge.UserAgentAdapter
+-dontwarn org.apache.batik.util.XMLResourceDescriptor
+-dontwarn org.osgi.framework.Bundle
+-dontwarn org.osgi.framework.BundleContext
+-dontwarn org.osgi.framework.FrameworkUtil
+-dontwarn org.osgi.framework.ServiceReference
+-dontwarn org.osgi.framework.wiring.BundleRevision
+-dontwarn java.lang.reflect.AnnotatedParameterizedType
+-dontwarn java.lang.reflect.AnnotatedType
+
+
+# Disable obfuscation (keep all class names, method names, and field names)
+-dontobfuscate
+
+# Disable optimization
+#-dontoptimize
+
+# Avoid serialization failures caused by optimization
+# This is mainly due to JSON parsing
+-keep class com.openai.core.* { *; }

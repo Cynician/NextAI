@@ -42,7 +42,7 @@ class ChatRemoteRepository @Inject constructor() {
     fun streamingGen(
         apiType: ApiType,
         messageList: List<MessageEntity>,
-        provider: ProviderEntity
+        provider: ProviderEntity,
     ): Flow<GenerationEvent> =
         callbackFlow<GenerationEvent> {
             val mdBuffer = StreamBuffer()
@@ -70,7 +70,7 @@ class ChatRemoteRepository @Inject constructor() {
                 }
             }
             try {
-                Log.d(TAG, "[streamingGen] start to steaming...")
+                Log.d(TAG, "[streamingGen] start to streaming...")
                 getAIStreamingAnswer(apiType, messageList, provider, callback)
             } catch (e: Exception) {
                 trySend(GenerationEvent.Error("fail to streaming：${e.message}"))
@@ -79,5 +79,7 @@ class ChatRemoteRepository @Inject constructor() {
             awaitClose {
                 Log.d(TAG, "[streamingGen] close...")
             }
-        }.buffer(Channel.UNLIMITED).onEach { delay(3) }.flowOn(Dispatchers.IO)
+        }.buffer(Channel.UNLIMITED)
+            .onEach { delay(3) }
+            .flowOn(Dispatchers.IO)
 }

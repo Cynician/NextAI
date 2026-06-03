@@ -17,16 +17,13 @@ import com.vladsch.flexmark.ast.Text
 import com.vladsch.flexmark.ast.ThematicBreak
 import com.vladsch.flexmark.ext.gfm.strikethrough.Strikethrough
 import com.vladsch.flexmark.ext.gfm.strikethrough.Subscript
-import com.vladsch.flexmark.ext.gfm.strikethrough.SubscriptExtension
 import com.vladsch.flexmark.ext.superscript.Superscript
-import com.vladsch.flexmark.ext.superscript.SuperscriptExtension
 import com.vladsch.flexmark.ext.tables.TableBlock
 import com.vladsch.flexmark.ext.tables.TableBody
 import com.vladsch.flexmark.ext.tables.TableCaption
 import com.vladsch.flexmark.ext.tables.TableCell
 import com.vladsch.flexmark.ext.tables.TableHead
 import com.vladsch.flexmark.ext.tables.TableRow
-import com.vladsch.flexmark.ext.tables.TablesExtension
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.ast.Node
 
@@ -40,10 +37,16 @@ data class MarkdownParseResult(
 object MarkdownNodeUtils {
     private const val TAG = "MarkdownNodeUtils"
     private val parser by lazy {
+        // TODO In the release version of the apk, using the extension below feature will
+        //  cause an error and needs to be resolved
         Parser.builder()
-            .extensions(listOf(SubscriptExtension.create()))
-            .extensions(listOf(SuperscriptExtension.create()))
-            .extensions(listOf(TablesExtension.create()))
+            .extensions(
+                listOf(
+//                  SubscriptExtension.create(),
+//                   SuperscriptExtension.create(),
+//                    TablesExtension.create()
+                )
+            )
             .build()
     }
 
@@ -107,9 +110,16 @@ object MarkdownNodeUtils {
             }
             return MarkdownParseResult(nodes = result, parsedLength = parsedLength)
         } catch (e: Exception) {
-            Log.e(TAG, "parseMarkDown# e:$e")
+            Log.e(
+                TAG,
+                "parseMarkDown# failed",
+                e
+            )
+            return MarkdownParseResult(
+                nodes = listOf(MarkdownNode.Text(md)),
+                parsedLength = md.length
+            )
         }
-        return MarkdownParseResult(nodes = emptyList(), parsedLength = 0)
     }
 }
 
