@@ -195,10 +195,10 @@ class ProviderViewModel @Inject constructor(
             val provider = ProviderEntity(
                 id = _curProvider.value?.id ?: UUID.randomUUID().toString(),
                 type = _curProvider.value?.type ?: ProviderType.OTHER,
-                name = _providerSettingState.value.name,
-                desc = _providerSettingState.value.desc,
-                apiUrl = _providerSettingState.value.apiUrl,
-                apiKey = _providerSettingState.value.apiKey,
+                name = _providerSettingState.value.name.trim(),
+                desc = _providerSettingState.value.desc.trim(),
+                apiUrl = _providerSettingState.value.apiUrl.trim(),
+                apiKey = _providerSettingState.value.apiKey.trim(),
                 models = _providerModelsState.value.selectedModels,
                 isOK = _providerModelsState.value.selectedModels.isNotEmpty()
             )
@@ -207,7 +207,14 @@ class ProviderViewModel @Inject constructor(
             } else {
                 repository.updateProvider(provider)
             }
-
+            updateProviderSettingState(
+                ProviderSettingState(
+                    name = provider.name,
+                    desc = provider.desc,
+                    apiUrl = provider.apiUrl,
+                    apiKey = provider.apiKey
+                )
+            )
             _curProvider.value = provider
         }
     }
