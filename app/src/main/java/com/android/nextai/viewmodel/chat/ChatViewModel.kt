@@ -101,6 +101,7 @@ class ChatViewModel @Inject constructor(
         )
         val parser = markdownCacheHolder.getOrCreate(assistantMessage.id)
         messageHolder.addMessage(assistantMessage)
+        messageHolder.emitScrollToLatestMessageEvent()
         chatRemoteRepository.streamingGen(
             apiType = ApiType.OPENAI,
             messageList = messageHolder.getMessages(),
