@@ -482,21 +482,23 @@ private fun ModelListPager(
         ) {
 
             Text(
-                modifier = Modifier.widthIn(12.dp),
                 text = "${pagerState.currentPage + 1}",
-                style = MaterialTheme.typography.labelLarge
+                style = MaterialTheme.typography.labelLarge.copy(
+                    textAlign = TextAlign.End
+                )
             )
 
             Text(
-                modifier = Modifier.widthIn(12.dp),
+                modifier = Modifier.padding(horizontal = 8.dp),
                 text = "/",
                 style = MaterialTheme.typography.labelLarge
             )
 
             Text(
-                modifier = Modifier.widthIn(12.dp),
                 text = "${pagerState.pageCount}",
-                style = MaterialTheme.typography.labelLarge
+                style = MaterialTheme.typography.labelLarge.copy(
+                    textAlign = TextAlign.Start
+                )
             )
         }
 
