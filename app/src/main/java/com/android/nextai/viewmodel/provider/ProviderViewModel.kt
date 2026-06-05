@@ -39,92 +39,100 @@ class ProviderViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Job
-     */
+    /** Retrieve models Job(Single). **/
     private var retrieveModelsJob: Job? = null
 
     /**
-     * Info
+     * The currently selected model provider will be set when setting or adding a model provider
+     * (the initial value is read from the database), if in addition mode, this value is null.
      */
     private val _curProvider = MutableStateFlow<ProviderEntity?>(null)
-
-    val providers = repository.providersFlow
-    val defaultProvider = repository.defaultProviderFlow
     val curProvider = _curProvider.asStateFlow()
 
-    /**
-     * State
-     */
-    private val _retrieveModelsState = MutableStateFlow<ProviderState>(ProviderState.Idle)
-    //The items when setting the provider
-    private val _providerSettingState = MutableStateFlow(ProviderSettingState())
-    //List of available and selected models
-    private val _providerModelsState = MutableStateFlow(ProviderModelsState())
+    /** All model providers and databases are delivered directly via "Flow", avoiding complicated CRUDs. **/
+    val providers = repository.providersFlow
 
+    /** The default model provider is currently set to the first provider to be successfully configured. **/
+    val defaultProvider = repository.defaultProviderFlow
+
+
+    /** The status of the remote request retrieval model, including idle, in retrieval。 **/
+    private val _retrieveModelsState = MutableStateFlow<ProviderState>(ProviderState.Idle)
     val retrieveModelsState = _retrieveModelsState.asStateFlow()
+
+    /**
+     * Various configurable information for the model provider, recording data interacting with
+     * the input box.
+     * The initial value is the current model provider's information, and the addition mode is set
+     * to default value.
+     */
+    private val _providerSettingState = MutableStateFlow(ProviderSettingState())
     val providerSettingState = _providerSettingState.asStateFlow()
+
+    /**
+     * Records the list of available models from the current model provider as well as the list of
+     * selected models.
+     *
+     * - The list of available models is obtained via remote request.
+     *
+     * - The initial value of the selected model list is provided by the current model provider. In
+     * the selected mode, it is empty. Through interaction, user can add models from the list of
+     * selected models to the selected model list.
+     * */
+    private val _providerModelsState = MutableStateFlow(ProviderModelsState())
     val providerModelsState = _providerModelsState.asStateFlow()
 
-    val isProviderSettingChanged: StateFlow<Boolean> =
-        combine(
-            _providerSettingState,
-            _providerModelsState,
-            _curProvider
-        ) { settingState, modelsState, provider ->
-
-            if (provider == null) {
-                return@combine (
-                        settingState.name.isNotBlank() ||
-                                settingState.desc.isNotBlank() ||
-                                settingState.apiUrl.isNotBlank() ||
-                                settingState.apiKey.isNotBlank() ||
-                                modelsState.selectedModels.isNotEmpty()
-                        )
-            }
-
-            settingState.name != provider.name ||
-                    settingState.desc != provider.desc ||
-                    settingState.apiUrl != provider.apiUrl ||
-                    settingState.apiKey != provider.apiKey ||
-                    modelsState.selectedModels != provider.models
-
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = false
-        )
-
     /**
-     * Event
+     * Records whether the current model provider information has changed, mainly by comparing it
+     * with the data of "_providerSettingState" and "_providerModelsState".
      */
+    val isProviderSettingChanged: StateFlow<Boolean> = combine(
+        _providerSettingState, _providerModelsState, _curProvider
+    ) { settingState, modelsState, provider ->
+        if (provider == null) {
+            return@combine (settingState.name.isNotBlank() || settingState.desc.isNotBlank() || settingState.apiUrl.isNotBlank() || settingState.apiKey.isNotBlank() || modelsState.selectedModels.isNotEmpty())
+        }
+        settingState.name != provider.name || settingState.desc != provider.desc || settingState.apiUrl != provider.apiUrl || settingState.apiKey != provider.apiKey || modelsState.selectedModels != provider.models
+    }.stateIn(
+        scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = false
+    )
+
+    /** Regarding events involving model providers, the main focus is on recording the results after the event is completed. **/
     private val _providerEvent = MutableSharedFlow<ProviderEvent>()
 
+    /**
+     * When adding model provider, initialize some variable information.
+     */
+    fun addProviderInit() {
+        _curProvider.value = null
+        _providerSettingState.value = ProviderSettingState()
+        _providerModelsState.value = ProviderModelsState()
+    }
 
-    fun setCurrentProvider(
+    /**
+     * Select the current model provider, and the entry point is the model providers screen.
+     */
+    fun selectCurrentProvider(
         providerId: String,
     ) {
         viewModelScope.launch {
             _curProvider.value = repository.getProviderById(providerId)
-            /** _providerSettingState init **/
             _curProvider.value?.let {
                 _providerSettingState.value = ProviderSettingState(
                     name = it.name,
                     desc = it.desc,
                     apiUrl = it.apiUrl,
-                    apiKey = it.apiKey
+                    apiKey = it.apiKey,
+                    isOK = it.isOK,
                 )
                 _providerModelsState.value = ProviderModelsState(
                     selectedModels = it.models
                 )
+                if (it.isOK) {
+                    retrieveModels(it.apiUrl, it.apiKey)
+                }
             }
         }
-    }
-
-    fun initCurrentProvider() {
-        _curProvider.value = null
-        _providerSettingState.value = ProviderSettingState()
-        _providerModelsState.value = ProviderModelsState()
     }
 
     fun deleteProvider(
@@ -135,7 +143,6 @@ class ProviderViewModel @Inject constructor(
         }
     }
 
-
     fun retrieveModels(
         apiUrl: String,
         apiKey: String,
@@ -144,31 +151,29 @@ class ProviderViewModel @Inject constructor(
         retrieveModelsJob = viewModelScope.launch {
             _retrieveModelsState.value = ProviderState.RetrievingModels
             ModelManager(
-                baseUrl = apiUrl,
-                apiKey = apiKey
+                baseUrl = apiUrl, apiKey = apiKey
             ).retrievingModels().let { result ->
                 when (result) {
                     is ApiResult.Success -> {
+                        val modelList = result.data ?: emptyList()
                         _providerEvent.emit(
                             ProviderEvent.RetrieveModels(
-                                success = true,
-                                data = result.data ?: emptyList()
+                                success = true, data = modelList
                             )
                         )
-                        _providerModelsState.update {
-                            it.copy(
-                                availableModels = result.data ?: emptyList()
-                            )
-                        }
+                        _providerModelsState.update { it.copy(availableModels = modelList) }
+                        _providerSettingState.update { it.copy(isOK = modelList.isNotEmpty()) }
                     }
 
                     is ApiResult.Error -> {
                         _providerEvent.emit(
                             ProviderEvent.RetrieveModels(
-                                success = true,
-                                message = result.message
+                                success = true, message = result.message
                             )
                         )
+                        _providerSettingState.update { it.copy(isOK = false) }
+                        _providerModelsState.value = ProviderModelsState()
+                        saveProviderSetting()
                     }
 
                 }
@@ -200,7 +205,7 @@ class ProviderViewModel @Inject constructor(
                 apiUrl = _providerSettingState.value.apiUrl.trim(),
                 apiKey = _providerSettingState.value.apiKey.trim(),
                 models = _providerModelsState.value.selectedModels,
-                isOK = _providerModelsState.value.selectedModels.isNotEmpty()
+                isOK = _providerSettingState.value.isOK
             )
             if (_curProvider.value == null) {
                 repository.addProvider(provider)
@@ -212,7 +217,7 @@ class ProviderViewModel @Inject constructor(
                     name = provider.name,
                     desc = provider.desc,
                     apiUrl = provider.apiUrl,
-                    apiKey = provider.apiKey
+                    apiKey = provider.apiKey,
                 )
             )
             _curProvider.value = provider

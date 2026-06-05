@@ -13,6 +13,7 @@ data class ProviderSettingState(
     var desc: String = "",
     var apiUrl: String = "",
     var apiKey: String = "",
+    var isOK: Boolean = false,
 )
 
 data class ProviderModelsState(

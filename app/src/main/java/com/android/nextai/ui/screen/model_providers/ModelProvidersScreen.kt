@@ -63,7 +63,7 @@ fun ModelProvidersScreen(
             BottomBar(
                 onAddModelProviderClick = {
                     onNavigateToProviderSetting()
-                    providerViewModel.initCurrentProvider()
+                    providerViewModel.addProviderInit()
                 }
             )
         }
@@ -91,7 +91,7 @@ fun ModelProvidersScreen(
                     icon = icon,
                     onClick = {
                         onNavigateToProviderSetting()
-                        providerViewModel.setCurrentProvider(provider.id)
+                        providerViewModel.selectCurrentProvider(provider.id)
                     }
                 )
             }

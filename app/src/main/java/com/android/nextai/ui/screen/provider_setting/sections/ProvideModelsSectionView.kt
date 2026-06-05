@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
@@ -62,10 +63,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.android.nextai.domain.database.datastore.entity.ModelEntity
+import com.android.nextai.ui.component.loading.PageLoadingStateView
 import com.android.nextai.ui.component.other.SectionHeader
 import com.android.nextai.ui.icon.SettingsIcon
 import com.android.nextai.viewmodel.provider.ProviderViewModel
 import com.android.nextai.viewmodel.provider.entity.ProviderModelsState
+import com.android.nextai.viewmodel.provider.entity.ProviderState
 import kotlinx.coroutines.launch
 import kotlin.math.ceil
 
@@ -79,40 +82,46 @@ fun ProviderModelsSectionView(
 
     val pageSize = 10
 
+    /**
+     * Temporary variables used to record available models requested remotely and selected models
+     * saved locally.
+     */
     val providerModelsState by providerViewModel.providerModelsState.collectAsState()
     val availableModels = providerModelsState.availableModels
     val selectedModels = providerModelsState.selectedModels
 
-
+    /** Search keyword. **/
     var searchKey by remember { mutableStateOf("") }
+
+    /** Record whether it is being searched. **/
     val isSearching = remember(searchKey) { searchKey.trim().isNotEmpty() }
 
+    /** A list of selected models filtered by keywords. **/
     val filteredSelectedModels = selectedModels.filter { it.id.contains(searchKey, true) }
+
+    /** A list of available models filtered by keywords. **/
     val filteredAvailableModels = availableModels.filter { it.id.contains(searchKey.trim(), true) }
 
-    /** Independent pager statuses for available models, selected models,
-     * available models (searching), and available models (searching).**/
-    val availablePagerState = rememberPagerState(pageCount = { getPageNum(availableModels.size, pageSize) })
+    /** Page state controller for the list of available models. **/
+    val availablePagerState =
+        rememberPagerState(pageCount = { getPageNum(availableModels.size, pageSize) })
+
+    /** Page state controller for the list of available models filtered by search keywords. **/
     val filteredAvailablePagerState =
         rememberPagerState(pageCount = { getPageNum(filteredAvailableModels.size, pageSize) })
+
+    /** Page status controller for the selected model list. **/
     val selectedPagerState =
         rememberPagerState(pageCount = { getPageNum(selectedModels.size, pageSize) })
+
+    /** Page state controller for the list of selected models filtered by search keywords. **/
     val filteredSelectedPagerState =
         rememberPagerState(pageCount = { getPageNum(filteredSelectedModels.size, pageSize) })
-
-    /** When the search Key changes, the two pagers in searching are placed on the first page**/
-    LaunchedEffect(searchKey.trim()) {
-        if (searchKey.isNotBlank()) {
-            filteredAvailablePagerState.scrollToPage(0)
-            filteredSelectedPagerState.scrollToPage(0)
-        }
-    }
 
     /** Tab switch**/
     var currentTab by remember { mutableStateOf(ModelTab.AVAILABLE) }
 
-    /** Decide current pager state and models to show according to tab type, searching status
-     * and so on. **/
+    /** Decide current pager state and models to show according to tab type and searching status. **/
     val currentPagerState = when {
         currentTab == ModelTab.AVAILABLE && !isSearching -> availablePagerState
 
@@ -122,15 +131,27 @@ fun ProviderModelsSectionView(
 
         else -> filteredSelectedPagerState
     }
-    val currentModelList = when (currentTab) {
-        ModelTab.AVAILABLE -> { if (isSearching) filteredAvailableModels else availableModels }
 
-        ModelTab.SELECTED -> { if (isSearching) filteredSelectedModels else selectedModels.toList() }
+    /** A list of models that should be displayed based on the current tab selection. **/
+    val currentModelList = when (currentTab) {
+        ModelTab.AVAILABLE -> {
+            if (isSearching) filteredAvailableModels else availableModels
+        }
+
+        ModelTab.SELECTED -> {
+            if (isSearching) filteredSelectedModels else selectedModels
+        }
     }
 
-    /**
-     * Layout
-     */
+    // When the search Key changes, the two page state controller in searching are placed on the
+    // first page.
+    LaunchedEffect(searchKey.trim()) {
+        if (searchKey.isNotBlank()) {
+            filteredAvailablePagerState.scrollToPage(0)
+            filteredSelectedPagerState.scrollToPage(0)
+        }
+    }
+
     Column {
 
         SectionHeader(title = sectionTitle)
@@ -151,7 +172,6 @@ fun ProviderModelsSectionView(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
 
-                /** Search bar **/
                 SearchBar(searchKey = searchKey, onValueChange = { searchKey = it })
 
                 val counts = when {
@@ -164,7 +184,6 @@ fun ProviderModelsSectionView(
                     }
                 }
 
-                /** Highlight Tab with sliding animation  **/
                 SlidingTabRow(
                     tabs = listOf("可选模型", "已选模型"),
                     counts = counts,
@@ -176,9 +195,9 @@ fun ProviderModelsSectionView(
                 ModelListPager(
                     providerViewModel = providerViewModel,
                     providerModelsState = providerModelsState,
+                    currentTab = currentTab,
                     pagerState = currentPagerState,
                     currentModelList = currentModelList,
-                    pageSize = pageSize,
                     selectedModels = selectedModels,
                 )
             }
@@ -246,7 +265,8 @@ fun SlidingTabRow(
                             )
                             if (tabInfos.size <= index) tabInfos.add(info)
                             else tabInfos[index] = info
-                        }, horizontalAlignment = Alignment.CenterHorizontally
+                        },
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
                     Row(
@@ -283,7 +303,7 @@ fun SlidingTabRow(
             }
         }
 
-        // 高亮条
+        // Highlight Bar
         if (tabInfos.size == tabs.size) {
             val targetX = tabInfos[currentIndex].x
             val targetWidth = tabInfos[currentIndex].width
@@ -365,15 +385,32 @@ private fun ModelItem(
 }
 
 @Composable
-fun ModelListPager(
+private fun ModelListPager(
     providerViewModel: ProviderViewModel,
     providerModelsState: ProviderModelsState,
+    currentTab: ModelTab,
+    pageSize: Int = 10,
     pagerState: PagerState,
-    pageSize: Int,
     currentModelList: List<ModelEntity>,
     selectedModels: List<ModelEntity>,
-) {
-    /** Prevent crossing boundaries **/
+
+    ) {
+
+    val retrieveModelsState by providerViewModel.retrieveModelsState.collectAsState()
+
+
+    val scope = rememberCoroutineScope()
+
+    /** Set the height of the ModelItem. **/
+    val modelItemHeight = 50.dp
+
+    /** Set space between ModelItems. **/
+    val spacing = 3.dp
+
+    /** Calculate the container height based on the height and spacing of ModelItems. **/
+    val containerHeight = modelItemHeight * pageSize + spacing * (pageSize - 1)
+
+    // Prevent page state controller from crossing the boundary
     LaunchedEffect(currentModelList.size) {
         val lastPage = (pagerState.pageCount - 1).coerceAtLeast(0)
         if (pagerState.currentPage > lastPage) {
@@ -381,47 +418,48 @@ fun ModelListPager(
         }
     }
 
-    val scope = rememberCoroutineScope()
-
-    /** Height control prevents sudden changes in elevation **/
-    val modelItemHeight = 50.dp
-    val spacing = 3.dp
-    val containerHeight = modelItemHeight * pageSize + spacing * (pageSize - 1)
-
     HorizontalPager(
         modifier = Modifier.fillMaxWidth(),
         state = pagerState,
     ) { page ->
 
         val pageItems = currentModelList.drop(page * pageSize).take(pageSize)
-
-        Column(
+        Box(
             modifier = Modifier.height(containerHeight),
-            verticalArrangement = Arrangement.spacedBy(spacing)
         ) {
-            pageItems.forEach { model ->
-                val selected = model in selectedModels
-                ModelItem(
-                    model = model,
-                    itemHeight = modelItemHeight,
-                    selected = selected,
-                    onClick = {
-                        if (!selected) {
-                            providerViewModel.updateProviderModelsState(
-                                providerModelsState.copy(selectedModels = selectedModels + model)
-                            )
-                        } else {
-                            providerViewModel.updateProviderModelsState(
-                                providerModelsState.copy(selectedModels = selectedModels - model)
-                            )
+            if (currentTab == ModelTab.AVAILABLE && retrieveModelsState is ProviderState.RetrievingModels) {
+                PageLoadingStateView()
+                return@Box
+            }
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(spacing)
+            ) {
+
+                pageItems.forEach { model ->
+                    val selected = model in selectedModels
+                    ModelItem(
+                        model = model,
+                        itemHeight = modelItemHeight,
+                        selected = selected,
+                        onClick = {
+                            if (!selected) {
+                                providerViewModel.updateProviderModelsState(
+                                    providerModelsState.copy(selectedModels = selectedModels + model)
+                                )
+                            } else {
+                                providerViewModel.updateProviderModelsState(
+                                    providerModelsState.copy(selectedModels = selectedModels - model)
+                                )
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     }
 
-    /** Page control bar **/
+    // Page Control Bar
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
