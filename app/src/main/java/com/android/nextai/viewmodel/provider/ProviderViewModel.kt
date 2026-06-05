@@ -92,7 +92,15 @@ class ProviderViewModel @Inject constructor(
         if (provider == null) {
             return@combine (settingState.name.isNotBlank() || settingState.desc.isNotBlank() || settingState.apiUrl.isNotBlank() || settingState.apiKey.isNotBlank() || modelsState.selectedModels.isNotEmpty())
         }
+        // Api url/key changed, init state.
+        if (settingState.apiUrl != provider.apiUrl || settingState.apiKey != provider.apiKey) {
+            _curProvider.value?.run {
+                _providerModelsState.update { it.copy(availableModels = emptyList()) }
+                _providerSettingState.update { it.copy(isOK = false) }
+            }
+        }
         settingState.name != provider.name || settingState.desc != provider.desc || settingState.apiUrl != provider.apiUrl || settingState.apiKey != provider.apiKey || modelsState.selectedModels != provider.models
+
     }.stateIn(
         scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = false
     )
@@ -128,9 +136,7 @@ class ProviderViewModel @Inject constructor(
                 _providerModelsState.value = ProviderModelsState(
                     selectedModels = it.models
                 )
-                if (it.isOK) {
-                    retrieveModels(it.apiUrl, it.apiKey)
-                }
+                retrieveModels(it.apiUrl, it.apiKey)
             }
         }
     }
@@ -161,8 +167,15 @@ class ProviderViewModel @Inject constructor(
                                 success = true, data = modelList
                             )
                         )
+                        val isOK = modelList.isNotEmpty()
                         _providerModelsState.update { it.copy(availableModels = modelList) }
-                        _providerSettingState.update { it.copy(isOK = modelList.isNotEmpty()) }
+                        _providerSettingState.update { it.copy(isOK = isOK) }
+                        _curProvider.value?.let {
+                            val saveP =
+                                it.copy(isOK = isOK, models = if (!isOK) emptyList() else it.models)
+                            saveProviderSetting(saveP)
+                            _curProvider.value = saveP
+                        }
                     }
 
                     is ApiResult.Error -> {
@@ -173,7 +186,12 @@ class ProviderViewModel @Inject constructor(
                         )
                         _providerSettingState.update { it.copy(isOK = false) }
                         _providerModelsState.value = ProviderModelsState()
-                        saveProviderSetting()
+                        _curProvider.value?.let {
+                            val saveP = it.copy(isOK = false, models = emptyList())
+                            saveProviderSetting(saveP)
+                            _curProvider.value = saveP
+                        }
+
                     }
 
                 }
@@ -195,6 +213,7 @@ class ProviderViewModel @Inject constructor(
         _providerModelsState.value = newState
     }
 
+    /** Save all changed info. **/
     fun saveProviderSetting() {
         viewModelScope.launch {
             val provider = ProviderEntity(
@@ -221,6 +240,13 @@ class ProviderViewModel @Inject constructor(
                 )
             )
             _curProvider.value = provider
+        }
+    }
+
+    /** Save partial changed information **/
+    fun saveProviderSetting(provider: ProviderEntity) {
+        viewModelScope.launch {
+            repository.updateProvider(provider)
         }
     }
 
