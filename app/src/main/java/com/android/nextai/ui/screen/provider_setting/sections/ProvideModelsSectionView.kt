@@ -239,7 +239,7 @@ fun SlidingTabRow(
     currentIndex: Int,
     onTabSelected: (Int) -> Unit,
 ) {
-    data class TabInfo(val x: Float, val width: Float, )
+    data class TabInfo(val x: Float, val width: Float)
 
     val focusManager = LocalFocusManager.current
 
@@ -507,6 +507,7 @@ private fun ModelListPager(
             ) {
 
                 Text(
+                    modifier = Modifier.width(36.dp),
                     text = "${pagerState.currentPage + 1}",
                     style = MaterialTheme.typography.labelLarge.copy(
                         textAlign = TextAlign.End
@@ -520,6 +521,7 @@ private fun ModelListPager(
                 )
 
                 Text(
+                    modifier = Modifier.width(36.dp),
                     text = "${pagerState.pageCount}",
                     style = MaterialTheme.typography.labelLarge.copy(
                         textAlign = TextAlign.Start
