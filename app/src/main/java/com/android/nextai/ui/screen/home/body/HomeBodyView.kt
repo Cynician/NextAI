@@ -4,9 +4,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -212,14 +212,18 @@ fun HomeBodyView(
     }
 
     // When the condition is met, keep following the bottom of the list.
-    LaunchedEffect(followBottom) {
-        if (isChangingSession) {
-            return@LaunchedEffect
-        }
+    LaunchedEffect(followBottom, isChangingSession) {
+        if (isChangingSession) return@LaunchedEffect
+        // TODO Consider set the sliding speed as a custom parameter.
+        // Scrolling Speed
+        val scrollingSpeed = 20f
         while (followBottom && !isUserDragging) {
-            // TODO Consider set the sliding speed as a custom parameter.
-            listState.scrollBy(10f)
-            awaitFrame()
+            listState.scroll(scrollPriority = MutatePriority.Default) {
+                while (followBottom && !isUserDragging) {
+                    awaitFrame()
+                    scrollBy(scrollingSpeed)
+                }
+            }
         }
     }
 
