@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
@@ -24,6 +25,9 @@ fun ParagraphView(node: MarkdownNode.Paragraph, colors: InlineColors) {
     }
     var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 
+    /** Obtain the current UriHandler for calling the system browser **/
+    val uriHandler = LocalUriHandler.current
+
     Text(
         text = annotated,
         modifier = Modifier
@@ -34,7 +38,14 @@ fun ParagraphView(node: MarkdownNode.Paragraph, colors: InlineColors) {
                     layoutResult?.let { layout ->
                         val offset = layout.getOffsetForPosition(offsetPosition)
                         annotated.getStringAnnotations("URL", offset, offset)
-                            .firstOrNull()?.let { annotation->println("点击链接：${annotation.item}") }
+                            .firstOrNull()?.let {
+                                annotation->println("Click the link：${annotation.item}")
+                                try {
+                                    uriHandler.openUri(annotation.item)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
                     }
                 }
             },
