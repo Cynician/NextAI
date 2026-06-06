@@ -10,7 +10,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -116,9 +115,6 @@ fun ProviderSettingScreen(
                     .fillMaxSize()
                     .padding(paddingValues = padding)
                     .padding(Standard.screenContainerPadding),
-                contentPadding = PaddingValues(
-                    bottom = 80.dp
-                ),
                 verticalArrangement = Arrangement.spacedBy(Standard.screenSectionSpacing)
             ) {
 
