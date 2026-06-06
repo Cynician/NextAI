@@ -61,7 +61,7 @@ fun ProviderSettingSectionView(
                     value = providerSettingState.name,
                     placeholder = "请输入提供方名称",
                     onValueChange = {
-                        providerViewModel.updateProviderSettingState(providerSettingState.copy(name = it))
+                        providerViewModel.onProviderNameChanged(it)
                     }
                 )
 
@@ -70,9 +70,7 @@ fun ProviderSettingSectionView(
                     value = providerSettingState.desc,
                     placeholder = "添加提供方描述",
                     onValueChange = {
-                        providerViewModel.updateProviderSettingState(
-                            providerSettingState.copy(desc = it)
-                        )
+                        providerViewModel.onProviderDescChanged(it)
                     }
                 )
 
@@ -81,9 +79,7 @@ fun ProviderSettingSectionView(
                     value = providerSettingState.apiUrl,
                     placeholder = "请输入 API 地址",
                     onValueChange = {
-                        providerViewModel.updateProviderSettingState(
-                            providerSettingState.copy(apiUrl = it)
-                        )
+                        providerViewModel.onApiUrlChanged(it)
                     }
                 )
 
@@ -91,9 +87,7 @@ fun ProviderSettingSectionView(
                     title = "API Key",
                     value = providerSettingState.apiKey,
                     onValueChange = {
-                        providerViewModel.updateProviderSettingState(
-                            providerSettingState.copy(apiKey = it)
-                        )
+                        providerViewModel.onApiKeyChanged(it)
                     },
                     passwordVisible = isApiKeyVisible,
                     onPasswordVisibleChange = { isApiKeyVisible = !isApiKeyVisible },

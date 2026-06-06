@@ -71,7 +71,6 @@ import com.android.nextai.ui.component.loading.PageLoadingStateView
 import com.android.nextai.ui.component.other.SectionHeader
 import com.android.nextai.ui.icon.SettingsIcon
 import com.android.nextai.viewmodel.provider.ProviderViewModel
-import com.android.nextai.viewmodel.provider.entity.ProviderModelsState
 import com.android.nextai.viewmodel.provider.entity.ProviderState
 import kotlinx.coroutines.launch
 import kotlin.math.ceil
@@ -191,13 +190,11 @@ fun ProviderModelsSectionView(
                     tabs = listOf("可选模型", "已选模型"),
                     counts = counts,
                     currentIndex = if (currentTab == ModelTab.AVAILABLE) 0 else 1,
-                    onTabSelected = {
-                        currentTab = if (it == 0) ModelTab.AVAILABLE else ModelTab.SELECTED
-                    })
+                    onTabSelected = { currentTab = if (it == 0) ModelTab.AVAILABLE else ModelTab.SELECTED }
+                )
 
                 ModelListPager(
                     providerViewModel = providerViewModel,
-                    providerModelsState = providerModelsState,
                     currentTab = currentTab,
                     pagerState = currentPagerState,
                     currentModelList = currentModelList,
@@ -400,7 +397,6 @@ private fun ModelItem(
 @Composable
 private fun ModelListPager(
     providerViewModel: ProviderViewModel,
-    providerModelsState: ProviderModelsState,
     currentTab: ModelTab,
     pageSize: Int = 10,
     pagerState: PagerState,
@@ -469,13 +465,9 @@ private fun ModelListPager(
                             selected = selected,
                             onClick = {
                                 if (!selected) {
-                                    providerViewModel.updateProviderModelsState(
-                                        providerModelsState.copy(selectedModels = selectedModels + model)
-                                    )
+                                    providerViewModel.addSelectedModel(model)
                                 } else {
-                                    providerViewModel.updateProviderModelsState(
-                                        providerModelsState.copy(selectedModels = selectedModels - model)
-                                    )
+                                    providerViewModel.removeSelectedModel(model)
                                 }
                             }
                         )

@@ -2,6 +2,7 @@ package com.android.nextai.viewmodel.provider
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.nextai.domain.database.datastore.entity.ModelEntity
 import com.android.nextai.domain.database.datastore.entity.ProviderEntity
 import com.android.nextai.domain.database.datastore.entity.ProviderType
 import com.android.nextai.domain.remote.entity.ApiResult
@@ -92,15 +93,7 @@ class ProviderViewModel @Inject constructor(
         if (provider == null) {
             return@combine (settingState.name.isNotBlank() || settingState.desc.isNotBlank() || settingState.apiUrl.isNotBlank() || settingState.apiKey.isNotBlank() || modelsState.selectedModels.isNotEmpty())
         }
-        // Api url/key changed, init state.
-        if (settingState.apiUrl != provider.apiUrl || settingState.apiKey != provider.apiKey) {
-            _curProvider.value?.run {
-                _providerModelsState.update { it.copy(availableModels = emptyList()) }
-                _providerSettingState.update { it.copy(isOK = false) }
-            }
-        }
         settingState.name != provider.name || settingState.desc != provider.desc || settingState.apiUrl != provider.apiUrl || settingState.apiKey != provider.apiKey || modelsState.selectedModels != provider.models
-
     }.stateIn(
         scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = false
     )
@@ -136,7 +129,7 @@ class ProviderViewModel @Inject constructor(
                 _providerModelsState.value = ProviderModelsState(
                     selectedModels = it.models
                 )
-                retrieveModels(it.apiUrl, it.apiKey)
+                retrieveModels(it.apiUrl, it.apiKey, true)
             }
         }
     }
@@ -152,6 +145,7 @@ class ProviderViewModel @Inject constructor(
     fun retrieveModels(
         apiUrl: String,
         apiKey: String,
+        isFirstTime: Boolean = false,
     ) {
         retrieveModelsJob?.cancel()
         retrieveModelsJob = viewModelScope.launch {
@@ -160,57 +154,58 @@ class ProviderViewModel @Inject constructor(
                 baseUrl = apiUrl, apiKey = apiKey
             ).retrievingModels().let { result ->
                 when (result) {
+
                     is ApiResult.Success -> {
                         val modelList = result.data ?: emptyList()
-                        _providerEvent.emit(
-                            ProviderEvent.RetrieveModels(
-                                success = true, data = modelList
-                            )
-                        )
                         val isOK = modelList.isNotEmpty()
-                        _providerModelsState.update { it.copy(availableModels = modelList) }
-                        _providerSettingState.update { it.copy(isOK = isOK) }
-                        _curProvider.value?.let {
-                            val saveP =
-                                it.copy(isOK = isOK, models = if (!isOK) emptyList() else it.models)
-                            saveProviderSetting(saveP)
-                            _curProvider.value = saveP
-                        }
+                        onRetrieveModelsSuccess(modelList, isOK, isFirstTime)
                     }
 
                     is ApiResult.Error -> {
-                        _providerEvent.emit(
-                            ProviderEvent.RetrieveModels(
-                                success = true, message = result.message
-                            )
-                        )
-                        _providerSettingState.update { it.copy(isOK = false) }
-                        _providerModelsState.value = ProviderModelsState()
-                        _curProvider.value?.let {
-                            val saveP = it.copy(isOK = false, models = emptyList())
-                            saveProviderSetting(saveP)
-                            _curProvider.value = saveP
-                        }
-
+                        onRetrieveModelsFailure(isFirstTime, result.message)
                     }
 
                 }
-
             }
             _retrieveModelsState.value = ProviderState.Idle
         }
     }
 
-    fun updateProviderSettingState(
-        newState: ProviderSettingState,
-    ) {
-        _providerSettingState.value = newState
+    private suspend fun onRetrieveModelsSuccess(
+            modelList: List<ModelEntity>,
+            isOK: Boolean,
+            isFirstTime: Boolean,
+        ){
+        _providerModelsState.update { it.copy(availableModels = modelList) }
+        _providerSettingState.update { it.copy(isOK = isOK) }
+        // Not add provider mode and not the first time auto retrieve models.
+        _curProvider.value?.let {
+            if(!isFirstTime) return@let
+            val saveP = it.copy(
+                isOK = isOK && it.models.isNotEmpty(),
+                models = if (!isOK) emptyList() else it.models
+            )
+            saveProviderSetting(saveP)
+            _curProvider.value = saveP
+        }
+
+        _providerEvent.emit(ProviderEvent.RetrieveModels(success = true, data = modelList))
     }
 
-    fun updateProviderModelsState(
-        newState: ProviderModelsState,
-    ) {
-        _providerModelsState.value = newState
+    private suspend fun onRetrieveModelsFailure(
+        isFirstTime: Boolean,
+        errorMsg: String,
+    ){
+        _providerSettingState.update { it.copy(isOK = false) }
+        _providerModelsState.value = ProviderModelsState()
+        // Not add provider mode and not the first time auto retrieve models.
+        _curProvider.value?.let {
+            if(!isFirstTime) return@let
+            val saveP = it.copy(isOK = false, models = emptyList())
+            saveProviderSetting(saveP)
+            _curProvider.value = saveP
+        }
+        _providerEvent.emit(ProviderEvent.RetrieveModels(success = true, message = errorMsg))
     }
 
     /** Save all changed info. **/
@@ -231,14 +226,6 @@ class ProviderViewModel @Inject constructor(
             } else {
                 repository.updateProvider(provider)
             }
-            updateProviderSettingState(
-                ProviderSettingState(
-                    name = provider.name,
-                    desc = provider.desc,
-                    apiUrl = provider.apiUrl,
-                    apiKey = provider.apiKey,
-                )
-            )
             _curProvider.value = provider
         }
     }
@@ -258,11 +245,62 @@ class ProviderViewModel @Inject constructor(
                     desc = _curProvider.value?.desc ?: "",
                     apiUrl = _curProvider.value?.apiUrl ?: "",
                     apiKey = _curProvider.value?.apiKey ?: "",
+                    isOK = _curProvider.value?.isOK ?: false,
                 )
             }
             _providerModelsState.update {
                 it.copy(selectedModels = _curProvider.value?.models ?: emptyList())
             }
+        }
+    }
+
+    /** Provider name changed. **/
+    fun onProviderNameChanged(newName: String) {
+        _providerSettingState.update { it.copy(name = newName) }
+    }
+
+    /** Provider description changed. **/
+    fun onProviderDescChanged(newDesc: String) {
+        _providerSettingState.update { it.copy(desc = newDesc) }
+    }
+
+    /** Api Url changed then init states. **/
+    fun onApiUrlChanged(newUrl: String) {
+        _providerSettingState.update {
+            it.copy(
+                apiUrl = newUrl,
+                isOK = newUrl == _curProvider.value?.apiUrl && _curProvider.value?.isOK == true
+            )
+        }
+        _providerModelsState.update { it.copy(availableModels = emptyList()) }
+    }
+
+    /** Api key changed then then init states. **/
+    fun onApiKeyChanged(newKey: String) {
+        _providerSettingState.update {
+            it.copy(
+                apiKey = newKey,
+                isOK = newKey == _curProvider.value?.apiKey && _curProvider.value?.isOK == true
+            )
+        }
+        _providerModelsState.update { it.copy(availableModels = emptyList()) }
+    }
+
+    /** Add a model to the selected models list. **/
+    fun addSelectedModel(model: ModelEntity) {
+        _providerModelsState.update { state ->
+            if (state.selectedModels.contains(model)) {
+                state
+            } else {
+                state.copy(selectedModels = state.selectedModels + model)
+            }
+        }
+    }
+
+    /** Remove a model from the selected models list. **/
+    fun removeSelectedModel(model: ModelEntity) {
+        _providerModelsState.update { state ->
+            state.copy(selectedModels = state.selectedModels - model)
         }
     }
 }
