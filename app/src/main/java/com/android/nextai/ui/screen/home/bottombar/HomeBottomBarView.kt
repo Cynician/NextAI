@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.button.ActionButton
 import com.android.nextai.ui.icon.HomeIcon
@@ -37,6 +38,9 @@ internal fun HomeBottomBar(
     chatViewModel: ChatViewModel,
     providerViewModel: ProviderViewModel,
 ) {
+
+    val focusManager = LocalFocusManager.current
+
     val provider by providerViewModel.defaultProvider.collectAsState(null)
 
     var query by remember { mutableStateOf("") }
@@ -95,6 +99,7 @@ internal fun HomeBottomBar(
                     onClickListener = {
                         val currentProvider = provider ?: return@ActionButton
                         if(!canSend) return@ActionButton
+                        focusManager.clearFocus()
                         chatViewModel.sendUserQuery(
                             query.trim(),
                             currentProvider
