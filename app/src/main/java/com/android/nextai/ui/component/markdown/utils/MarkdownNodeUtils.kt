@@ -24,8 +24,10 @@ import com.vladsch.flexmark.ext.tables.TableCaption
 import com.vladsch.flexmark.ext.tables.TableCell
 import com.vladsch.flexmark.ext.tables.TableHead
 import com.vladsch.flexmark.ext.tables.TableRow
+import com.vladsch.flexmark.ext.tables.TablesExtension
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.ast.Node
+import com.vladsch.flexmark.util.data.MutableDataSet
 
 
 data class MarkdownParseResult(
@@ -37,17 +39,12 @@ data class MarkdownParseResult(
 object MarkdownNodeUtils {
     private const val TAG = "MarkdownNodeUtils"
     private val parser by lazy {
-        // TODO In the release version of the apk, using the extension below feature will
-        //  cause an error and needs to be resolved
-        Parser.builder()
-            .extensions(
-                listOf(
-//                  SubscriptExtension.create(),
-//                   SuperscriptExtension.create(),
-//                    TablesExtension.create()
-                )
-            )
-            .build()
+        val options = MutableDataSet()
+        options.set(
+            Parser.EXTENSIONS,
+            listOf(TablesExtension.create())
+        )
+        Parser.builder(options).build()
     }
 
     fun parseChildren(node: Node): List<MarkdownNode>{

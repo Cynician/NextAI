@@ -42,6 +42,38 @@
 -dontwarn java.lang.reflect.AnnotatedParameterizedType
 -dontwarn java.lang.reflect.AnnotatedType
 
+# com.vladsch.flexmark
+-dontwarn java.awt.AlphaComposite
+-dontwarn java.awt.BasicStroke
+-dontwarn java.awt.Color
+-dontwarn java.awt.Composite
+-dontwarn java.awt.Container
+-dontwarn java.awt.Font
+-dontwarn java.awt.Graphics2D
+-dontwarn java.awt.Graphics
+-dontwarn java.awt.Image
+-dontwarn java.awt.RenderingHints$Key
+-dontwarn java.awt.RenderingHints
+-dontwarn java.awt.Shape
+-dontwarn java.awt.Stroke
+-dontwarn java.awt.Toolkit
+-dontwarn java.awt.datatransfer.Clipboard
+-dontwarn java.awt.datatransfer.DataFlavor
+-dontwarn java.awt.datatransfer.Transferable
+-dontwarn java.awt.datatransfer.UnsupportedFlavorException
+-dontwarn java.awt.geom.AffineTransform
+-dontwarn java.awt.geom.RoundRectangle2D$Float
+-dontwarn java.awt.image.AffineTransformOp
+-dontwarn java.awt.image.BufferedImage
+-dontwarn java.awt.image.FilteredImageSource
+-dontwarn java.awt.image.ImageFilter
+-dontwarn java.awt.image.ImageObserver
+-dontwarn java.awt.image.ImageProducer
+-dontwarn java.awt.image.RGBImageFilter
+-dontwarn java.awt.image.RenderedImage
+-dontwarn javax.imageio.ImageIO
+-dontwarn javax.swing.JTextPane
+-dontwarn javax.swing.plaf.FontUIResource
 
 # Disable obfuscation (keep all class names, method names, and field names)
 -dontobfuscate
@@ -52,3 +84,7 @@
 # Avoid serialization failures caused by optimization
 # This is mainly due to JSON parsing
 -keep class com.openai.core.* { *; }
+
+# Avoid parse error in optimization mode : Dependent class class
+# com.vladsch.flexmark.parser.core.ReferencePreProcessorFactory is duplicated.
+-keep class com.vladsch.flexmark.parser.core.ReferencePreProcessorFactory.** { *; }
