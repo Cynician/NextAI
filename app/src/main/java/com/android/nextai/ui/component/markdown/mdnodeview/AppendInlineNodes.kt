@@ -32,7 +32,7 @@ fun AnnotatedString.Builder.appendInlineNodes(nodes: List<MarkdownNode>, colors:
                     fontSize = 12.sp
                 )
             ) {
-                append(node.code)
+                append(" ${node.code} ")
             }
             is MarkdownNode.Link -> {
                 pushStringAnnotation(tag = "URL", annotation = node.url)
