@@ -160,9 +160,7 @@ fun HomeBodyView(
         snapshotFlow {
             isLastItemBottomVisible()
         }.collect {
-            if (imeInsets.getBottom(density) == 0) {
-                wasBottomVisible = it
-            }
+            wasBottomVisible = it
         }
     }
 
