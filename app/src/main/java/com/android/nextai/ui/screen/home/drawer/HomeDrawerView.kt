@@ -21,6 +21,10 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToDown
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.loading.PageLoadingStateView
 import com.android.nextai.ui.screen.home.drawer.views.BatchActionBarView
@@ -38,6 +42,8 @@ fun HomeDrawerView(
     onSessionItemClick: (Long) -> Unit,
     chatViewModel: ChatViewModel,
 ) {
+    val focusManager = LocalFocusManager.current
+
     val isSessionLoading by chatViewModel.sessionHolder.isLoading.collectAsState()
     val groupedSessions by chatViewModel.sessionHolder.groupedSessions.collectAsState()
     val isBatchSelectMode by chatViewModel.sessionHolder.isBatchSelectMode.collectAsState()
@@ -56,7 +62,18 @@ fun HomeDrawerView(
     }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        if (event.changes.any { it.changedToDown() }) {
+                            focusManager.clearFocus()
+                        }
+                    }
+                }
+            },
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Column(

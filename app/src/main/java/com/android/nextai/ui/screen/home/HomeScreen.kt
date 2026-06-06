@@ -17,10 +17,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.changedToDown
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalFocusManager
 import com.android.nextai.ui.screen.home.body.HomeBodyView
 import com.android.nextai.ui.screen.home.bottombar.HomeBottomBar
 import com.android.nextai.ui.screen.home.drawer.HomeDrawerView
@@ -54,22 +50,7 @@ fun HomeScreen(
         }
     }
 
-    val focusManager = LocalFocusManager.current
-
     ModalNavigationDrawer(
-        modifier = Modifier
-            .pointerInput(Unit) {
-                // Use the underlying awaitPointerEventScope for event interception and prioritize
-                // triggering the event here.
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Initial)
-                        if (event.changes.any { it.changedToDown() }) {
-                            focusManager.clearFocus()
-                        }
-                    }
-                }
-            },
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(

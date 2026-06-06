@@ -7,6 +7,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -64,13 +65,8 @@ fun ProviderSettingScreen(
         modifier = Modifier
             .fillMaxSize()
             .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Initial)
-                        if (event.changes.any { it.changedToDown() }) {
-                            focusManager.clearFocus()
-                        }
-                    }
+                detectTapGestures {
+                    focusManager.clearFocus()
                 }
             },
     ) {
@@ -81,7 +77,18 @@ fun ProviderSettingScreen(
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 CenterAlignedTopAppBar(
-                    modifier = Modifier.padding(horizontal = 8.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                                    if (event.changes.any { it.changedToDown() }) {
+                                        focusManager.clearFocus()
+                                    }
+                                }
+                            }
+                        },
                     title = {
                         Text(
                             text = "模型提供方设置",
@@ -136,7 +143,17 @@ fun ProviderSettingScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .imePadding(),
+                    .imePadding()
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                if (event.changes.any { it.changedToDown() }) {
+                                    focusManager.clearFocus()
+                                }
+                            }
+                        }
+                    },
                 visible = (canDelete || isProviderSettingChanged),
                 enableDelete = canDelete,
                 enableReset = isProviderSettingChanged,

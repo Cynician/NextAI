@@ -44,7 +44,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToDown
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -69,6 +73,8 @@ fun HomeBodyView(
     paddingValues: PaddingValues,
     chatViewModel: ChatViewModel,
 ) {
+    val focusManager = LocalFocusManager.current
+
     /** Get the current stream generation status **/
     val isGenerating by chatViewModel.messageHolder.isGenerating.collectAsState(initial = false)
 
@@ -247,6 +253,16 @@ fun HomeBodyView(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(paddingValues)
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        if (event.changes.any { it.changedToDown() }) {
+                            focusManager.clearFocus()
+                        }
+                    }
+                }
+            },
     ) {
 
         LoadingOverlayView(visible = isChangingSession)

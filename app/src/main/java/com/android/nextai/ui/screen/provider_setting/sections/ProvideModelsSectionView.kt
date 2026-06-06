@@ -55,9 +55,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToDown
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -79,7 +83,6 @@ fun ProviderModelsSectionView(
     sectionTitle: String,
     providerViewModel: ProviderViewModel,
 ) {
-
     val pageSize = 10
 
     /**
@@ -236,16 +239,26 @@ fun SlidingTabRow(
     currentIndex: Int,
     onTabSelected: (Int) -> Unit,
 ) {
+    data class TabInfo(val x: Float, val width: Float, )
 
-    data class TabInfo(
-        val x: Float,
-        val width: Float,
-    )
+    val focusManager = LocalFocusManager.current
 
     val tabInfos = remember { mutableStateListOf<TabInfo>() }
     val density = LocalDensity.current
 
-    Column {
+    Column(
+        modifier = Modifier
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        if (event.changes.any { it.changedToDown() }) {
+                            focusManager.clearFocus()
+                        }
+                    }
+                }
+            },
+    ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(24.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -395,9 +408,9 @@ private fun ModelListPager(
     selectedModels: List<ModelEntity>,
 
     ) {
+    val focusManager = LocalFocusManager.current
 
     val retrieveModelsState by providerViewModel.retrieveModelsState.collectAsState()
-
 
     val scope = rememberCoroutineScope()
 
@@ -417,101 +430,114 @@ private fun ModelListPager(
             pagerState.scrollToPage(lastPage)
         }
     }
+    Column(
+        modifier = Modifier
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        if (event.changes.any { it.changedToDown() }) {
+                            focusManager.clearFocus()
+                        }
+                    }
+                }
+            },
+    ) {
+        HorizontalPager(
+            modifier = Modifier.fillMaxWidth(),
+            state = pagerState,
+        ) { page ->
 
-    HorizontalPager(
-        modifier = Modifier.fillMaxWidth(),
-        state = pagerState,
-    ) { page ->
+            val pageItems = currentModelList.drop(page * pageSize).take(pageSize)
+            Box(
+                modifier = Modifier.height(containerHeight),
+            ) {
+                if (currentTab == ModelTab.AVAILABLE && retrieveModelsState is ProviderState.RetrievingModels) {
+                    PageLoadingStateView()
+                    return@Box
+                }
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(spacing)
+                ) {
 
-        val pageItems = currentModelList.drop(page * pageSize).take(pageSize)
-        Box(
-            modifier = Modifier.height(containerHeight),
-        ) {
-            if (currentTab == ModelTab.AVAILABLE && retrieveModelsState is ProviderState.RetrievingModels) {
-                PageLoadingStateView()
-                return@Box
+                    pageItems.forEach { model ->
+                        val selected = model in selectedModels
+                        ModelItem(
+                            model = model,
+                            itemHeight = modelItemHeight,
+                            selected = selected,
+                            onClick = {
+                                if (!selected) {
+                                    providerViewModel.updateProviderModelsState(
+                                        providerModelsState.copy(selectedModels = selectedModels + model)
+                                    )
+                                } else {
+                                    providerViewModel.updateProviderModelsState(
+                                        providerModelsState.copy(selectedModels = selectedModels - model)
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
             }
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(spacing)
+        }
+
+        // Page Control Bar
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(
+                onClick = {
+                    scope.launch {
+                        pagerState.animateScrollToPage(
+                            pagerState.currentPage - 1
+                        )
+                    }
+                }, enabled = pagerState.currentPage > 0
+            ) {
+                Text("上一页")
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
             ) {
 
-                pageItems.forEach { model ->
-                    val selected = model in selectedModels
-                    ModelItem(
-                        model = model,
-                        itemHeight = modelItemHeight,
-                        selected = selected,
-                        onClick = {
-                            if (!selected) {
-                                providerViewModel.updateProviderModelsState(
-                                    providerModelsState.copy(selectedModels = selectedModels + model)
-                                )
-                            } else {
-                                providerViewModel.updateProviderModelsState(
-                                    providerModelsState.copy(selectedModels = selectedModels - model)
-                                )
-                            }
-                        }
+                Text(
+                    text = "${pagerState.currentPage + 1}",
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        textAlign = TextAlign.End
                     )
-                }
+                )
+
+                Text(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    text = "/",
+                    style = MaterialTheme.typography.labelLarge
+                )
+
+                Text(
+                    text = "${pagerState.pageCount}",
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        textAlign = TextAlign.Start
+                    )
+                )
             }
-        }
-    }
 
-    // Page Control Bar
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        TextButton(
-            onClick = {
-                scope.launch {
-                    pagerState.animateScrollToPage(
-                        pagerState.currentPage - 1
-                    )
-                }
-            }, enabled = pagerState.currentPage > 0
-        ) {
-            Text("上一页")
-        }
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-
-            Text(
-                text = "${pagerState.currentPage + 1}",
-                style = MaterialTheme.typography.labelLarge.copy(
-                    textAlign = TextAlign.End
-                )
-            )
-
-            Text(
-                modifier = Modifier.padding(horizontal = 8.dp),
-                text = "/",
-                style = MaterialTheme.typography.labelLarge
-            )
-
-            Text(
-                text = "${pagerState.pageCount}",
-                style = MaterialTheme.typography.labelLarge.copy(
-                    textAlign = TextAlign.Start
-                )
-            )
-        }
-
-        TextButton(
-            onClick = {
-                scope.launch {
-                    pagerState.animateScrollToPage(
-                        pagerState.currentPage + 1
-                    )
-                }
-            }, enabled = pagerState.currentPage < pagerState.pageCount - 1
-        ) {
-            Text("下一页")
+            TextButton(
+                onClick = {
+                    scope.launch {
+                        pagerState.animateScrollToPage(
+                            pagerState.currentPage + 1
+                        )
+                    }
+                }, enabled = pagerState.currentPage < pagerState.pageCount - 1
+            ) {
+                Text("下一页")
+            }
         }
     }
 }
