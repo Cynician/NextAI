@@ -75,7 +75,7 @@ internal fun HomeBottomBar(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(end = 56.dp),
-                    placeholder = { Text(text = "Ask NextAI…") },
+                    placeholder = { Text(text = "问问 NextAI") },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
