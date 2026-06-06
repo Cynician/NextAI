@@ -87,4 +87,4 @@
 
 # Avoid parse error in optimization mode : Dependent class class
 # com.vladsch.flexmark.parser.core.ReferencePreProcessorFactory is duplicated.
--keep class com.vladsch.flexmark.parser.core.ReferencePreProcessorFactory.** { *; }
+-keep class com.vladsch.flexmark.parser.core.* { *; }
