@@ -3,8 +3,11 @@ package com.android.nextai.ui.component.markdown.mdnodeview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -82,10 +85,10 @@ fun TableView(
     }
 
     val maxHeaderCellWidthPx = maxTextWidthPx + with(density) { headerHorizontalPadding.toPx() * 2 }
-    val maxContentCellWidthPx =
-        maxTextWidthPx + with(density) { contentHorizontalPadding.toPx() * 2 }
+    val maxContentCellWidthPx = maxTextWidthPx + with(density) { contentHorizontalPadding.toPx() * 2 }
     val minWidthPx = with(density) { 100.dp.toPx() }
 
+    // 这里是放置修改的核心区域
     val columnWidths = remember(headers, rows) {
         val allRows = headers + rows
         val colCount = allRows.maxOfOrNull {
@@ -94,34 +97,72 @@ fun TableView(
 
         val widths = FloatArray(colCount)
 
+        // 1. 测量 Header 的宽度
         headers.forEach { row ->
             val cells = row.children.filterIsInstance<MarkdownNode.TableCell>()
             cells.forEachIndexed { i, cell ->
-                val text = buildAnnotatedString { appendInlineNodes(cell.children, colors) }
-                val result = textMeasurer.measure(
-                    text = text,
-                    style = currentStyle,
-                    constraints = Constraints(maxWidth = maxTextWidthPx.toInt()),
-                    maxLines = Int.MAX_VALUE
-                )
-                val cellWidth =
-                    result.size.width.toFloat() + with(density) { headerHorizontalPadding.toPx() * 2 }
+                val mathNodes = cell.children.filterIsInstance<MarkdownNode.InlineMath>()
+                var cellWidth = if (mathNodes.isNotEmpty()) {
+                    val totalLatexLength = mathNodes.sumOf { it.formula.length }
+                    val estimatedMathWidthPx = with(density) { (totalLatexLength * 6).dp.toPx() }
+
+                    val textWithoutMath = buildAnnotatedString {
+                        appendInlineNodes(cell.children.filter { it !is MarkdownNode.InlineMath }, colors)
+                    }
+                    val textResult = textMeasurer.measure(
+                        text = textWithoutMath,
+                        style = currentStyle,
+                        constraints = Constraints(maxWidth = maxTextWidthPx.toInt())
+                    )
+                    textResult.size.width.toFloat() + estimatedMathWidthPx
+                } else {
+                    val text = buildAnnotatedString { appendInlineNodes(cell.children, colors) }
+                    val result = textMeasurer.measure(
+                        text = text,
+                        style = currentStyle,
+                        constraints = Constraints(maxWidth = maxTextWidthPx.toInt()),
+                        maxLines = Int.MAX_VALUE
+                    )
+                    result.size.width.toFloat()
+                }
+
+                // 加上 Header 的 Padding
+                cellWidth += with(density) { headerHorizontalPadding.toPx() * 2 }
                 widths[i] = maxOf(widths[i], cellWidth)
             }
         }
 
+        // 2. 测量 Body Rows 的宽度
         rows.forEach { row ->
             val cells = row.children.filterIsInstance<MarkdownNode.TableCell>()
             cells.forEachIndexed { i, cell ->
-                val text = buildAnnotatedString { appendInlineNodes(cell.children, colors) }
-                val result = textMeasurer.measure(
-                    text = text,
-                    style = currentStyle,
-                    constraints = Constraints(maxWidth = maxTextWidthPx.toInt()),
-                    maxLines = Int.MAX_VALUE
-                )
-                val cellWidth =
-                    result.size.width.toFloat() + with(density) { contentHorizontalPadding.toPx() * 2 }
+                val mathNodes = cell.children.filterIsInstance<MarkdownNode.InlineMath>()
+                var cellWidth = if (mathNodes.isNotEmpty()) {
+                    val totalLatexLength = mathNodes.sumOf { it.formula.length }
+                    val estimatedMathWidthPx = with(density) { (totalLatexLength * 6).dp.toPx() }
+
+                    val textWithoutMath = buildAnnotatedString {
+                        appendInlineNodes(cell.children.filter { it !is MarkdownNode.InlineMath }, colors)
+                    }
+                    val textResult = textMeasurer.measure(
+                        text = textWithoutMath,
+                        style = currentStyle,
+                        constraints = Constraints(maxWidth = maxTextWidthPx.toInt())
+                    )
+                    textResult.size.width.toFloat() + estimatedMathWidthPx
+                } else {
+                    val text = buildAnnotatedString { appendInlineNodes(cell.children, colors) }
+                    val result = textMeasurer.measure(
+                        text = text,
+                        style = currentStyle,
+                        constraints = Constraints(maxWidth = maxTextWidthPx.toInt()),
+                        maxLines = Int.MAX_VALUE
+                    )
+                    result.size.width.toFloat()
+                }
+
+                // 加上 Content 的 Padding
+                cellWidth += with(density) { contentHorizontalPadding.toPx() * 2 }
                 widths[i] = maxOf(widths[i], cellWidth)
             }
         }
@@ -129,7 +170,6 @@ fun TableView(
         widths.map { it.coerceIn(minWidthPx, maxOf(maxHeaderCellWidthPx, maxContentCellWidthPx)) }
     }
 
-    /** Define the rounded shape. **/
     val tableShape = RoundedCornerShape(8.dp)
 
     Column(
@@ -139,7 +179,6 @@ fun TableView(
             .clip(tableShape)
             .border(width = 0.5.dp, color = outlineColor, shape = tableShape)
     ) {
-
         headers.forEachIndexed { index, row ->
             TableRowView(
                 row = row,
@@ -241,6 +280,7 @@ fun TableRowView(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TableCellView(
     cell: MarkdownNode.TableCell,
@@ -251,11 +291,7 @@ fun TableCellView(
     vPadding: Dp,
     modifier: Modifier = Modifier,
 ) {
-    val text = buildAnnotatedString { appendInlineNodes(cell.children, colors) }
-
-    /** All cell containers must be centered **/
     val boxAlign = Alignment.Center
-
     val textAlign = when (cell.alignment) {
         TableCell.Alignment.CENTER -> TextAlign.Center
         TableCell.Alignment.LEFT -> TextAlign.Left
@@ -267,13 +303,52 @@ fun TableCellView(
         modifier = modifier.padding(horizontal = hPadding, vertical = vPadding),
         contentAlignment = boxAlign
     ) {
-        Text(
-            text = text,
-            style = style,
-            maxLines = Int.MAX_VALUE,
-            textAlign = textAlign,
-            fontWeight = if (isHeader) FontWeight.Bold else FontWeight.Normal,
-            softWrap = true
-        )
+        // 判断是否包含数学公式
+        val hasMath = cell.children.any { it is MarkdownNode.InlineMath }
+
+        if (!hasMath) {
+            // 纯文本旧逻辑：直接渲染，性能最高
+            val text = buildAnnotatedString { appendInlineNodes(cell.children, colors) }
+            Text(
+                text = text,
+                style = style,
+                maxLines = Int.MAX_VALUE,
+                textAlign = textAlign,
+                fontWeight = if (isHeader) FontWeight.Bold else FontWeight.Normal,
+                softWrap = true
+            )
+        } else {
+            // 图文混排逻辑：把文字和公式拆开，用 FlowRow 自动换行拼装
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.Center
+            ) {
+                cell.children.forEach { child ->
+                    when (child) {
+                        is MarkdownNode.InlineMath -> {
+                            // 渲染数学公式
+                            InlineMathView(
+                                latex = child.formula,
+                                modifier = Modifier.padding(horizontal = 2.dp)
+                            )
+                        }
+                        is MarkdownNode.Text -> {
+                            // 渲染普通文本
+                            Text(
+                                text = child.text,
+                                style = style,
+                                fontWeight = if (isHeader) FontWeight.Bold else FontWeight.Normal,
+                                textAlign = textAlign
+                            )
+                        }
+                        // 如果有其他行内节点（如 Strong、Emphasis），可在此继续扩展
+                        else -> {
+                            val text = buildAnnotatedString { appendInlineNodes(listOf(child), colors) }
+                            Text(text = text, style = style)
+                        }
+                    }
+                }
+            }
+        }
     }
 }

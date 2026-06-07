@@ -14,6 +14,7 @@ import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 import com.android.nextai.ui.component.markdown.mdnodeview.BlockQuoteView
 import com.android.nextai.ui.component.markdown.mdnodeview.FencedCodeBlockView
 import com.android.nextai.ui.component.markdown.mdnodeview.HeadingView
+import com.android.nextai.ui.component.markdown.mdnodeview.InlineMathView
 import com.android.nextai.ui.component.markdown.mdnodeview.ListBlockView
 import com.android.nextai.ui.component.markdown.mdnodeview.ListItemView
 import com.android.nextai.ui.component.markdown.mdnodeview.ParagraphView
@@ -54,6 +55,8 @@ fun MarkdownNodeView(node: MarkdownNode) {
         )
         // Table
         is MarkdownNode.TableBlock -> TableBlockView(node, colors)
+
+        is MarkdownNode.InlineMath -> InlineMathView(node.formula)
         else -> {}
     }
 }
