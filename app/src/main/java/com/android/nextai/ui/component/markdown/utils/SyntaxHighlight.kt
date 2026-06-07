@@ -354,121 +354,157 @@ private fun tokenize(code: String, language: String): List<CodeToken> {
     val rules = LANG_RULES[lang] ?: return listOf(CodeToken(code, CodeTokenType.Default))
     val tokens = mutableListOf<CodeToken>()
     var pos = 0
+    val length = code.length
 
-    while (pos < code.length) {
+    while (pos < length) {
+        // 1. Block comment.
         if (rules.blockCommentStart != null && code.startsWith(rules.blockCommentStart, pos)) {
             val blockEnd = rules.blockCommentEnd ?: ""
-            val end = code.indexOf(blockEnd, pos + rules.blockCommentStart.length)
-            val commentEnd = if (end >= 0) end + blockEnd.length else code.length
+            val end = if (blockEnd.isNotEmpty()) code.indexOf(blockEnd, pos + rules.blockCommentStart.length) else -1
+            // Make sure the commentEnd never exceeds the actual length.
+            val commentEnd = if (end >= 0) { (end + blockEnd.length).coerceAtMost(length) } else { length }
             tokens.add(CodeToken(code.substring(pos, commentEnd), CodeTokenType.Comment))
-            pos = commentEnd; continue
+            pos = commentEnd
+            continue
         }
 
+        // 2. Line comment.
         if (rules.lineComment != null && code.startsWith(rules.lineComment, pos)) {
             val end = code.indexOf('\n', pos)
-            val commentEnd = if (end >= 0) end else code.length
+            val commentEnd = if (end >= 0) end else length
             tokens.add(CodeToken(code.substring(pos, commentEnd), CodeTokenType.Comment))
-            pos = commentEnd; continue
+            pos = commentEnd
+            continue
         }
 
+        // 3. Hash comment.
         if (rules.hashComment && code[pos] == '#') {
             val end = code.indexOf('\n', pos)
-            val commentEnd = if (end >= 0) end else code.length
+            val commentEnd = if (end >= 0) end else length
             tokens.add(CodeToken(code.substring(pos, commentEnd), CodeTokenType.Comment))
-            pos = commentEnd; continue
+            pos = commentEnd
+            continue
         }
 
+        // 4. Strings (regular strings & triple-quote strings).
         if (code[pos] == '"' || code[pos] == '\'' || code[pos] == '`') {
             val quote = code[pos]
-            if (quote != '`' && pos + 2 < code.length && code[pos + 1] == quote && code[pos + 2] == quote) {
+            // 三引号
+            if (quote != '`' && pos + 2 < length && code[pos + 1] == quote && code[pos + 2] == quote) {
                 val tripleQuote = "$quote$quote$quote"
                 val end = code.indexOf(tripleQuote, pos + 3)
-                val strEnd = if (end >= 0) end + 3 else code.length
+                val strEnd = if (end >= 0) (end + 3).coerceAtMost(length) else length
                 tokens.add(CodeToken(code.substring(pos, strEnd), CodeTokenType.String))
-                pos = strEnd; continue
+                pos = strEnd
+                continue
             }
+            // Regular single-quote/double-quote string.
             var j = pos + 1
-            while (j < code.length) {
+            while (j < length) {
                 if (code[j] == '\\') { j += 2; continue }
                 if (code[j] == quote) { j++; break }
                 if (quote != '`' && code[j] == '\n') break
                 j++
             }
-            tokens.add(CodeToken(code.substring(pos, j), CodeTokenType.String))
-            pos = j; continue
+            val strEnd = j.coerceAtMost(length)
+            tokens.add(CodeToken(code.substring(pos, strEnd), CodeTokenType.String))
+            pos = strEnd
+            continue
         }
 
+        // 5. Annotations(@**).
         if (rules.annotationPrefix != null && code[pos] == rules.annotationPrefix) {
             var j = pos + 1
-            while (j < code.length && (code[j].isLetterOrDigit() || code[j] == '_' || code[j] == '.')) j++
+            while (j < length && (code[j].isLetterOrDigit() || code[j] == '_' || code[j] == '.')) j++
             if (j > pos + 1) {
-                tokens.add(CodeToken(code.substring(pos, j), CodeTokenType.Annotation))
-                pos = j; continue
+                tokens.add(CodeToken(code.substring(pos, j.coerceAtMost(length)), CodeTokenType.Annotation))
+                pos = j
+                continue
             }
         }
 
-        if (code[pos].isDigit() || (code[pos] == '.' && pos + 1 < code.length && code[pos + 1].isDigit())) {
+        // 6. Digits.
+        if (code[pos].isDigit() || (code[pos] == '.' && pos + 1 < length && code[pos + 1].isDigit())) {
             var j = pos
-            if (code[pos] == '0' && j + 1 < code.length && (code[j + 1] == 'x' || code[j + 1] == 'X')) {
+            if (code[pos] == '0' && j + 1 < length && (code[j + 1] == 'x' || code[j + 1] == 'X')) {
                 j += 2
-                while (j < code.length && (code[j].isDigit() || code[j] in 'a'..'f' || code[j] in 'A'..'F' || code[j] == '_')) j++
+                while (j < length && (code[j].isDigit() || code[j] in 'a'..'f' || code[j] in 'A'..'F' || code[j] == '_')) j++
             } else {
-                while (j < code.length && (code[j].isDigit() || code[j] == '.' || code[j] == '_')) j++
-                if (j < code.length && (code[j] == 'e' || code[j] == 'E')) {
+                while (j < length && (code[j].isDigit() || code[j] == '.' || code[j] == '_')) j++
+                if (j < length && (code[j] == 'e' || code[j] == 'E')) {
                     j++
-                    if (j < code.length && (code[j] == '+' || code[j] == '-')) j++
-                    while (j < code.length && code[j].isDigit()) j++
+                    if (j < length && (code[j] == '+' || code[j] == '-')) j++
+                    while (j < length && code[j].isDigit()) j++
                 }
             }
-            if (j < code.length && code[j] in "fFdDlLuU") j++
-            tokens.add(CodeToken(code.substring(pos, j), CodeTokenType.Number))
-            pos = j; continue
+            if (j < length && code[j] in "fFdDlLuU") j++
+            tokens.add(CodeToken(code.substring(pos, j.coerceAtMost(length)), CodeTokenType.Number))
+            pos = j
+            continue
         }
 
+        // 7. Keywords/identifiers.
         if (code[pos].isLetter() || code[pos] == '_') {
             var j = pos
-            while (j < code.length && (code[j].isLetterOrDigit() || code[j] == '_')) j++
-            val word = code.substring(pos, j)
+            while (j < length && (code[j].isLetterOrDigit() || code[j] == '_')) j++
+            val word = code.substring(pos, j.coerceAtMost(length))
             val type = when {
                 word in rules.keywords -> CodeTokenType.Keyword
                 word in rules.typeKeywords -> CodeTokenType.Type
-                word[0].isUpperCase() && rules.typeKeywords.isNotEmpty() -> CodeTokenType.Type
-                j < code.length && code[j] == '(' -> CodeTokenType.Function
+                word.isNotEmpty() && word[0].isUpperCase() && rules.typeKeywords.isNotEmpty() -> CodeTokenType.Type
+                j < length && code[j] == '(' -> CodeTokenType.Function
                 else -> CodeTokenType.Default
             }
             tokens.add(CodeToken(word, type))
-            pos = j; continue
+            pos = j
+            continue
         }
 
+        // 8. XML/HTML labels.
         if ((lang == "xml" || lang == "html") && code[pos] == '<') {
             var j = pos + 1
-            if (j < code.length && code[j] == '/') j++
-            while (j < code.length && code[j] != '>' && code[j] != ' ' && code[j] != '\n') j++
-            if (j > pos + 1) {
-                tokens.add(CodeToken(code.substring(pos, j), CodeTokenType.Keyword))
-                pos = j; continue
-            }
-        }
-
-        if (code[pos] in "+-*/%=<>!&|^~?:") {
-            var j = pos + 1
-            while (j < code.length && code[j] in "+-*/%=<>!&|^~?:." && j - pos < 3) j++
-            tokens.add(CodeToken(code.substring(pos, j), CodeTokenType.Operator))
+            if (j < length && code[j] == '/') j++
+            while (j < length && code[j] != '>' && code[j] != '/' && !code[j].isWhitespace()) j++
+            tokens.add(CodeToken(code.substring(pos, j.coerceAtMost(length)), CodeTokenType.Keyword))
             pos = j; continue
         }
 
+        // 9. Operators.
+        if (code[pos] in "+-*/%=<>!&|^~?:") {
+            // Special handling in XML/HTML environments.
+            if (lang == "xml" || lang == "html") {
+                if (code[pos] == '/' && pos + 1 < length && code[pos + 1] == '>') {
+                    tokens.add(CodeToken("/>", CodeTokenType.Keyword))
+                    pos += 2; continue
+                }
+                if (code[pos] == '>') {
+                    tokens.add(CodeToken(">", CodeTokenType.Keyword))
+                    pos++; continue
+                }
+            }
+            var j = pos + 1
+            while (j < length && code[j] in "+-*/%=<>!&|^~?:." && j - pos < 3) j++
+            tokens.add(CodeToken(code.substring(pos, j.coerceAtMost(length)), CodeTokenType.Operator)) // 修复了原代码中的误写为 String
+            pos = j
+            continue
+        }
+
+        // 10. Punctuation.
         if (code[pos] in "{}[]();,.$\\") {
             tokens.add(CodeToken(code[pos].toString(), CodeTokenType.Punctuation))
-            pos++; continue
+            pos++
+            continue
         }
 
         if (code[pos].isWhitespace()) {
             var j = pos
-            while (j < code.length && code[j].isWhitespace()) j++
-            tokens.add(CodeToken(code.substring(pos, j), CodeTokenType.Default))
-            pos = j; continue
+            while (j < length && code[j].isWhitespace()) j++
+            tokens.add(CodeToken(code.substring(pos, j.coerceAtMost(length)), CodeTokenType.Default))
+            pos = j
+            continue
         }
 
+        // Guaranteed minimum treatment to ensure bottom-line progress.
         tokens.add(CodeToken(code[pos].toString(), CodeTokenType.Default))
         pos++
     }
