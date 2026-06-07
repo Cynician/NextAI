@@ -2,6 +2,8 @@ package com.android.nextai.ui.component.markdown.utils
 
 import android.util.Log
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
+import com.android.nextai.ui.component.markdown.ext.math.MathExtension
+import com.android.nextai.ui.component.markdown.ext.math.MathFormulaInLineNode
 import com.vladsch.flexmark.ast.BlockQuote
 import com.vladsch.flexmark.ast.BulletList
 import com.vladsch.flexmark.ast.Code
@@ -15,9 +17,6 @@ import com.vladsch.flexmark.ast.Paragraph
 import com.vladsch.flexmark.ast.StrongEmphasis
 import com.vladsch.flexmark.ast.Text
 import com.vladsch.flexmark.ast.ThematicBreak
-import com.vladsch.flexmark.ext.gfm.strikethrough.Strikethrough
-import com.vladsch.flexmark.ext.gfm.strikethrough.Subscript
-import com.vladsch.flexmark.ext.superscript.Superscript
 import com.vladsch.flexmark.ext.tables.TableBlock
 import com.vladsch.flexmark.ext.tables.TableBody
 import com.vladsch.flexmark.ext.tables.TableCaption
@@ -33,7 +32,7 @@ import com.vladsch.flexmark.util.data.MutableDataSet
 data class MarkdownParseResult(
     val nodes: List<MarkdownNode>,
     //Stable parsed character length
-    val parsedLength: Int
+    val parsedLength: Int,
 )
 
 object MarkdownNodeUtils {
@@ -42,31 +41,56 @@ object MarkdownNodeUtils {
         val options = MutableDataSet()
         options.set(
             Parser.EXTENSIONS,
-            listOf(TablesExtension.create())
+            listOf(
+                TablesExtension.create(),
+                MathExtension.create()
+            )
         )
+        options.set(TablesExtension.HEADER_SEPARATOR_COLUMN_MATCH, true)
         Parser.builder(options).build()
     }
 
-    fun parseChildren(node: Node): List<MarkdownNode>{
+    fun parseChildren(node: Node): List<MarkdownNode> {
         val result = mutableListOf<MarkdownNode>()
         var child = node.firstChild
-        while(child!=null){
+        while (child != null) {
             parseNode(child)?.let { result.add(it) }
             child = child.next
         }
         return result
     }
 
-    fun parseNode(node:Node):MarkdownNode?{
-        return when(node){
+    fun parseNode(node: Node): MarkdownNode? {
+        return when (node) {
             // Block
             is Paragraph -> MarkdownNode.Paragraph(parseChildren(node))
             is Heading -> MarkdownNode.Heading(level = node.level, children = parseChildren(node))
-            is BulletList -> MarkdownNode.ListBlock(children = parseChildren(node), ordered = false, depth = 0)
-            is OrderedList -> MarkdownNode.ListBlock(children = parseChildren(node), ordered = true, depth = 0)
-            is ListItem -> MarkdownNode.ListItem(parseChildren(node), depth = 0, index = 0, ordered = false)
-            is FencedCodeBlock -> MarkdownNode.FencedCodeBlock(code = node.contentChars.toString(), lang = node.info.toString())
+            is BulletList -> MarkdownNode.ListBlock(
+                children = parseChildren(node),
+                ordered = false,
+                depth = 0
+            )
+
+            is OrderedList -> MarkdownNode.ListBlock(
+                children = parseChildren(node),
+                ordered = true,
+                depth = 0
+            )
+
+            is ListItem -> MarkdownNode.ListItem(
+                parseChildren(node),
+                depth = 0,
+                index = 0,
+                ordered = false
+            )
+
+            is FencedCodeBlock -> MarkdownNode.FencedCodeBlock(
+                code = node.contentChars.toString(),
+                lang = node.info.toString()
+            )
+
             is BlockQuote -> MarkdownNode.BlockQuote(parseChildren(node), depth = 0)
+
             // Inline
             is Text -> MarkdownNode.Text(node.chars.toString())
             is Emphasis -> MarkdownNode.Emphasis(parseChildren(node))
@@ -74,31 +98,88 @@ object MarkdownNodeUtils {
             is Code -> MarkdownNode.InlineCode(node.text.toString())
             is Link -> MarkdownNode.Link(url = node.url.toString(), children = parseChildren(node))
             is ThematicBreak -> MarkdownNode.ThematicBreak
-            is Strikethrough -> MarkdownNode.Strikethrough(children = parseChildren(node))
-            is Subscript -> MarkdownNode.Subscript(children = parseChildren(node))
-            is Superscript -> MarkdownNode.Superscript(children = parseChildren(node))
+
+
             // Table
             is TableBlock -> MarkdownNode.TableBlock(children = parseChildren(node))
             is TableBody -> MarkdownNode.TableBody(children = parseChildren(node))
             is TableCaption -> MarkdownNode.TableCaption(children = parseChildren(node))
             is TableHead -> MarkdownNode.TableHead(children = parseChildren(node))
             is TableRow -> MarkdownNode.TableRow(children = parseChildren(node))
-            is TableCell -> MarkdownNode.TableCell(children = parseChildren(node), node.alignment, node.isHeader)
-            else -> {null}
+            is TableCell -> MarkdownNode.TableCell(
+                children = parseChildren(node),
+                node.alignment,
+                node.isHeader
+            )
+
+            is MathFormulaInLineNode -> MarkdownNode.InlineMath(node.text.toString())
+
+            else -> {
+                null
+            }
+        }
+    }
+
+
+fun replaceLatexDelimiters(md: String): String {
+    var processed = md
+
+    // 1. 核心修复：先找出所有在 \( ... \) 内部的 | 并转义为 \|
+    val inlineMathBracketRegex = """\\\(([^)]+)\\\)""".toRegex()
+    processed = inlineMathBracketRegex.replace(processed) { matchResult ->
+        val content = matchResult.groupValues[1]
+        "\\(${content.replace("|", "\\|")}\\)"
+    }
+
+    // 2. 顺便保护一下可能存在于 \[ ... \] 块级公式里的 |
+    val blockMathBracketRegex = """\\\[([^]]+)\\]""".toRegex()
+    processed = blockMathBracketRegex.replace(processed) { matchResult ->
+        val content = matchResult.groupValues[1]
+        "\\[${content.replace("|", "\\|")}\\]"
+    }
+
+    // 3. 最后放心地将 LaTeX 语法糖替换为统一的 $ 符号
+    processed = processed.replace("\\[", "$$").replace("\\]", "$$")
+    processed = processed.replace("\\(", "$").replace("\\)", "$")
+
+    return processed
+}
+
+    private fun dump(node: Node, depth: Int = 0) {
+        Log.d(
+            "AST",
+            "${" ".repeat(depth*2)}${node.javaClass.name} -> [${node.chars}]"
+        )
+        var child = node.firstChild
+        while (child != null) {
+            dump(child, depth + 2)
+            child = child.next
         }
     }
 
     fun parseMarkDown(md: String): MarkdownParseResult {
         try {
+            Log.d(TAG, "markdown = $md")
 
-            val document = parser.parse(md)
+            val standardizedMd = replaceLatexDelimiters(md)
+            Log.d(TAG, "markdown = $standardizedMd")
+            val document = parser.parse(standardizedMd)
+
+
+//            val document = parser.parse(md)
+
+            Log.d(TAG, "firstChild = ${document.firstChild?.javaClass?.name}")
+            dump(document, 0)
+
+
             val result = mutableListOf<MarkdownNode>()
             var node = document.firstChild
+
             while (node != null) {
                 parseNode(node)?.let { result.add(it) }
                 node = node.next
             }
-             /** When streaming,  The last node may not be closed yet**/
+            /** When streaming,  The last node may not be closed yet**/
             val lastNode = document.lastChild
             val parsedLength = if (lastNode != null && result.isNotEmpty()) {
                 lastNode.startOffset

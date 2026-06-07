@@ -69,6 +69,17 @@ fun AnnotatedString.Builder.appendInlineNodes(nodes: List<MarkdownNode>, colors:
                 appendInlineNodes(node.children, colors)
                 pop()
             }
+
+            is MarkdownNode.InlineMath -> withStyle(
+                SpanStyle(
+                    color = colors.mathColor, // 你们主题色中的公式高亮色
+                    fontStyle = FontStyle.Italic // 公式通常采用斜体
+                )
+            ) {
+                // 如果你想保留 $ 符号显示：append("$${node.formula}$")
+                // 如果只想干净地显示公式内部：
+                append(node.formula)
+            }
             else -> {}
         }
     }

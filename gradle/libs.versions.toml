@@ -109,8 +109,6 @@ jackson-datatype-jsr310 = {group = "com.fasterxml.jackson.datatype", name = "jac
 
 # Markdown
 flexmark = { group = "com.vladsch.flexmark", name = "flexmark", version.ref = "flexmark" }
-flexmark-ext-strikethrough = { group = "com.vladsch.flexmark", name = "flexmark-ext-gfm-strikethrough", version.ref = "flexmark" }
-flexmark-ext-superscript = { group = "com.vladsch.flexmark", name = "flexmark-ext-superscript", version.ref = "flexmark" }
 flexmark-ext-tables = { group = "com.vladsch.flexmark", name = "flexmark-ext-tables", version.ref = "flexmark" }
 
 # Test

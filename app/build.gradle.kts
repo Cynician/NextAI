@@ -139,7 +139,5 @@ dependencies {
 
     // Markdown
     implementation(libs.flexmark)
-    implementation(libs.flexmark.ext.strikethrough)
-    implementation(libs.flexmark.ext.superscript)
     implementation(libs.flexmark.ext.tables)
 }

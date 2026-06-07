@@ -335,7 +335,7 @@ private fun processLineBreaks(input: String): String {
     return r
 }
 
-internal fun renderMathToUnicode(expression: String): String {
+fun renderMathToUnicode(expression: String): String {
     var r = expression
     r = processTextCommands(r)
     r = processBlackboardBold(r)
