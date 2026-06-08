@@ -140,4 +140,8 @@ dependencies {
     // Markdown
     implementation(libs.flexmark)
     implementation(libs.flexmark.ext.tables)
+
+    implementation(libs.latex.base) // 基础日志
+    implementation(libs.latex.renderer) // 渲染逻辑
+    implementation(libs.latex.parser) // 解析逻辑
 }

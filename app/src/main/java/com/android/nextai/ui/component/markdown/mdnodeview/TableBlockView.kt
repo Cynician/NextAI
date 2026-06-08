@@ -3,18 +3,15 @@ package com.android.nextai.ui.component.markdown.mdnodeview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -25,11 +22,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
@@ -37,6 +33,9 @@ import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.markdown.entity.InlineColors
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 import com.vladsch.flexmark.ext.tables.TableCell
+import com.hrm.latex.renderer.LatexAutoWrap
+import com.hrm.latex.renderer.model.LatexConfig
+import kotlin.math.max
 
 @Composable
 fun TableBlockView(node: MarkdownNode.TableBlock, colors: InlineColors) {
@@ -48,18 +47,15 @@ fun TableBlockView(node: MarkdownNode.TableBlock, colors: InlineColors) {
                 is MarkdownNode.TableHead -> {
                     headerRows.addAll(child.children.filterIsInstance<MarkdownNode.TableRow>())
                 }
-
                 is MarkdownNode.TableBody -> {
                     dataRows.addAll(child.children.filterIsInstance<MarkdownNode.TableRow>())
                 }
-
-                else -> { /* Ignore */
-                }
+                else -> { /* Ignore */ }
             }
         }
         Pair(headerRows, dataRows)
     }
-    TableView(headers = headers, rows = bodyRows, colors)
+    TableView(headers = headers, rows = bodyRows, colors = colors)
 }
 
 @Composable
@@ -71,103 +67,26 @@ fun TableView(
     val outlineColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)
     val headerBg = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
     val contentBg = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
-
-    val textMeasurer = rememberTextMeasurer()
-    val density = LocalDensity.current
     val currentStyle = MaterialTheme.typography.bodySmall
 
-    val headerHorizontalPadding = 16.dp
-    val contentHorizontalPadding = 16.dp
+    val headerHorizontalPadding = 12.dp
+    val contentHorizontalPadding = 12.dp
 
-    val maxTextWidthPx = remember(currentStyle) {
-        val sampleText = "一二三四五六七八九十Android"
-        textMeasurer.measure(sampleText, currentStyle).size.width.toFloat()
+    val allRows = headers + rows
+    val colCount = remember(allRows) {
+        allRows.maxOfOrNull { it.children.filterIsInstance<MarkdownNode.TableCell>().size } ?: 0
     }
 
-    val maxHeaderCellWidthPx = maxTextWidthPx + with(density) { headerHorizontalPadding.toPx() * 2 }
-    val maxContentCellWidthPx = maxTextWidthPx + with(density) { contentHorizontalPadding.toPx() * 2 }
-    val minWidthPx = with(density) { 100.dp.toPx() }
-
-    // 这里是放置修改的核心区域
-    val columnWidths = remember(headers, rows) {
-        val allRows = headers + rows
-        val colCount = allRows.maxOfOrNull {
-            it.children.filterIsInstance<MarkdownNode.TableCell>().size
-        } ?: 0
-
-        val widths = FloatArray(colCount)
-
-        // 1. 测量 Header 的宽度
-        headers.forEach { row ->
-            val cells = row.children.filterIsInstance<MarkdownNode.TableCell>()
-            cells.forEachIndexed { i, cell ->
-                val mathNodes = cell.children.filterIsInstance<MarkdownNode.InlineMath>()
-                var cellWidth = if (mathNodes.isNotEmpty()) {
-                    val totalLatexLength = mathNodes.sumOf { it.formula.length }
-                    val estimatedMathWidthPx = with(density) { (totalLatexLength * 6).dp.toPx() }
-
-                    val textWithoutMath = buildAnnotatedString {
-                        appendInlineNodes(cell.children.filter { it !is MarkdownNode.InlineMath }, colors)
-                    }
-                    val textResult = textMeasurer.measure(
-                        text = textWithoutMath,
-                        style = currentStyle,
-                        constraints = Constraints(maxWidth = maxTextWidthPx.toInt())
-                    )
-                    textResult.size.width.toFloat() + estimatedMathWidthPx
-                } else {
-                    val text = buildAnnotatedString { appendInlineNodes(cell.children, colors) }
-                    val result = textMeasurer.measure(
-                        text = text,
-                        style = currentStyle,
-                        constraints = Constraints(maxWidth = maxTextWidthPx.toInt()),
-                        maxLines = Int.MAX_VALUE
-                    )
-                    result.size.width.toFloat()
-                }
-
-                // 加上 Header 的 Padding
-                cellWidth += with(density) { headerHorizontalPadding.toPx() * 2 }
-                widths[i] = maxOf(widths[i], cellWidth)
+    // 为每一列定义合适的基础宽度和最大宽度边界，长公式在此边界内自动换行
+    val fixedColumnWidths = remember(colCount) {
+        // 第一列普通函数名可以窄一点，中间公式列和最后一列收敛域由于有长公式，直接给予充足的固定宽度空间
+        List(colCount) { index ->
+            when (index) {
+                0 -> 240.dp
+                1 -> 240.dp
+                else -> 240.dp
             }
         }
-
-        // 2. 测量 Body Rows 的宽度
-        rows.forEach { row ->
-            val cells = row.children.filterIsInstance<MarkdownNode.TableCell>()
-            cells.forEachIndexed { i, cell ->
-                val mathNodes = cell.children.filterIsInstance<MarkdownNode.InlineMath>()
-                var cellWidth = if (mathNodes.isNotEmpty()) {
-                    val totalLatexLength = mathNodes.sumOf { it.formula.length }
-                    val estimatedMathWidthPx = with(density) { (totalLatexLength * 6).dp.toPx() }
-
-                    val textWithoutMath = buildAnnotatedString {
-                        appendInlineNodes(cell.children.filter { it !is MarkdownNode.InlineMath }, colors)
-                    }
-                    val textResult = textMeasurer.measure(
-                        text = textWithoutMath,
-                        style = currentStyle,
-                        constraints = Constraints(maxWidth = maxTextWidthPx.toInt())
-                    )
-                    textResult.size.width.toFloat() + estimatedMathWidthPx
-                } else {
-                    val text = buildAnnotatedString { appendInlineNodes(cell.children, colors) }
-                    val result = textMeasurer.measure(
-                        text = text,
-                        style = currentStyle,
-                        constraints = Constraints(maxWidth = maxTextWidthPx.toInt()),
-                        maxLines = Int.MAX_VALUE
-                    )
-                    result.size.width.toFloat()
-                }
-
-                // 加上 Content 的 Padding
-                cellWidth += with(density) { contentHorizontalPadding.toPx() * 2 }
-                widths[i] = maxOf(widths[i], cellWidth)
-            }
-        }
-
-        widths.map { it.coerceIn(minWidthPx, maxOf(maxHeaderCellWidthPx, maxContentCellWidthPx)) }
     }
 
     val tableShape = RoundedCornerShape(8.dp)
@@ -175,100 +94,161 @@ fun TableView(
     Column(
         modifier = Modifier
             .horizontalScroll(rememberScrollState())
-            .padding(vertical = 4.dp)
+            .padding(vertical = 8.dp)
             .clip(tableShape)
             .border(width = 0.5.dp, color = outlineColor, shape = tableShape)
     ) {
-        headers.forEachIndexed { index, row ->
-            TableRowView(
+        headers.forEach { row ->
+            SyncTableRowWrapper(
                 row = row,
                 isHeader = true,
                 colors = colors,
                 style = currentStyle,
                 background = headerBg,
                 outlineColor = outlineColor,
-                columnWidths = columnWidths,
                 hPadding = headerHorizontalPadding,
-                vPadding = 14.dp,
+                vPadding = 12.dp,
+                colCount = colCount,
+                columnWidths = fixedColumnWidths
             )
         }
         rows.forEachIndexed { index, row ->
-            TableRowView(
+            SyncTableRowWrapper(
                 row = row,
                 isHeader = false,
                 colors = colors,
                 style = currentStyle,
                 background = contentBg,
                 outlineColor = outlineColor,
-                columnWidths = columnWidths,
                 hPadding = contentHorizontalPadding,
-                vPadding = 10.dp,
+                vPadding = 12.dp,
                 isLastRow = index == rows.lastIndex,
+                colCount = colCount,
+                columnWidths = fixedColumnWidths
             )
         }
     }
 }
 
+/**
+ * 【终极核心组件】：利用高级 SubcomposeLayout 代替标准的 Row。
+ * 它能够分步执行：第一步测量拿到所有单元格的真实爆发高度，第二步强行拉伸整行，从物理层面上粉碎重叠错位。
+ */
 @Composable
-fun TableRowView(
+fun SyncTableRowWrapper(
     row: MarkdownNode.TableRow,
     isHeader: Boolean,
     colors: InlineColors,
     style: TextStyle,
     background: Color,
     outlineColor: Color,
-    columnWidths: List<Float>,
     hPadding: Dp,
     vPadding: Dp,
+    colCount: Int,
+    columnWidths: List<Dp>,
     isLastRow: Boolean = false,
 ) {
     val cells = row.children.filterIsInstance<MarkdownNode.TableCell>()
-    val density = LocalDensity.current
 
-    Column(
-        modifier = Modifier.background(background)
-    ) {
-        Row(
-            modifier = Modifier
-                .height(IntrinsicSize.Min)
-                .background(background)
-        ) {
+    Column(modifier = Modifier.background(background)) {
+        // 使用 SubcomposeLayout 进行精准的“高度夹逼测量”
+        SubcomposeLayout { constraints ->
 
-            cells.forEachIndexed { index, cell ->
-                val widthDp = with(density) {
-                    columnWidths.getOrElse(index) { 100f }.toDp()
-                }
+            // 1. 预先测量这一行所有的单元格，让他们自由释放高度
+            val placeables = (0 until colCount).map { index ->
+                val cell = cells.getOrNull(index)
+                val cellWidthPx = columnWidths[index].roundToPx()
 
-                TableCellView(
-                    cell = cell,
-                    colors = colors,
-                    style = style,
-                    isHeader = isHeader,
-                    hPadding = hPadding,
-                    vPadding = vPadding,
-                    modifier = Modifier
-                        .width(widthDp)
-                        .fillMaxHeight()
-                )
-
-                /**
-                 * Vertical inner/outer border lines: If it is the last column, do not draw the
-                 * right border (handled by the outer border).
-                 */
-                if (index < cells.lastIndex) {
-                    Box(
-                        modifier = Modifier
-                            .width(0.5.dp)
-                            .fillMaxHeight()
-                            .background(outlineColor)
+                // 使用 subcompose 独立开辟插槽进行探测
+                subcompose("cell_$index") {
+                    if (cell != null) {
+                        TableCellView(
+                            cell = cell,
+                            colors = colors,
+                            style = style,
+                            isHeader = isHeader,
+                            hPadding = hPadding,
+                            vPadding = vPadding
+                        )
+                    } else {
+                        Box(modifier = Modifier.width(columnWidths[index]))
+                    }
+                }.map { measurable ->
+                    // 强制给予规定的宽度，高度保持自适应包裹
+                    measurable.measure(
+                        Constraints(
+                            minWidth = cellWidthPx,
+                            maxWidth = cellWidthPx,
+                            minHeight = 0,
+                            maxHeight = Constraints.Infinity
+                        )
                     )
+                }
+            }
+
+            // 2. 核心计算：找出当前行所有单元格中，由于 Latex 展开导致的最深、最高的那一个高度
+            var maxRowHeight = 0
+            placeables.flatten().forEach { placeable ->
+                maxRowHeight = max(maxRowHeight, placeable.height)
+            }
+
+            // 兜底保底行高，防止出现极端 0 高度
+            if (maxRowHeight == 0) {
+                maxRowHeight = 45.dp.roundToPx()
+            }
+
+            // 3. 重新测量：用刚刚找出来的 maxRowHeight 制造一个绝对强制的“硬约束”，重新注入给每一个单元格
+            val finalPlaceables = (0 until colCount).map { index ->
+                val cell = cells.getOrNull(index)
+                val cellWidthPx = columnWidths[index].roundToPx()
+
+                subcompose("final_cell_$index") {
+                    if (cell != null) {
+                        TableCellView(
+                            cell = cell,
+                            colors = colors,
+                            style = style,
+                            isHeader = isHeader,
+                            hPadding = hPadding,
+                            vPadding = vPadding,
+                            modifier = Modifier.fillMaxHeight() // 允许占满最高高度
+                        )
+                    } else {
+                        Box(modifier = Modifier.width(columnWidths[index]).fillMaxHeight())
+                    }
+                }.map { measurable ->
+                    // 关键改动：宽高全部锁死为当前行的最大对齐尺寸！
+                    measurable.measure(Constraints.fixed(cellWidthPx, maxRowHeight))
+                }
+            }
+
+            // 4. 计算整行的总宽度（加上分割线）
+            val totalWidth = columnWidths.sumOf { it.roundToPx() } + ((colCount - 1) * 0.5.dp.roundToPx())
+
+            // 5. 开始物理排版绘制
+            layout(totalWidth, maxRowHeight) {
+                var xPosition = 0
+                val dividerWidthPx = 0.5.dp.roundToPx()
+
+                finalPlaceables.forEachIndexed { index, list ->
+                    list.forEach { placeable ->
+                        placeable.placeRelative(xPosition, 0)
+                        xPosition += placeable.width
+                    }
+
+                    // 顺手绘制垂直分割线，同样强制拉满高度
+                    if (index < colCount - 1) {
+                        subcompose("div_$index") {
+                            Box(modifier = Modifier.width(0.5.dp).height(maxRowHeight.toDp()).background(outlineColor))
+                        }.forEach { measurable ->
+                            measurable.measure(Constraints.fixed(dividerWidthPx, maxRowHeight)).placeRelative(xPosition, 0)
+                        }
+                        xPosition += dividerWidthPx
+                    }
                 }
             }
         }
 
-        /**
-         * Horizontal divider: If it is not the last row, draw the divider normally.
-         */
         if (!isLastRow) {
             Box(
                 modifier = Modifier
@@ -280,7 +260,6 @@ fun TableRowView(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TableCellView(
     cell: MarkdownNode.TableCell,
@@ -291,63 +270,85 @@ fun TableCellView(
     vPadding: Dp,
     modifier: Modifier = Modifier,
 ) {
-    val boxAlign = Alignment.Center
     val textAlign = when (cell.alignment) {
         TableCell.Alignment.CENTER -> TextAlign.Center
-        TableCell.Alignment.LEFT -> TextAlign.Left
         TableCell.Alignment.RIGHT -> TextAlign.Right
         else -> TextAlign.Left
     }
 
+    val boxAlign = when (cell.alignment) {
+        TableCell.Alignment.CENTER -> Alignment.Center
+        TableCell.Alignment.RIGHT -> Alignment.CenterEnd
+        else -> Alignment.CenterStart
+    }
+
+    // 每一格的最外层：完美支持外部注入的约束拉伸
     Box(
         modifier = modifier.padding(horizontal = hPadding, vertical = vPadding),
-        contentAlignment = boxAlign
+        contentAlignment = Alignment.Center // 终极垂直居中保障
     ) {
-        // 判断是否包含数学公式
-        val hasMath = cell.children.any { it is MarkdownNode.InlineMath }
+        Box(
+            modifier = Modifier
+                .wrapContentWidth()
+                .wrapContentHeight(),
+            contentAlignment = boxAlign
+        ) {
+            val hasMath = cell.children.any {
+                it is MarkdownNode.InlineMath || it.javaClass.simpleName.contains("Math")
+            }
 
-        if (!hasMath) {
-            // 纯文本旧逻辑：直接渲染，性能最高
-            val text = buildAnnotatedString { appendInlineNodes(cell.children, colors) }
-            Text(
-                text = text,
-                style = style,
-                maxLines = Int.MAX_VALUE,
-                textAlign = textAlign,
-                fontWeight = if (isHeader) FontWeight.Bold else FontWeight.Normal,
-                softWrap = true
-            )
-        } else {
-            // 图文混排逻辑：把文字和公式拆开，用 FlowRow 自动换行拼装
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.Center
-            ) {
-                cell.children.forEach { child ->
-                    when (child) {
-                        is MarkdownNode.InlineMath -> {
-                            // 渲染数学公式
-                            InlineMathView(
-                                latex = child.formula,
-                                modifier = Modifier.padding(horizontal = 2.dp)
-                            )
-                        }
-                        is MarkdownNode.Text -> {
-                            // 渲染普通文本
-                            Text(
-                                text = child.text,
-                                style = style,
-                                fontWeight = if (isHeader) FontWeight.Bold else FontWeight.Normal,
-                                textAlign = textAlign
-                            )
-                        }
-                        // 如果有其他行内节点（如 Strong、Emphasis），可在此继续扩展
-                        else -> {
-                            val text = buildAnnotatedString { appendInlineNodes(listOf(child), colors) }
-                            Text(text = text, style = style)
+            if (!hasMath) {
+                val text = buildAnnotatedString { appendInlineNodes(cell.children, colors) }
+                Text(
+                    text = text,
+                    style = style,
+                    maxLines = Int.MAX_VALUE,
+                    textAlign = textAlign,
+                    fontWeight = if (isHeader) FontWeight.Bold else FontWeight.Normal,
+                    softWrap = true
+                )
+            } else {
+                val fullLatexString = remember(cell.children) {
+                    buildString {
+                        cell.children.forEach { child ->
+                            if (child is MarkdownNode.InlineMath || child.javaClass.simpleName.contains("Math")) {
+                                val formula = try {
+                                    val field = child.javaClass.getDeclaredField("formula")
+                                    field.isAccessible = true
+                                    field.get(child) as String
+                                } catch (e: Exception) {
+                                    child.toString()
+                                }
+                                if (!formula.startsWith("$")) append("$")
+                                append(formula)
+                                if (!formula.endsWith("$")) append("$")
+                            } else {
+                                val rawText = try {
+                                    val field = child.javaClass.getDeclaredField("text")
+                                    field.isAccessible = true
+                                    field.get(child) as String
+                                } catch (e: Exception) {
+                                    ""
+                                }
+                                if (rawText.isNotEmpty()) {
+                                    append("\\text{ $rawText }")
+                                }
+                            }
                         }
                     }
                 }
+
+                // 核心：直接调用。此时外层 SubcomposeLayout 已经给定了精准的单元格 Constraints 宽度，
+                // 内部的 BoxWithConstraints 能够立刻知道应该在哪一个边界开始强制截断换行。
+                // 换行生成的高度会被外部的 SubcomposeLayout 强行同步给同行的其他单元格。
+                LatexAutoWrap(
+                    latex = fullLatexString.replace("\\|", "|"),
+                    modifier = Modifier.wrapContentWidth().wrapContentHeight(),
+                    config = LatexConfig(
+                        fontSize = style.fontSize,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                )
             }
         }
     }

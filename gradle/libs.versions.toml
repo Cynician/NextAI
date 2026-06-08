@@ -44,6 +44,7 @@ jackson = "2.21.4"
 
 # Markdown
 flexmark = "0.64.8"
+latex = "1.3.0-kt2.1.0"
 
 # Test
 androidx-espresso-core = "3.7.0"
@@ -110,6 +111,9 @@ jackson-datatype-jsr310 = {group = "com.fasterxml.jackson.datatype", name = "jac
 # Markdown
 flexmark = { group = "com.vladsch.flexmark", name = "flexmark", version.ref = "flexmark" }
 flexmark-ext-tables = { group = "com.vladsch.flexmark", name = "flexmark-ext-tables", version.ref = "flexmark" }
+latex-base = { module = "io.github.huarangmeng:latex-base", version.ref = "latex" }
+latex-parser = { module = "io.github.huarangmeng:latex-parser", version.ref = "latex" }
+latex-renderer = { module = "io.github.huarangmeng:latex-renderer", version.ref = "latex" }
 
 # Test
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "androidx-espresso-core" }
