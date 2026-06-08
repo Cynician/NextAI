@@ -14,6 +14,9 @@ import com.vladsch.flexmark.parser.delimiter.DelimiterRun;
 import com.vladsch.flexmark.util.ast.Node;
 import com.vladsch.flexmark.util.sequence.BasedSequence;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class MathFormulaInLineDelimiterProcessor implements DelimiterProcessor {
 
     @Override
@@ -30,46 +33,44 @@ public class MathFormulaInLineDelimiterProcessor implements DelimiterProcessor {
     public int getMinLength() {
         return 1;
     }
-    
-//    @Override
-//    public boolean canBeOpener(String before, String after, boolean leftFlanking, boolean rightFlanking,
-//            boolean beforeIsPunctuation, boolean afterIsPunctuation, boolean beforeIsWhitespace,
-//            boolean afterIsWhiteSpace) {
-//        return leftFlanking && beforeIsWhitespace;
-//    }
-//
-//    @Override
-//    public boolean canBeCloser(String before, String after, boolean leftFlanking, boolean rightFlanking,
-//            boolean beforeIsPunctuation, boolean afterIsPunctuation, boolean beforeIsWhitespace,
-//            boolean afterIsWhiteSpace) {
-//        return rightFlanking && afterIsWhiteSpace;
-//    }
 
+    private static final Pattern PURE_NUMBER_PATTERN = Pattern.compile("^\\d+(\\.\\d+)?(?=\\$)");
 
     @Override
     public boolean canBeOpener(String before, String after, boolean leftFlanking, boolean rightFlanking,
                                boolean beforeIsPunctuation, boolean afterIsPunctuation, boolean beforeIsWhitespace,
                                boolean afterIsWhiteSpace) {
-        // 开头判定：$ 后面绝对不能是空格或换行，且不能是数字（防止 $100 误判）
         if (after == null || after.isEmpty()) return false;
+
         char nextChar = after.charAt(0);
-        if (Character.isWhitespace(nextChar) || Character.isDigit(nextChar)) {
+        // 1. 基础拦截：$ 后面绝对不能是空格或换行
+        if (Character.isWhitespace(nextChar)) {
             return false;
         }
-        return true; // 只要后面有实质的数学公式内容，就允许作为 Opener
+
+        // 2. 核心改进：如果是数字开头，检查直到下一个 $ 之间是不是纯数字
+        if (Character.isDigit(nextChar)) {
+            Matcher matcher = PURE_NUMBER_PATTERN.matcher(after);
+            if (matcher.find()) {
+                // 如果能匹配成功，说明形如 "$100$" 或 "$3.14$"，这是纯金额或数字，拒绝作为公式开头
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Override
     public boolean canBeCloser(String before, String after, boolean leftFlanking, boolean rightFlanking,
                                boolean beforeIsPunctuation, boolean afterIsPunctuation, boolean beforeIsWhitespace,
                                boolean afterIsWhiteSpace) {
-        // 结尾判定：$ 前面绝对不能是空格或换行（公式内部末尾不可能以空格结尾）
+        // 结尾判定保持原样即可：公式内部末尾不可能以空格结尾
         if (before == null || before.isEmpty()) return false;
         char prevChar = before.charAt(before.length() - 1);
         if (Character.isWhitespace(prevChar)) {
             return false;
         }
-        return true; // 只要公式身体正常结束，不管后面跟着句号、空格还是换行，都允许作为 Closer
+        return true;
     }
 
     @Override
