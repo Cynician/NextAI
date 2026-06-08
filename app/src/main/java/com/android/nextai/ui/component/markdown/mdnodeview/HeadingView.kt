@@ -9,6 +9,7 @@ import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -18,7 +19,7 @@ import com.android.nextai.ui.component.markdown.entity.InlineColors
 import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 
 @Composable
-fun HeadingView(node: MarkdownNode.Heading, colors: InlineColors) {
+fun HeadingView(node: MarkdownNode.Heading, colors: InlineColors, style: TextStyle) {
     val textStyle = when (node.level) {
         1 -> TextStyle(
             fontSize = 28.sp,
@@ -44,13 +45,16 @@ fun HeadingView(node: MarkdownNode.Heading, colors: InlineColors) {
             color = LocalContentColor.current.copy(alpha = 1f)
         )
     }
-
+    val density = LocalDensity.current
     Column(modifier = Modifier
         .fillMaxWidth()
         .padding(vertical = 2.dp)) {
         ProvideTextStyle(textStyle) {
             Text(
-                text = buildAnnotatedString { appendInlineNodes(node.children, colors = colors) },
+                text = buildAnnotatedString {
+
+                    appendInlineNodes(node.children, colors = colors, style, density = density)
+                },
                 style = MaterialTheme.typography.titleLarge,
                 fontSize = textStyle.fontSize,
                 fontWeight = textStyle.fontWeight,

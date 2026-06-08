@@ -121,29 +121,30 @@ object MarkdownNodeUtils {
     }
 
 
-fun replaceLatexDelimiters(md: String): String {
-    var processed = md
+    fun replaceLatexDelimiters(md: String): String {
+        var processed = md
 
-    // 1. 核心修复：先找出所有在 \( ... \) 内部的 | 并转义为 \|
-    val inlineMathBracketRegex = """\\\(([^)]+)\\\)""".toRegex()
-    processed = inlineMathBracketRegex.replace(processed) { matchResult ->
-        val content = matchResult.groupValues[1]
-        "\\(${content.replace("|", "\\|")}\\)"
+        // 1. 统一语法糖：将所有 \(, \), \[, \] 统一替换为 $ 和 $$
+        processed = processed.replace("\\[", "$$").replace("\\]", "$$")
+        processed = processed.replace("\\(", "$").replace("\\)", "$")
+
+        // 2. 核心转义：匹配 $$ ... $$ 块级公式并转义内部的 |
+        val blockDollarRegex = """\$\$([\s\S]*?)\$\$""".toRegex()
+        processed = blockDollarRegex.replace(processed) { matchResult ->
+            val content = matchResult.groupValues[1]
+            "\$\${${content.replace("|", "\\|")}}\$\$"
+        }
+
+        // 3. 核心转义：匹配 $ ... $ 行内公式并转义内部的 |
+        // [^$\n]+? 确保非贪婪匹配，且不跨行，精准锁定单行公式
+        val inlineDollarRegex = """\$(?!\s)([^$\n]+?)(?<!\s)\$""".toRegex()
+        processed = inlineDollarRegex.replace(processed) { matchResult ->
+            val content = matchResult.groupValues[1]
+            "\$${content.replace("|", "\\|")}\$"
+        }
+
+        return processed
     }
-
-    // 2. 顺便保护一下可能存在于 \[ ... \] 块级公式里的 |
-    val blockMathBracketRegex = """\\\[([^]]+)\\]""".toRegex()
-    processed = blockMathBracketRegex.replace(processed) { matchResult ->
-        val content = matchResult.groupValues[1]
-        "\\[${content.replace("|", "\\|")}\\]"
-    }
-
-    // 3. 最后放心地将 LaTeX 语法糖替换为统一的 $ 符号
-    processed = processed.replace("\\[", "$$").replace("\\]", "$$")
-    processed = processed.replace("\\(", "$").replace("\\)", "$")
-
-    return processed
-}
 
     private fun dump(node: Node, depth: Int = 0) {
         Log.d(

@@ -34,10 +34,11 @@ fun MarkdownNodeView(node: MarkdownNode) {
             )
         )
     }
+    val style = MaterialTheme.typography.bodyMedium
     when (node) {
         // Block
-        is MarkdownNode.Paragraph -> ParagraphView(node, colors)
-        is MarkdownNode.Heading -> HeadingView(node, colors)
+        is MarkdownNode.Paragraph -> ParagraphView(node, colors,style)
+        is MarkdownNode.Heading -> HeadingView(node, colors, style)
         is MarkdownNode.ListBlock -> ListBlockView(node, 0)
         is MarkdownNode.ListItem -> ListItemView(
             node,
