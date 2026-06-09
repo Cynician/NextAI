@@ -1,12 +1,6 @@
-/*
- * This work is made available under the terms of the BSD 2-Clause "Simplified" License.
- * The BSD accompanies this distribution (LICENSE.txt).
- * 
- * Copyright © 2022-2024 Advantest Europe GmbH. All rights reserved.
- */
-package com.android.nextai.ui.component.markdown.ext.math.internal;
+package com.android.nextai.ui.component.markdown.parser.ext.math.parser;
 
-import com.android.nextai.ui.component.markdown.ext.math.MathFormulaInLineNode;
+import com.android.nextai.ui.component.markdown.parser.ext.math.node.MathFormulaInLineNode;
 import com.vladsch.flexmark.parser.InlineParser;
 import com.vladsch.flexmark.parser.core.delimiter.Delimiter;
 import com.vladsch.flexmark.parser.delimiter.DelimiterProcessor;
@@ -17,7 +11,7 @@ import com.vladsch.flexmark.util.sequence.BasedSequence;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MathFormulaInLineDelimiterProcessor implements DelimiterProcessor {
+public class MathFormulaInLineNodeParser implements DelimiterProcessor {
 
     @Override
     public char getOpeningCharacter() {
@@ -43,34 +37,28 @@ public class MathFormulaInLineDelimiterProcessor implements DelimiterProcessor {
         if (after == null || after.isEmpty()) return false;
 
         char nextChar = after.charAt(0);
-        // 1. 基础拦截：$ 后面绝对不能是空格或换行
-        if (Character.isWhitespace(nextChar)) {
-            return false;
-        }
+        // 1. Basic interception: $ must not be followed by a space
+        if (Character.isWhitespace(nextChar)) return false;
 
-        // 2. 核心改进：如果是数字开头，检查直到下一个 $ 之间是不是纯数字
+        // 2. Pure digital interception (prevents $100 misjudgments, maintains previous optimization)
         if (Character.isDigit(nextChar)) {
             Matcher matcher = PURE_NUMBER_PATTERN.matcher(after);
-            if (matcher.find()) {
-                // 如果能匹配成功，说明形如 "$100$" 或 "$3.14$"，这是纯金额或数字，拒绝作为公式开头
-                return false;
-            }
+            if (matcher.find()) return false;
         }
-
-        return true;
+        return leftFlanking;
     }
 
     @Override
     public boolean canBeCloser(String before, String after, boolean leftFlanking, boolean rightFlanking,
                                boolean beforeIsPunctuation, boolean afterIsPunctuation, boolean beforeIsWhitespace,
                                boolean afterIsWhiteSpace) {
-        // 结尾判定保持原样即可：公式内部末尾不可能以空格结尾
         if (before == null || before.isEmpty()) return false;
+
         char prevChar = before.charAt(before.length() - 1);
-        if (Character.isWhitespace(prevChar)) {
-            return false;
-        }
-        return true;
+        // Basic interception: $ must never be a space before it
+        if (Character.isWhitespace(prevChar)) return false;
+
+        return rightFlanking;
     }
 
     @Override
@@ -99,5 +87,5 @@ public class MathFormulaInLineDelimiterProcessor implements DelimiterProcessor {
                 opener.getTailChars(delimitersUsed), text, closer.getLeadChars(delimitersUsed));
         opener.moveNodesBetweenDelimitersTo(formula, closer);
     }
-    
+
 }

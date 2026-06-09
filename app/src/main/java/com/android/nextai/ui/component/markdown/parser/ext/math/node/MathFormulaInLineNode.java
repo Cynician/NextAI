@@ -1,16 +1,10 @@
-/*
- * This work is made available under the terms of the BSD 2-Clause "Simplified" License.
- * The BSD accompanies this distribution (LICENSE.txt).
- * 
- * Copyright © 2022-2024 Advantest Europe GmbH. All rights reserved.
- */
-package com.android.nextai.ui.component.markdown.ext.math;
-
-import org.jetbrains.annotations.NotNull;
+package com.android.nextai.ui.component.markdown.parser.ext.math.node;
 
 import com.vladsch.flexmark.util.ast.DelimitedNode;
 import com.vladsch.flexmark.util.ast.Node;
 import com.vladsch.flexmark.util.sequence.BasedSequence;
+
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Node representing in-line math formula like the following

@@ -1,4 +1,4 @@
-package com.android.nextai.ui.component.markdown.entity
+package com.android.nextai.ui.component.markdown
 
 import kotlinx.serialization.Serializable
 
@@ -7,6 +7,8 @@ sealed class MarkdownNode {
     // Block
     data class Paragraph(val children: List<MarkdownNode>) : MarkdownNode()
     data class Heading(val level: Int, val children: List<MarkdownNode>) : MarkdownNode()
+    data class FencedCodeBlock(val code: String, val lang: String) : MarkdownNode()
+    data class BlockQuote(val children: List<MarkdownNode>, val depth: Int = 0) : MarkdownNode()
     data class ListBlock(val children: List<MarkdownNode>, val ordered: Boolean, val depth: Int) :
         MarkdownNode()
 
@@ -17,8 +19,6 @@ sealed class MarkdownNode {
         val ordered: Boolean,
     ) : MarkdownNode()
 
-    data class FencedCodeBlock(val code: String, val lang: String) : MarkdownNode()
-    data class BlockQuote(val children: List<MarkdownNode>, val depth: Int = 0) : MarkdownNode()
 
     // inline
     data class Text(val text: String) : MarkdownNode()
@@ -26,14 +26,8 @@ sealed class MarkdownNode {
     data class Emphasis(val children: List<MarkdownNode>) : MarkdownNode()
     data class InlineCode(val code: String) : MarkdownNode()
     data class Link(val url: String, val children: List<MarkdownNode>) : MarkdownNode()
-    data class Strikethrough(val children: List<MarkdownNode>) : MarkdownNode()
     data object ThematicBreak : MarkdownNode()
-    data class Subscript(val children: List<MarkdownNode>) : MarkdownNode()
-    data class Superscript(val children: List<MarkdownNode>) : MarkdownNode()
-
-    // latex
-    data class BlockMath(val formula: String) : MarkdownNode()
-    data class InlineMath(val formula: String) : MarkdownNode()
+    data class InlineMath(val formula: String) : MarkdownNode()    // latex
 
     // table
     data class TableBlock(val children: List<MarkdownNode>) : MarkdownNode()
@@ -46,6 +40,4 @@ sealed class MarkdownNode {
         val alignment: com.vladsch.flexmark.ext.tables.TableCell.Alignment?,
         val header: Boolean,
     ) : MarkdownNode()
-
-
 }

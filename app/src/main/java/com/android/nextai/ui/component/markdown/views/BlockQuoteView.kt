@@ -1,4 +1,4 @@
-package com.android.nextai.ui.component.markdown.mdnodeview
+package com.android.nextai.ui.component.markdown.views
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.markdown.MarkdownNodeView
-import com.android.nextai.ui.component.markdown.entity.MarkdownNode
+import com.android.nextai.ui.component.markdown.MarkdownNode
 
 @Composable
 fun BlockQuoteView(node: MarkdownNode.BlockQuote, depth:Int = 0){

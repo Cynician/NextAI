@@ -1,9 +1,9 @@
-package com.android.nextai.ui.component.markdown.utils
+package com.android.nextai.ui.component.markdown.parser
 
 import android.util.Log
-import com.android.nextai.ui.component.markdown.entity.MarkdownNode
-import com.android.nextai.ui.component.markdown.ext.math.MathExtension
-import com.android.nextai.ui.component.markdown.ext.math.MathFormulaInLineNode
+import com.android.nextai.ui.component.markdown.MarkdownNode
+import com.android.nextai.ui.component.markdown.parser.ext.math.MathExtension
+import com.android.nextai.ui.component.markdown.parser.ext.math.node.MathFormulaInLineNode
 import com.vladsch.flexmark.ast.BlockQuote
 import com.vladsch.flexmark.ast.BulletList
 import com.vladsch.flexmark.ast.Code
@@ -35,8 +35,8 @@ data class MarkdownParseResult(
     val parsedLength: Int,
 )
 
-object MarkdownNodeUtils {
-    private const val TAG = "MarkdownNodeUtils"
+object MarkdownParser {
+    private const val TAG = "MarkdownParser"
     private val parser by lazy {
         val options = MutableDataSet()
         options.set(
@@ -98,7 +98,7 @@ object MarkdownNodeUtils {
             is Code -> MarkdownNode.InlineCode(node.text.toString())
             is Link -> MarkdownNode.Link(url = node.url.toString(), children = parseChildren(node))
             is ThematicBreak -> MarkdownNode.ThematicBreak
-
+            is MathFormulaInLineNode -> MarkdownNode.InlineMath(node.text.toString())
 
             // Table
             is TableBlock -> MarkdownNode.TableBlock(children = parseChildren(node))
@@ -112,66 +112,54 @@ object MarkdownNodeUtils {
                 node.isHeader
             )
 
-            is MathFormulaInLineNode -> MarkdownNode.InlineMath(node.text.toString())
-
             else -> {
                 null
             }
         }
     }
 
-
+    /**
+     * Problems with Markdown:
+     *
+     * 1. In some model outputs, mathematical formulas are replaced with \(...\) instead of $...$
+     * and \[...\] instead of $$...$$, which does not comply with the LaTex specification and
+     * therefore requires replacement.
+     *
+     * 2. The determination format for the Table column is |..|, which conflicts with absolute value
+     * symbols in mathematical formulas, so escape processing is required.
+     */
     fun replaceLatexDelimiters(md: String): String {
         var processed = md
-
-        // 1. 统一语法糖：将所有 \(, \), \[, \] 统一替换为 $ 和 $$
+        // 1. Unified syntax: replace all \(, \), \[, \] uniformly with $ and $$.
         processed = processed.replace("\\[", "$$").replace("\\]", "$$")
         processed = processed.replace("\\(", "$").replace("\\)", "$")
 
-        // 2. 核心转义：匹配 $$ ... $$ 块级公式并转义内部的 |
+        // 2. Core escaping: matches $$ ... $$ block-level formulas and escapes internally |.
         val blockDollarRegex = """\$\$([\s\S]*?)\$\$""".toRegex()
         processed = blockDollarRegex.replace(processed) { matchResult ->
             val content = matchResult.groupValues[1]
-            "\$\${${content.replace("|", "\\|")}}\$\$"
+            "$\${${content.replace("|", "\\|")}}$$"
         }
 
-        // 3. 核心转义：匹配 $ ... $ 行内公式并转义内部的 |
-        // [^$\n]+? 确保非贪婪匹配，且不跨行，精准锁定单行公式
+        // 3. Core escaping: matches the $ ... $ inline formula and escapes the internal |.
         val inlineDollarRegex = """\$(?!\s)([^$\n]+?)(?<!\s)\$""".toRegex()
         processed = inlineDollarRegex.replace(processed) { matchResult ->
             val content = matchResult.groupValues[1]
-            "\$${content.replace("|", "\\|")}\$"
+            "$${content.replace("|", "\\|")}$"
         }
 
         return processed
     }
 
-    private fun dump(node: Node, depth: Int = 0) {
-        Log.d(
-            "AST",
-            "${" ".repeat(depth*2)}${node.javaClass.name} -> [${node.chars}]"
-        )
-        var child = node.firstChild
-        while (child != null) {
-            dump(child, depth + 2)
-            child = child.next
-        }
-    }
-
     fun parseMarkDown(md: String): MarkdownParseResult {
         try {
-            Log.d(TAG, "markdown = $md")
+            // Log.d(TAG, "markdown = $md")
 
             val standardizedMd = replaceLatexDelimiters(md)
-            Log.d(TAG, "markdown = $standardizedMd")
+
+            // Log.d(TAG, "markdown = $standardizedMd")
+
             val document = parser.parse(standardizedMd)
-
-
-//            val document = parser.parse(md)
-
-            Log.d(TAG, "firstChild = ${document.firstChild?.javaClass?.name}")
-            dump(document, 0)
-
 
             val result = mutableListOf<MarkdownNode>()
             var node = document.firstChild
@@ -180,7 +168,7 @@ object MarkdownNodeUtils {
                 parseNode(node)?.let { result.add(it) }
                 node = node.next
             }
-            /** When streaming,  The last node may not be closed yet**/
+
             val lastNode = document.lastChild
             val parsedLength = if (lastNode != null && result.isNotEmpty()) {
                 lastNode.startOffset

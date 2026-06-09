@@ -111,8 +111,6 @@ jackson-datatype-jsr310 = {group = "com.fasterxml.jackson.datatype", name = "jac
 # Markdown
 flexmark = { group = "com.vladsch.flexmark", name = "flexmark", version.ref = "flexmark" }
 flexmark-ext-tables = { group = "com.vladsch.flexmark", name = "flexmark-ext-tables", version.ref = "flexmark" }
-latex-base = { module = "io.github.huarangmeng:latex-base", version.ref = "latex" }
-latex-parser = { module = "io.github.huarangmeng:latex-parser", version.ref = "latex" }
 latex-renderer = { module = "io.github.huarangmeng:latex-renderer", version.ref = "latex" }
 
 # Test
