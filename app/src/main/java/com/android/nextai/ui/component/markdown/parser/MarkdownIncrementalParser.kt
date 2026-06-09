@@ -1,17 +1,17 @@
-package com.android.nextai.ui.component.markdown.utils
+package com.android.nextai.ui.component.markdown.parser
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.android.nextai.ui.component.markdown.entity.MarkdownNode
+import com.android.nextai.ui.component.markdown.MarkdownNode
+import com.android.nextai.ui.component.markdown.parser.MarkdownParser.parseMarkDown
 
 /**
- * Used for incremental parsing in Markdown documents,
- * for each long text with long text or streaming output,
- * it can be parsed as stable nodes or a node in parsing.
+ * Used for incremental parsing in Markdown documents, for each long text with streaming output, it
+ * can be parsed as stable nodes or a node in parsing.
  */
-class MarkdownParser {
+class MarkdownIncrementalParser {
 
     /**
      * Stable nodes
@@ -43,9 +43,11 @@ class MarkdownParser {
      */
     fun setContent(content: String) {
         reset()
-        if (content.isEmpty()) { return }
+        if (content.isEmpty()) {
+            return
+        }
 
-        val result = MarkdownNodeUtils.parseMarkDown(content)
+        val result = parseMarkDown(content)
         stableNodes.addAll(result.nodes)
         parsedIndex = content.length
     }
@@ -57,10 +59,12 @@ class MarkdownParser {
             reset()
         }
         val delta = fullContent.substring(parsedIndex)
-        if (delta.isEmpty()) { return }
+        if (delta.isEmpty()) {
+            return
+        }
         parsedIndex = fullContent.length
         pendingBuffer.append(delta)
-        val result = MarkdownNodeUtils.parseMarkDown(
+        val result = parseMarkDown(
             md = pendingBuffer.toString()
         )
         val nodes = result.nodes
@@ -84,9 +88,11 @@ class MarkdownParser {
      */
     fun complete() {
 
-        if (pendingBuffer.isEmpty()) { return }
+        if (pendingBuffer.isEmpty()) {
+            return
+        }
 
-        val result = MarkdownNodeUtils.parseMarkDown(md = pendingBuffer.toString())
+        val result = parseMarkDown(md = pendingBuffer.toString())
         val nodes = result.nodes
         if (nodes.isNotEmpty()) {
             stableNodes.addAll(nodes)

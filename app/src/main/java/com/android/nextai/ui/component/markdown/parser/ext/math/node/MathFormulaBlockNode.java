@@ -1,18 +1,12 @@
-/*
- * This work is made available under the terms of the BSD 2-Clause "Simplified" License.
- * The BSD accompanies this distribution (LICENSE.txt).
- * 
- * Copyright © 2022-2024 Advantest Europe GmbH. All rights reserved.
- */
-package com.android.nextai.ui.component.markdown.ext.math;
-
-import java.util.List;
-
-import org.jetbrains.annotations.NotNull;
+package com.android.nextai.ui.component.markdown.parser.ext.math.node;
 
 import com.vladsch.flexmark.ast.CodeBlock;
 import com.vladsch.flexmark.util.ast.BlockContent;
 import com.vladsch.flexmark.util.sequence.BasedSequence;
+
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 /**
  * Node representing display mode math formula like the following
@@ -22,23 +16,23 @@ import com.vladsch.flexmark.util.sequence.BasedSequence;
  * </pre>
  *
  */
-public class MathFormulaDisplayModeNode extends CodeBlock {
+public class MathFormulaBlockNode extends CodeBlock {
 	
 	private BasedSequence startMarker;
     private BasedSequence endMarker;
     
-    public MathFormulaDisplayModeNode() {
+    public MathFormulaBlockNode() {
     }
 
-    public MathFormulaDisplayModeNode(BasedSequence chars) {
+    public MathFormulaBlockNode(BasedSequence chars) {
         super(chars);
     }
 
-    public MathFormulaDisplayModeNode(BasedSequence chars, List<BasedSequence> lineSegments) {
+    public MathFormulaBlockNode(BasedSequence chars, List<BasedSequence> lineSegments) {
         super(chars, lineSegments);
     }
 
-    public MathFormulaDisplayModeNode(List<BasedSequence> lineSegments) {
+    public MathFormulaBlockNode(List<BasedSequence> lineSegments) {
         this(getSpanningChars(lineSegments), lineSegments);
     }
 
@@ -48,7 +42,7 @@ public class MathFormulaDisplayModeNode extends CodeBlock {
                 lineSegments.get(lineSegments.size() - 1).getEndOffset());
     }
 
-    public MathFormulaDisplayModeNode(BlockContent blockContent) {
+    public MathFormulaBlockNode(BlockContent blockContent) {
         super(blockContent);
     }
     

@@ -1,4 +1,4 @@
-package com.android.nextai.ui.component.markdown.mdnodeview
+package com.android.nextai.ui.component.markdown.views
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,7 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.nextai.ui.component.markdown.MarkdownNodeView
-import com.android.nextai.ui.component.markdown.entity.MarkdownNode
+import com.android.nextai.ui.component.markdown.MarkdownNode
 
 @Composable
 fun ListBlockView(

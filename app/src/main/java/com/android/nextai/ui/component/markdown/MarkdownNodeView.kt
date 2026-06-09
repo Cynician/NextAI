@@ -10,16 +10,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.component.markdown.entity.InlineColors
-import com.android.nextai.ui.component.markdown.entity.MarkdownNode
-import com.android.nextai.ui.component.markdown.mdnodeview.BlockQuoteView
-import com.android.nextai.ui.component.markdown.mdnodeview.FencedCodeBlockView
-import com.android.nextai.ui.component.markdown.mdnodeview.HeadingView
-import com.android.nextai.ui.component.markdown.mdnodeview.InlineMathView
-import com.android.nextai.ui.component.markdown.mdnodeview.ListBlockView
-import com.android.nextai.ui.component.markdown.mdnodeview.ListItemView
-import com.android.nextai.ui.component.markdown.mdnodeview.ParagraphView
-import com.android.nextai.ui.component.markdown.mdnodeview.TableBlockView
-import com.android.nextai.ui.component.markdown.mdnodeview.TextView
+import com.android.nextai.ui.component.markdown.views.BlockQuoteView
+import com.android.nextai.ui.component.markdown.views.FencedCodeBlockView
+import com.android.nextai.ui.component.markdown.views.HeadingView
+import com.android.nextai.ui.component.markdown.views.ListBlockView
+import com.android.nextai.ui.component.markdown.views.ParagraphView
+import com.android.nextai.ui.component.markdown.views.TableBlockView
+import com.android.nextai.ui.component.markdown.views.TextView
+
 
 @Composable
 fun MarkdownNodeView(node: MarkdownNode) {
@@ -35,31 +33,28 @@ fun MarkdownNodeView(node: MarkdownNode) {
         )
     }
     val style = MaterialTheme.typography.bodyMedium
+
     when (node) {
-        // Block
-        is MarkdownNode.Paragraph -> ParagraphView(node, colors,style)
-        is MarkdownNode.Heading -> HeadingView(node, colors, style)
-        is MarkdownNode.ListBlock -> ListBlockView(node, 0)
-        is MarkdownNode.ListItem -> ListItemView(
-            node,
-            depth = node.depth,
-            index = node.index,
-            node.ordered
-        )
-        is MarkdownNode.BlockQuote -> BlockQuoteView(node, 0)
-        // Inline
+
         is MarkdownNode.Text -> TextView(node)
+
+        is MarkdownNode.Paragraph -> ParagraphView(node, colors, style)
+
+        is MarkdownNode.Heading -> HeadingView(node, colors, style)
+
+        is MarkdownNode.ListBlock -> ListBlockView(node, 0)
+
+        is MarkdownNode.BlockQuote -> BlockQuoteView(node, 0)
+
         is MarkdownNode.FencedCodeBlock -> FencedCodeBlockView(node, true)
+
         is MarkdownNode.ThematicBreak -> HorizontalDivider(
             modifier = Modifier.padding(vertical = 12.dp),
             color = MaterialTheme.colorScheme.outlineVariant
         )
-        // Table
+
         is MarkdownNode.TableBlock -> TableBlockView(node, colors)
 
-        is MarkdownNode.InlineMath -> InlineMathView(node.formula)
         else -> {}
     }
 }
-
-

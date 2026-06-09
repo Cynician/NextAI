@@ -1,4 +1,4 @@
-package com.android.nextai.ui.component.markdown.mdnodeview
+package com.android.nextai.ui.component.markdown.views
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.nextai.ui.component.button.ActionButton
 import com.android.nextai.ui.component.button.ActionToggleButton
-import com.android.nextai.ui.component.markdown.entity.MarkdownNode
+import com.android.nextai.ui.component.markdown.MarkdownNode
 import com.android.nextai.ui.component.markdown.utils.highlightCode
 import com.android.nextai.ui.component.markdown.utils.resolveSyntaxTheme
 import com.android.nextai.ui.icon.HomeIcon

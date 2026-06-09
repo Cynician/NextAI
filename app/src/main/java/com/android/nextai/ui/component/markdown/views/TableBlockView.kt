@@ -1,4 +1,4 @@
-package com.android.nextai.ui.component.markdown.mdnodeview
+package com.android.nextai.ui.component.markdown.views
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,14 +31,36 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.android.nextai.ui.component.markdown.appendInlineNodes
+import com.android.nextai.ui.component.markdown.MarkdownNode
 import com.android.nextai.ui.component.markdown.entity.InlineColors
-import com.android.nextai.ui.component.markdown.entity.MarkdownNode
+import com.android.nextai.ui.component.markdown.entity.LatexRenderParams
 import com.hrm.latex.renderer.measure.rememberLatexMeasurer
 import kotlin.math.max
 import kotlin.math.min
 
+// ==========================================
+// UI Constants
+// ==========================================
+private val TABLE_SHAPE = RoundedCornerShape(8.dp)
+private val TABLE_BORDER_WIDTH = 0.5.dp
+private val TABLE_PADDING_VERTICAL = 8.dp
+
+private val CELL_MIN_WIDTH = 90.dp
+private val CELL_MAX_WIDTH = 240.dp
+private val CELL_PADDING_HORIZONTAL = 12.dp
+private val CELL_PADDING_VERTICAL = 12.dp
+
+// Maximum cell content width (for LaTeX or multimedia computing)
+private val MAX_CELL_CONTENT_WIDTH = CELL_MAX_WIDTH - (CELL_PADDING_HORIZONTAL * 2)
+private val DEFAULT_ROW_HEIGHT = 45.dp
+
+
 @Composable
-fun TableBlockView(node: MarkdownNode.TableBlock, colors: InlineColors) {
+fun TableBlockView(
+    node: MarkdownNode.TableBlock,
+    colors: InlineColors
+) {
     val (headers, bodyRows) = remember(node) {
         val headerRows = mutableListOf<MarkdownNode.TableRow>()
         val dataRows = mutableListOf<MarkdownNode.TableRow>()
@@ -66,63 +87,61 @@ fun TableView(
     val contentBg = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
     val currentStyle = MaterialTheme.typography.bodySmall
 
-    val allRows = headers + rows
+    val allRows = remember(headers, rows) { headers + rows }
     val colCount = remember(allRows) {
         allRows.maxOfOrNull { it.children.filterIsInstance<MarkdownNode.TableCell>().size } ?: 0
     }
 
-    // 设置更具弹性的阈值范围：保底 90dp，上限扩容至 340dp 确保巨型公式舒展
-    val minCellWidth = 90.dp
-    val maxCellWidth = 120.dp
-    val tableShape = RoundedCornerShape(8.dp)
-
     SubcomposeLayout(
         modifier = Modifier
             .horizontalScroll(rememberScrollState())
-            .padding(vertical = 8.dp)
-            .clip(tableShape)
-            .border(width = 0.5.dp, color = outlineColor, shape = tableShape)
+            .padding(vertical = TABLE_PADDING_VERTICAL)
+            .clip(TABLE_SHAPE)
+            .border(width = TABLE_BORDER_WIDTH, color = outlineColor, shape = TABLE_SHAPE)
     ) { constraints ->
 
-        val colMaxWidthsPx = IntArray(colCount) { minCellWidth.roundToPx() }
-        val maxConstraintWidthPx = maxCellWidth.roundToPx()
+        val minCellWidthPx = CELL_MIN_WIDTH.roundToPx()
+        val maxCellWidthPx = CELL_MAX_WIDTH.roundToPx()
+        val colMaxWidthsPx = IntArray(colCount) { minCellWidthPx }
 
-        // 1. 【核心修复】探测阶段：回归无限制自由度
+        // 1. Detection phase: Calculate the maximum width of each column.
         (0 until colCount).forEach { colIdx ->
             allRows.forEachIndexed { rowIdx, row ->
                 val cells = row.children.filterIsInstance<MarkdownNode.TableCell>()
                 val cell = cells.getOrNull(colIdx)
                 if (cell != null) {
+                    // 优化：提供稳定的 slotId 防止不必要的丢弃与重建
                     val placeables = subcompose("probe_${rowIdx}_${colIdx}") {
-                        TableCellContent(cell = cell, colors = colors, style = currentStyle, isHeader = rowIdx < headers.size)
-                    }.map {
-                        // 👈 彻底移除写死的最大宽度钳制！用无界约束测出巨型公式的最自然舒适平铺长宽
-                        it.measure(Constraints())
-                    }
+                        TableCell(
+                            cell = cell,
+                            colors = colors,
+                            style = currentStyle,
+                            isHeader = rowIdx < headers.size
+                        )
+                    }.map { it.measure(Constraints()) }
 
                     placeables.forEach {
                         colMaxWidthsPx[colIdx] = max(colMaxWidthsPx[colIdx], it.width)
                     }
                 }
             }
-            // 测出最高物理尺寸后，再在这里安全筑起最高上限防火墙
-            colMaxWidthsPx[colIdx] = min(colMaxWidthsPx[colIdx], maxConstraintWidthPx)
+            colMaxWidthsPx[colIdx] = min(colMaxWidthsPx[colIdx], maxCellWidthPx)
         }
 
         val computedColumnWidths = colMaxWidthsPx.map { it.toDp() }
 
-        // 2. 实体排版阶段
+        // 2. Layout stage: Render the entire table.
         val contentPlaceables = subcompose("table_body") {
             Column {
                 headers.forEach { row ->
-                    SyncTableRowWrapper(
+                    TableRow(
                         row = row, isHeader = true, colors = colors, style = currentStyle,
                         background = headerBg, outlineColor = outlineColor, colCount = colCount,
                         columnWidths = computedColumnWidths
                     )
                 }
                 rows.forEachIndexed { index, row ->
-                    SyncTableRowWrapper(
+                    TableRow(
                         row = row, isHeader = false, colors = colors, style = currentStyle,
                         background = contentBg, outlineColor = outlineColor, colCount = colCount,
                         columnWidths = computedColumnWidths, isLastRow = index == rows.lastIndex
@@ -141,7 +160,7 @@ fun TableView(
 }
 
 @Composable
-fun SyncTableRowWrapper(
+fun TableRow(
     row: MarkdownNode.TableRow,
     isHeader: Boolean,
     colors: InlineColors,
@@ -152,112 +171,120 @@ fun SyncTableRowWrapper(
     columnWidths: List<Dp>,
     isLastRow: Boolean = false,
 ) {
-    val cells = row.children.filterIsInstance<MarkdownNode.TableCell>()
+    val cells = remember(row) { row.children.filterIsInstance<MarkdownNode.TableCell>() }
 
     Column(modifier = Modifier.background(background)) {
         SubcomposeLayout { constraints ->
+            val dividerWidthPx = TABLE_BORDER_WIDTH.roundToPx()
 
-            // 1. 测量拿到此列宽下的真实行高
-            val placeables = (0 until colCount).map { index ->
+            // 1. Preliminary Measurement: Get the highest row height actually needed for each cell in the current row.
+            val cellHeights = (0 until colCount).map { index ->
                 val cell = cells.getOrNull(index)
                 val cellWidthPx = columnWidths[index].roundToPx()
 
-                subcompose("cell_${index}") {
-                    Box {
-                        if (cell != null) {
-                            TableCellContent(cell = cell, colors = colors, style = style, isHeader = isHeader)
-                        }
+                val measurables = subcompose("cell_measure_${index}") {
+                    if (cell != null) {
+                        TableCell(cell = cell, colors = colors, style = style, isHeader = isHeader)
                     }
-                }.map { measurable ->
-                    measurable.measure(Constraints(minWidth = cellWidthPx, maxWidth = cellWidthPx, minHeight = 0, maxHeight = Constraints.Infinity))
                 }
+                measurables.maxOfOrNull {
+                    it.measure(Constraints(minWidth = cellWidthPx, maxWidth = cellWidthPx)).height
+                } ?: 0
             }
 
-            val maxRowHeight = placeables.flatten().maxOfOrNull { it.height } ?: 45.dp.roundToPx()
+            val maxRowHeight = max(cellHeights.maxOrNull() ?: 0, DEFAULT_ROW_HEIGHT.roundToPx())
 
-            // 2. 强力锁定，纵向拉伸对齐
+            // 2. Locking stage: stretch and fill alignment.
             val finalPlaceables = (0 until colCount).map { index ->
                 val cell = cells.getOrNull(index)
                 val cellWidthPx = columnWidths[index].roundToPx()
 
-                subcompose("final_cell_$index") {
+                subcompose("cell_final_${index}") {
                     Box(
                         modifier = Modifier.fillMaxHeight(),
-                        contentAlignment = Alignment.Center // 居中锚定
+                        contentAlignment = Alignment.Center
                     ) {
                         if (cell != null) {
-                            TableCellContent(cell = cell, colors = colors, style = style, isHeader = isHeader)
+                            TableCell(cell = cell, colors = colors, style = style, isHeader = isHeader)
                         }
                     }
-                }.map { measurable ->
-                    measurable.measure(Constraints.fixed(cellWidthPx, maxRowHeight))
-                }
+                }.map { it.measure(Constraints.fixed(cellWidthPx, maxRowHeight)) }
             }
 
-            val totalWidth = columnWidths.sumOf { it.roundToPx() } + ((colCount - 1) * 0.5.dp.roundToPx())
+            // Render the divider's Measurables
+            val dividerPlaceables = (0 until colCount - 1).map { index ->
+                subcompose("div_${index}") {
+                    Box(modifier = Modifier.width(TABLE_BORDER_WIDTH).height(maxRowHeight.toDp()).background(outlineColor))
+                }.map { it.measure(Constraints.fixed(dividerWidthPx, maxRowHeight)) }
+            }
 
+            val totalWidth = columnWidths.sumOf { it.roundToPx() } + ((colCount - 1) * dividerWidthPx)
+
+            // 3. Placement stage.
             layout(totalWidth, maxRowHeight) {
                 var xPosition = 0
-                val dividerWidthPx = 0.5.dp.roundToPx()
-
-                finalPlaceables.forEachIndexed { index, list ->
-                    list.forEach { placeable ->
+                finalPlaceables.forEachIndexed { index, placeables ->
+                    placeables.forEach { placeable ->
                         placeable.placeRelative(xPosition, 0)
                         xPosition += placeable.width
                     }
                     if (index < colCount - 1) {
-                        subcompose("div_$index") {
-                            Box(modifier = Modifier.width(0.5.dp).height(maxRowHeight.toDp()).background(outlineColor))
-                        }.forEach { it.measure(Constraints.fixed(dividerWidthPx, maxRowHeight)).placeRelative(xPosition, 0) }
-                        xPosition += dividerWidthPx
+                        dividerPlaceables.getOrNull(index)?.forEach { divPlaceable ->
+                            divPlaceable.placeRelative(xPosition, 0)
+                            xPosition += divPlaceable.width
+                        }
                     }
                 }
             }
         }
 
         if (!isLastRow) {
-            Box(modifier = Modifier.fillMaxWidth().height(0.5.dp).background(outlineColor))
+            Box(modifier = Modifier.fillMaxWidth().height(TABLE_BORDER_WIDTH).background(outlineColor))
         }
     }
 }
 
 @Composable
-fun TableCellContent(
+fun TableCell(
     cell: MarkdownNode.TableCell,
     colors: InlineColors,
     style: TextStyle,
     isHeader: Boolean
 ) {
-    val latexMeasurer = rememberLatexMeasurer()
-
-    val inlineContentMap = remember(cell.children) { mutableStateMapOf<String, InlineTextContent>() }
     val density = LocalDensity.current
-    val maxCellContentWidth = 120.dp - 24.dp
-    val annotatedString = remember(cell.children) {
+
+    // 1. LaTeX params.
+    val latexRenderParams = LatexRenderParams(
+        latexMeasurer = rememberLatexMeasurer(),
+        inlineContentMap = remember(cell.children) { mutableStateMapOf() },
+        maxTableCellContentWidth = MAX_CELL_CONTENT_WIDTH
+    )
+
+    // 2. Constructing rich texts.
+    val annotatedString = remember(cell.children, colors, style) {
         buildAnnotatedString {
             appendInlineNodes(
                 nodes = cell.children,
                 colors = colors,
                 style = style,
                 density = density,
-                latexMeasurer = latexMeasurer,
-                inlineContentMap = inlineContentMap,
-                maxContentWidth = maxCellContentWidth
+                latexRenderParams = latexRenderParams
             )
         }
     }
 
+    // 3. Render.
     CompositionLocalProvider(LocalDensity provides density) {
         Text(
             text = annotatedString,
+            inlineContent = latexRenderParams.inlineContentMap,
             style = style,
             textAlign = TextAlign.Left,
             fontWeight = if (isHeader) FontWeight.Bold else FontWeight.Normal,
-            inlineContent = inlineContentMap,
             softWrap = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 12.dp)
+                .padding(horizontal = CELL_PADDING_HORIZONTAL, vertical = CELL_PADDING_VERTICAL)
         )
     }
 }

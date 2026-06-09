@@ -1,4 +1,4 @@
-package com.android.nextai.ui.component.markdown.mdnodeview
+package com.android.nextai.ui.component.markdown.views
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,8 +15,9 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.android.nextai.ui.component.markdown.appendInlineNodes
+import com.android.nextai.ui.component.markdown.MarkdownNode
 import com.android.nextai.ui.component.markdown.entity.InlineColors
-import com.android.nextai.ui.component.markdown.entity.MarkdownNode
 
 @Composable
 fun HeadingView(node: MarkdownNode.Heading, colors: InlineColors, style: TextStyle) {
@@ -52,8 +53,7 @@ fun HeadingView(node: MarkdownNode.Heading, colors: InlineColors, style: TextSty
         ProvideTextStyle(textStyle) {
             Text(
                 text = buildAnnotatedString {
-
-                    appendInlineNodes(node.children, colors = colors, style, density = density)
+                    appendInlineNodes(node.children, colors = colors, style, density = density,)
                 },
                 style = MaterialTheme.typography.titleLarge,
                 fontSize = textStyle.fontSize,

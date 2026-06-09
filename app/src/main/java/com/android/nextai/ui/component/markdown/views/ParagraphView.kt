@@ -1,4 +1,4 @@
-package com.android.nextai.ui.component.markdown.mdnodeview
+package com.android.nextai.ui.component.markdown.views
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,21 +13,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
+import com.android.nextai.ui.component.markdown.appendInlineNodes
+import com.android.nextai.ui.component.markdown.MarkdownNode
 import com.android.nextai.ui.component.markdown.entity.InlineColors
-import com.android.nextai.ui.component.markdown.entity.MarkdownNode
+import com.android.nextai.ui.component.markdown.entity.LatexRenderParams
 import com.hrm.latex.renderer.measure.rememberLatexMeasurer
 
 @Composable
 fun ParagraphView(node: MarkdownNode.Paragraph, colors: InlineColors, style: TextStyle) {
-    val latexMeasurer = rememberLatexMeasurer()
+
     val inlineContentMap = remember(node.children) { mutableStateMapOf<String, InlineTextContent>() }
+    val latexRenderParams = LatexRenderParams(
+        latexMeasurer = rememberLatexMeasurer(),
+        inlineContentMap = inlineContentMap,
+    )
     val density = LocalDensity.current
     val annotatedString = remember(node.children) {
         buildAnnotatedString {
@@ -36,8 +41,7 @@ fun ParagraphView(node: MarkdownNode.Paragraph, colors: InlineColors, style: Tex
                 colors = colors,
                 style = style,
                 density = density,
-                latexMeasurer = latexMeasurer, // 👈 2. 顺着这里传进去
-                inlineContentMap = inlineContentMap,
+                latexRenderParams = latexRenderParams
             )
         }
     }

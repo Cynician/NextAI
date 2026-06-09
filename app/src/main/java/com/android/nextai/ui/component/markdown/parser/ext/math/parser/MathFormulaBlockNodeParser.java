@@ -1,39 +1,40 @@
-/*
- * This work is made available under the terms of the BSD 2-Clause "Simplified" License.
- * The BSD accompanies this distribution (LICENSE.txt).
- * 
- * Copyright © 2022-2024 Advantest Europe GmbH. All rights reserved.
- */
-package com.android.nextai.ui.component.markdown.ext.math.internal;
+package com.android.nextai.ui.component.markdown.parser.ext.math.parser;
 
-import java.util.Set;
+import com.android.nextai.ui.component.markdown.parser.ext.math.node.MathFormulaBlockNode;
+import com.vladsch.flexmark.ast.Text;
+import com.vladsch.flexmark.parser.block.AbstractBlockParser;
+import com.vladsch.flexmark.parser.block.AbstractBlockParserFactory;
+import com.vladsch.flexmark.parser.block.BlockContinue;
+import com.vladsch.flexmark.parser.block.BlockParserFactory;
+import com.vladsch.flexmark.parser.block.BlockStart;
+import com.vladsch.flexmark.parser.block.CustomBlockParserFactory;
+import com.vladsch.flexmark.parser.block.MatchedBlockParser;
+import com.vladsch.flexmark.parser.block.ParserState;
+import com.vladsch.flexmark.util.data.DataHolder;
+import com.vladsch.flexmark.util.sequence.BasedSequence;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import com.android.nextai.ui.component.markdown.ext.math.MathFormulaDisplayModeNode;
-import com.vladsch.flexmark.ast.Text;
-import com.vladsch.flexmark.util.data.DataHolder;
-import com.vladsch.flexmark.util.sequence.BasedSequence;
-import com.vladsch.flexmark.parser.block.*;
+import java.util.Set;
 
-public class MathFormulaBlockParser extends AbstractBlockParser {
+public class MathFormulaBlockNodeParser extends AbstractBlockParser {
 
-	private final MathFormulaDisplayModeNode blockNode;
+	private final MathFormulaBlockNode blockNode;
     private final BlockData blockData;
     
-    public MathFormulaBlockParser(BlockData blockData) {
+    public MathFormulaBlockNodeParser(BlockData blockData) {
         if (blockData == null) {
             throw new IllegalArgumentException();
         }
         
         this.blockData = blockData;
-        this.blockNode = new MathFormulaDisplayModeNode();
+        this.blockNode = new MathFormulaBlockNode();
         this.blockNode.setStartMarker(blockData.startMarker);
     }
 
     @Override
-    public MathFormulaDisplayModeNode getBlock() {
+    public MathFormulaBlockNode getBlock() {
         return blockNode;
     }
     
@@ -141,7 +142,7 @@ public class MathFormulaBlockParser extends AbstractBlockParser {
                     blockData.endMarker = line.subSequence(indexOfFirstEndMarkerChar, indexOfFirstEndMarkerChar + 2);
                     //blockData.contents = line.subSequence(indexOfFirstFormulaSymbol, indexOfFirstFormulaSymbol + indexOfEndMarkerInLineRemainder);
                     blockData.finished = true;
-                    return BlockStart.of(new MathFormulaBlockParser(blockData))
+                    return BlockStart.of(new MathFormulaBlockNodeParser(blockData))
                             .atColumn(state.getColumn());
                 }
             }
@@ -154,7 +155,7 @@ public class MathFormulaBlockParser extends AbstractBlockParser {
                 if (indexOfEndMarker > 0) {
                     blockData.endOffset = currentLine.getStartOffset() + indexOfEndMarker + 2;
                     blockData.endMarker = currentLine.subSequence(indexOfEndMarker, indexOfEndMarker + 2);
-                    return BlockStart.of(new MathFormulaBlockParser(blockData))
+                    return BlockStart.of(new MathFormulaBlockNodeParser(blockData))
                             .atColumn(state.getColumn());
                 }
             }

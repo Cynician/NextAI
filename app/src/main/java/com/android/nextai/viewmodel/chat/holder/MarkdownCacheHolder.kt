@@ -2,7 +2,7 @@ package com.android.nextai.viewmodel.chat.holder
 
 import android.util.Log
 import androidx.compose.runtime.mutableStateMapOf
-import com.android.nextai.ui.component.markdown.utils.MarkdownParser
+import com.android.nextai.ui.component.markdown.parser.MarkdownIncrementalParser
 import java.util.LinkedHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -16,7 +16,7 @@ class MarkdownCacheHolder @Inject constructor() {
         private const val MAX_CACHE_SIZE = 200
     }
 
-    private val parserMap = mutableStateMapOf<Long, MarkdownParser>()
+    private val parserMap = mutableStateMapOf<Long, MarkdownIncrementalParser>()
 
     /**
      * LRU
@@ -44,7 +44,7 @@ class MarkdownCacheHolder @Inject constructor() {
     @Synchronized
     fun get(
         messageId: Long
-    ): MarkdownParser? {
+    ): MarkdownIncrementalParser? {
         val parser = parserMap[messageId]
         if (parser != null) {
             // Update LRU
@@ -56,7 +56,7 @@ class MarkdownCacheHolder @Inject constructor() {
     @Synchronized
     fun getOrCreate(
         messageId: Long
-    ): MarkdownParser {
+    ): MarkdownIncrementalParser {
 
         // Already exists
         parserMap[messageId]?.let { parser ->
@@ -66,7 +66,7 @@ class MarkdownCacheHolder @Inject constructor() {
         }
 
         // Create new parser
-        val parser = MarkdownParser()
+        val parser = MarkdownIncrementalParser()
 
         parserMap[messageId] = parser
         // Insert LRU
