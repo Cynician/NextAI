@@ -36,7 +36,7 @@ fun EmptyStateView() {
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                "快去开启对话把~",
+                "快去开启对话吧~",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
