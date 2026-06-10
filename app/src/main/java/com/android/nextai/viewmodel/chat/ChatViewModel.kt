@@ -82,7 +82,7 @@ class ChatViewModel @Inject constructor(
                     startStreamingGen(provider)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "error: $e")
+                Log.e(TAG, "error: ", e)
                 generationJob?.cancel()
             }
         }
@@ -112,7 +112,7 @@ class ChatViewModel @Inject constructor(
                     is GenerationEvent.Word -> {
                         messageHolder.updateCurResponse(content = event.content)
                         val content = messageHolder.getCurResponse()
-                        parser.append(content)
+                        parser.appendDelta(event.content)
                         messageHolder.updateLastMessage(assistantMessage.copy(content = content))
                     }
 

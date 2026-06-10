@@ -130,18 +130,28 @@ object MarkdownParser {
      */
     fun replaceLatexDelimiters(md: String): String {
         var processed = md
-        // 1. Unified syntax: replace all \(, \), \[, \] uniformly with $ and $$.
-        processed = processed.replace("\\[", "$$").replace("\\]", "$$")
-        processed = processed.replace("\\(", "$").replace("\\)", "$")
 
-        // 2. Core escaping: matches $$ ... $$ block-level formulas and escapes internally |.
+        // 1. 限制：只有成对出现的 \[ ... \] 和 \( ... \) 才进行替换
+        val blockSlashRegex = """\\\[([\s\S]*?)\\\]""".toRegex()
+        processed = blockSlashRegex.replace(processed) { matchResult ->
+            val content = matchResult.groupValues[1]
+            "$$\n$content\n$$" // 替换为成对的 $$
+        }
+
+        val inlineSlashRegex = """\\\(([\s\S]*?)\\\)""".toRegex()
+        processed = inlineSlashRegex.replace(processed) { matchResult ->
+            val content = matchResult.groupValues[1]
+            "$$content$" // 替换为成对的 $
+        }
+
+        // 2. 核心转义：匹配 $$ ... $$ 块级公式，并转义内部的 |
         val blockDollarRegex = """\$\$([\s\S]*?)\$\$""".toRegex()
         processed = blockDollarRegex.replace(processed) { matchResult ->
             val content = matchResult.groupValues[1]
-            "$\${${content.replace("|", "\\|")}}$$"
+            "$$\n${content.replace("|", "\\|")}\n$$"
         }
 
-        // 3. Core escaping: matches the $ ... $ inline formula and escapes the internal |.
+        // 3. 核心转义：匹配 $ ... $ 行内公式，并转义内部的 |
         val inlineDollarRegex = """\$(?!\s)([^$\n]+?)(?<!\s)\$""".toRegex()
         processed = inlineDollarRegex.replace(processed) { matchResult ->
             val content = matchResult.groupValues[1]
@@ -153,13 +163,8 @@ object MarkdownParser {
 
     fun parseMarkDown(md: String): MarkdownParseResult {
         try {
-            // Log.d(TAG, "markdown = $md")
 
-            val standardizedMd = replaceLatexDelimiters(md)
-
-            // Log.d(TAG, "markdown = $standardizedMd")
-
-            val document = parser.parse(standardizedMd)
+            val document = parser.parse(md)
 
             val result = mutableListOf<MarkdownNode>()
             var node = document.firstChild
