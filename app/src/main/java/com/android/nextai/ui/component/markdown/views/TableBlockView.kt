@@ -21,6 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalDensity
@@ -144,7 +146,7 @@ fun TableView(
                     TableRow(
                         row = row, isHeader = false, colors = colors, style = currentStyle,
                         background = contentBg, outlineColor = outlineColor, colCount = colCount,
-                        columnWidths = computedColumnWidths, isLastRow = index == rows.lastIndex
+                        columnWidths = computedColumnWidths,
                     )
                 }
             }
@@ -169,11 +171,24 @@ fun TableRow(
     outlineColor: Color,
     colCount: Int,
     columnWidths: List<Dp>,
-    isLastRow: Boolean = false,
 ) {
     val cells = remember(row) { row.children.filterIsInstance<MarkdownNode.TableCell>() }
 
-    Column(modifier = Modifier.background(background)) {
+    Column(
+        modifier = Modifier
+            .background(background)
+            .drawBehind {
+                // Horizontal Line
+                val stroke = TABLE_BORDER_WIDTH.toPx()
+                drawLine(
+                    color = outlineColor,
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, 0f),
+                    strokeWidth = stroke
+                )
+            }
+    ) {
+
         SubcomposeLayout { constraints ->
             val dividerWidthPx = TABLE_BORDER_WIDTH.roundToPx()
 
@@ -211,7 +226,7 @@ fun TableRow(
                 }.map { it.measure(Constraints.fixed(cellWidthPx, maxRowHeight)) }
             }
 
-            // Render the divider's Measurables
+            //  Render the divider's Measurables
             val dividerPlaceables = (0 until colCount - 1).map { index ->
                 subcompose("div_${index}") {
                     Box(modifier = Modifier.width(TABLE_BORDER_WIDTH).height(maxRowHeight.toDp()).background(outlineColor))
@@ -236,10 +251,6 @@ fun TableRow(
                     }
                 }
             }
-        }
-
-        if (!isLastRow) {
-            Box(modifier = Modifier.fillMaxWidth().height(TABLE_BORDER_WIDTH).background(outlineColor))
         }
     }
 }
