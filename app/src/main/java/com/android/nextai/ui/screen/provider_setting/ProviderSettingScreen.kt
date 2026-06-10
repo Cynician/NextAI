@@ -40,7 +40,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.android.nextai.domain.database.datastore.entity.ProviderType
+import com.android.nextai.data.datebase.datastore.entity.ProviderType
 import com.android.nextai.ui.Standard
 import com.android.nextai.ui.component.button.ActionButton
 import com.android.nextai.ui.icon.SettingsIcon

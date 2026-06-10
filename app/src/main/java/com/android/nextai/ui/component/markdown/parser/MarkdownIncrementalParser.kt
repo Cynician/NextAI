@@ -50,14 +50,12 @@ class MarkdownIncrementalParser {
         if (rawContent.isEmpty()) return
 
         rawFullTextBuffer.append(rawContent)
-        Log.d(TAG, "raw: $rawContent")
-        // 转换为标准 Markdown
+        // Trans to Markdown
         val formatted = replaceLatexDelimiters(rawContent)
+        Log.d(TAG, "raw: $rawContent")
         Log.d(TAG, "formatted: $formatted")
         val result = parseMarkDown(formatted)
-
         stableNodes.addAll(result.nodes)
-        // 静态加载，全量直接视为标准坐标系下的稳定长度
         stableTextLength = formatted.length
     }
 

@@ -23,7 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.android.nextai.domain.database.datastore.entity.ProviderEntity
+import com.android.nextai.data.datebase.datastore.entity.ProviderEntity
 import com.android.nextai.ui.component.other.SuccessTipLabel
 import com.android.nextai.ui.icon.SettingsIcon
 

@@ -87,7 +87,6 @@ fun AnnotatedString.Builder.appendInlineNodes(
                 val latexFormula = formula.replace("\\|", "|").let {
                     if (!it.startsWith("$")) "$$it$" else it // 修复后：正确的双边包裹
                 }
-                println("formula: $latexFormula")
                 val id = "math_${latexFormula.hashCode()}_$index"
 
                 if (latexRenderParams != null) {

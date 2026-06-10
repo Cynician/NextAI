@@ -33,7 +33,7 @@ import com.android.nextai.ui.screen.home.drawer.views.SessionHeaderView
 import com.android.nextai.ui.screen.home.drawer.views.SessionItemView
 import com.android.nextai.ui.screen.home.drawer.views.StartNewSessionView
 import com.android.nextai.viewmodel.chat.ChatViewModel
-import com.android.nextai.viewmodel.chat.entity.SessionGroup
+import com.android.nextai.domain.model.SessionGroup
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
