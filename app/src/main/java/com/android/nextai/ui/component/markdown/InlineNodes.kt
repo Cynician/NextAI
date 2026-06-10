@@ -26,7 +26,7 @@ fun AnnotatedString.Builder.appendInlineNodes(
     colors: InlineColors,
     style: TextStyle,
     density: Density,
-    latexRenderParams: LatexRenderParams? = null,
+    latexRenderParams: LatexRenderParams?,
 ) {
 
     nodes.forEachIndexed { index, node ->
@@ -74,6 +74,7 @@ fun AnnotatedString.Builder.appendInlineNodes(
                         colors = colors,
                         style = style,
                         density = density,
+                        latexRenderParams = latexRenderParams,
                     )
                 }
                 pop()
@@ -83,11 +84,11 @@ fun AnnotatedString.Builder.appendInlineNodes(
                 val formula = node.formula
 
                 // Unified Formula Format (Clean Prefixes and Postfixes)
-                val cleanedFormula = formula.replace("\\|", "|").let {
-                    if (!it.startsWith("$")) "$$it$" else it
+                val latexFormula = formula.replace("\\|", "|").let {
+                    if (!it.startsWith("$")) "$$it$" else it // 修复后：正确的双边包裹
                 }
-
-                val id = "math_${cleanedFormula.hashCode()}_$index"
+                println("formula: $latexFormula")
+                val id = "math_${latexFormula.hashCode()}_$index"
 
                 if (latexRenderParams != null) {
 
@@ -97,7 +98,7 @@ fun AnnotatedString.Builder.appendInlineNodes(
 
                     // 2. Using the meter, pure synchronous memory measurements can be performed directly on the first frame!
                     val dimensions = latexMeasurer.measure(
-                        latex = cleanedFormula, config = LatexConfig(fontSize = style.fontSize)
+                        latex = latexFormula, config = LatexConfig(fontSize = style.fontSize)
                     )
 
                     if (dimensions != null) {
@@ -124,22 +125,19 @@ fun AnnotatedString.Builder.appendInlineNodes(
                             ) {
                                 InlineMathView(
                                     isFormulaTooLong = isTooLong,
-                                    formula = cleanedFormula,
+                                    formula = latexFormula,
                                     style = style,
                                 )
                             }
+                            // Write placeholders.
+                            appendInlineContent(id, "[math]")
                         }
                     } else {
                         // If the measurement fails, a regular character size is used as a safety net to prevent crashes.
-                        inlineContentMap[id] = InlineTextContent(
-                            Placeholder(
-                                style.fontSize, style.fontSize, PlaceholderVerticalAlign.Center
-                            )
-                        ) {}
+                        println("Latex measure fail, formula: $latexFormula")
+                        append(latexFormula)
                     }
                 }
-                // Write placeholders.
-                appendInlineContent(id, "[math]")
             }
 
             else -> {}
