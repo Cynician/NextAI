@@ -2,16 +2,12 @@ package com.android.nextai.viewmodel.provider
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.nextai.domain.database.datastore.entity.ModelEntity
-import com.android.nextai.domain.database.datastore.entity.ProviderEntity
-import com.android.nextai.domain.database.datastore.entity.ProviderType
-import com.android.nextai.domain.remote.entity.ApiResult
-import com.android.nextai.domain.remote.utils.ModelManager
-import com.android.nextai.domain.repository.ProviderRepository
-import com.android.nextai.viewmodel.provider.entity.ProviderEvent
-import com.android.nextai.viewmodel.provider.entity.ProviderModelsState
-import com.android.nextai.viewmodel.provider.entity.ProviderSettingState
-import com.android.nextai.viewmodel.provider.entity.ProviderState
+import com.android.nextai.data.datebase.datastore.entity.ModelEntity
+import com.android.nextai.data.datebase.datastore.entity.ProviderEntity
+import com.android.nextai.data.datebase.datastore.entity.ProviderType
+import com.android.nextai.domain.model.ApiResult
+import com.android.nextai.data.remote.utils.ModelManager
+import com.android.nextai.repository.ProviderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow

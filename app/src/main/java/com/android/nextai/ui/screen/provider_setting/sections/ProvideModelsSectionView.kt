@@ -66,12 +66,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.android.nextai.domain.database.datastore.entity.ModelEntity
+import com.android.nextai.data.datebase.datastore.entity.ModelEntity
 import com.android.nextai.ui.component.loading.PageLoadingStateView
 import com.android.nextai.ui.component.other.SectionHeader
 import com.android.nextai.ui.icon.SettingsIcon
 import com.android.nextai.viewmodel.provider.ProviderViewModel
-import com.android.nextai.viewmodel.provider.entity.ProviderState
+import com.android.nextai.viewmodel.provider.ProviderState
 import kotlinx.coroutines.launch
 import kotlin.math.ceil
 

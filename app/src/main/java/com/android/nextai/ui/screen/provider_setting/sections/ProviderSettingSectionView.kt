@@ -27,7 +27,7 @@ import com.android.nextai.ui.component.other.SectionHeader
 import com.android.nextai.ui.component.textfield.SettingPasswordField
 import com.android.nextai.ui.component.textfield.SettingTextField
 import com.android.nextai.viewmodel.provider.ProviderViewModel
-import com.android.nextai.viewmodel.provider.entity.ProviderState
+import com.android.nextai.viewmodel.provider.ProviderState
 
 @Composable
 fun ProviderSettingSectionView(

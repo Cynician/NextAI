@@ -59,7 +59,7 @@ import com.android.nextai.ui.screen.home.body.views.AssistantBubbleView
 import com.android.nextai.ui.screen.home.body.views.UserBubbleView
 import com.android.nextai.ui.theme.Animation
 import com.android.nextai.viewmodel.chat.ChatViewModel
-import com.android.nextai.viewmodel.chat.entity.Role
+import com.android.nextai.domain.model.Role
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.collectLatest

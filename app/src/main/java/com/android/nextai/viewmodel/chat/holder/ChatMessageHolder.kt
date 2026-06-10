@@ -1,6 +1,6 @@
 package com.android.nextai.viewmodel.chat.holder
 
-import com.android.nextai.domain.database.sqlite.entity.MessageEntity
+import com.android.nextai.data.datebase.room.entity.MessageEntity
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow

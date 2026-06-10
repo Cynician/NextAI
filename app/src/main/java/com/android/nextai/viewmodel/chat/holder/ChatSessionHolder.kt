@@ -1,8 +1,8 @@
 package com.android.nextai.viewmodel.chat.holder
 
-import com.android.nextai.domain.database.sqlite.entity.SessionEntity
-import com.android.nextai.domain.repository.ChatDatabaseRepository
-import com.android.nextai.viewmodel.chat.entity.SessionGroup
+import com.android.nextai.data.datebase.room.entity.SessionEntity
+import com.android.nextai.repository.ChatDatabaseRepository
+import com.android.nextai.domain.model.SessionGroup
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
