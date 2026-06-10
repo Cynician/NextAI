@@ -66,7 +66,7 @@ fun SequentialJumpingDots(
 
             Box(
                 modifier = Modifier
-                    .size(5.dp)
+                    .size(3.dp)
                     .graphicsLayer {
                         translationY = offsetY
                     }
