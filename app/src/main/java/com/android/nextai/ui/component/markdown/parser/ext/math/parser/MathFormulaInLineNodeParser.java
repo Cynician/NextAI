@@ -35,12 +35,8 @@ public class MathFormulaInLineNodeParser implements DelimiterProcessor {
                                boolean beforeIsPunctuation, boolean afterIsPunctuation, boolean beforeIsWhitespace,
                                boolean afterIsWhiteSpace) {
         if (after == null || after.isEmpty()) return false;
-
         char nextChar = after.charAt(0);
-        // 1. Basic interception: $ must not be followed by a space
-        if (Character.isWhitespace(nextChar)) return false;
-
-        // 2. Pure digital interception (prevents $100 misjudgments, maintains previous optimization)
+        // Pure digital interception (prevents $100 misjudgments, maintains previous optimization).
         if (Character.isDigit(nextChar)) {
             Matcher matcher = PURE_NUMBER_PATTERN.matcher(after);
             if (matcher.find()) return false;
@@ -53,11 +49,6 @@ public class MathFormulaInLineNodeParser implements DelimiterProcessor {
                                boolean beforeIsPunctuation, boolean afterIsPunctuation, boolean beforeIsWhitespace,
                                boolean afterIsWhiteSpace) {
         if (before == null || before.isEmpty()) return false;
-
-        char prevChar = before.charAt(before.length() - 1);
-        // Basic interception: $ must never be a space before it
-        if (Character.isWhitespace(prevChar)) return false;
-
         return rightFlanking;
     }
 
