@@ -1,5 +1,16 @@
 package com.android.nextai.domain.remote.utils
 
+internal enum class HoldState {
+    NONE,
+    CODE,
+    TITLE,
+    SPACE,
+    BULLET,
+    DIVIDER,
+    QUOTE,
+    NUMBER
+}
+
 class StreamBuffer {
 
     val holdBuffer = StringBuilder()
@@ -10,13 +21,15 @@ class StreamBuffer {
         when (state) {
 
             HoldState.NONE -> {
-                return when (char) {
-                    '`' -> switch(HoldState.CODE, char)
-                    '#' -> switch(HoldState.TITLE, char)
-                    ' ' -> switch(HoldState.SPACE, char)
-                    '-', '*', '+' -> switch(HoldState.BULLET, char)
-                    '_' -> switch(HoldState.DIVIDER, char)
-                    '>' -> switch(HoldState.QUOTE, char)
+                return when {
+                    char.isDigit() ->
+                        switch(HoldState.NUMBER, char)
+                    char == '`' -> switch(HoldState.CODE, char)
+                    char == '#' -> switch(HoldState.TITLE, char)
+                    char == ' ' -> switch(HoldState.SPACE, char)
+                    char in listOf('-', '*', '+') -> switch(HoldState.BULLET, char)
+                    char == '_' -> switch(HoldState.DIVIDER, char)
+                    char == '>' -> switch(HoldState.QUOTE, char)
                     else -> char.toString()
                 }
             }
@@ -42,7 +55,7 @@ class StreamBuffer {
     }
 
     /**
-     * 判断是否可以释放缓存
+     * Determine whether the cache can be flushed.
      */
     private fun shouldFlush(char: Char): Boolean {
         return when (state) {
@@ -71,6 +84,10 @@ class StreamBuffer {
                 holdBuffer.length > 4
             }
 
+            HoldState.NUMBER -> {
+                val nonWhitespaceCount = holdBuffer.count { !it.isWhitespace() }
+                nonWhitespaceCount >= 2 && !char.isDigit()
+            }
             else -> true
         }
     }
@@ -78,15 +95,5 @@ class StreamBuffer {
     private fun reset() {
         state = HoldState.NONE
         holdBuffer.clear()
-    }
-
-    enum class HoldState {
-        NONE,
-        CODE,
-        TITLE,
-        SPACE,
-        BULLET,
-        DIVIDER,
-        QUOTE
     }
 }
