@@ -34,22 +34,29 @@ public class MathFormulaInLineNodeParser implements DelimiterProcessor {
     public boolean canBeOpener(String before, String after, boolean leftFlanking, boolean rightFlanking,
                                boolean beforeIsPunctuation, boolean afterIsPunctuation, boolean beforeIsWhitespace,
                                boolean afterIsWhiteSpace) {
-        if (after == null || after.isEmpty()) return false;
+        if (after.isEmpty()) return false;
+
         char nextChar = after.charAt(0);
-        // Pure digital interception (prevents $100 misjudgments, maintains previous optimization).
+        // 1. Intercept pure numbers (such as $100) to prevent misjudgment
         if (Character.isDigit(nextChar)) {
             Matcher matcher = PURE_NUMBER_PATTERN.matcher(after);
             if (matcher.find()) return false;
         }
-        return leftFlanking;
+        // 2. Core relaxation: As long as the next $ is not another $ (to avoid swallowing the block
+        // level) and not a blank line, it is allowed as the beginning
+        return nextChar != '$';
     }
 
     @Override
     public boolean canBeCloser(String before, String after, boolean leftFlanking, boolean rightFlanking,
                                boolean beforeIsPunctuation, boolean afterIsPunctuation, boolean beforeIsWhitespace,
                                boolean afterIsWhiteSpace) {
-        if (before == null || before.isEmpty()) return false;
-        return rightFlanking;
+        if (before.isEmpty()) return false;
+
+        char prevChar = before.charAt(before.length() - 1);
+        // Core relaxation: Closing is allowed as long as the preceding character is not $ (to
+        // prevent closed tag collisions).
+        return prevChar != '$';
     }
 
     @Override
