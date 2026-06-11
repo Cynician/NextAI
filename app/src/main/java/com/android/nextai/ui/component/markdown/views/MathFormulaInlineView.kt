@@ -13,7 +13,7 @@ import com.hrm.latex.renderer.Latex
 import com.hrm.latex.renderer.model.LatexConfig
 
 @Composable
-fun InlineMathView(
+fun MathFormulaInlineView(
     isFormulaTooLong: Boolean,
     formula: String,
     style: TextStyle = LocalTextStyle.current

@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.nextai.ui.component.markdown.entity.InlineColors
 import com.android.nextai.ui.component.markdown.entity.LatexRenderParams
-import com.android.nextai.ui.component.markdown.views.InlineMathView
+import com.android.nextai.ui.component.markdown.views.MathFormulaInlineView
 import com.android.nextai.ui.theme.MapleMonoFontFamily
 import com.hrm.latex.renderer.model.LatexConfig
 
@@ -80,10 +80,10 @@ fun AnnotatedString.Builder.appendInlineNodes(
                 pop()
             }
 
-            is MarkdownNode.InlineMath -> {
+            is MarkdownNode.MathFormula -> {
                 val formula = node.formula
 
-                // Unified Formula Format (Clean Prefixes and Postfixes)
+                // 1. Unified formula format (clean prefixes and postfixes).
                 val latexFormula = formula.replace("\\|", "|").let {
                     if (!it.startsWith("$")) "$$it$" else it // 修复后：正确的双边包裹
                 }
@@ -122,7 +122,7 @@ fun AnnotatedString.Builder.appendInlineNodes(
                                     placeholderVerticalAlign = PlaceholderVerticalAlign.Center
                                 )
                             ) {
-                                InlineMathView(
+                                MathFormulaInlineView(
                                     isFormulaTooLong = isTooLong,
                                     formula = latexFormula,
                                     style = style,

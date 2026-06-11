@@ -6,34 +6,40 @@ import com.vladsch.flexmark.util.sequence.BasedSequence;
 
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Node representing in-line math formula like the following
- *
- * <pre>
- *     $E=mc^2$
- * </pre>
- *
- */
-public class MathFormulaInLineNode extends Node implements DelimitedNode {
-    
+
+public class MathFormulaNode extends Node implements DelimitedNode {
+
     protected BasedSequence openingMarker = BasedSequence.NULL;
     protected BasedSequence text = BasedSequence.NULL;
     protected BasedSequence closingMarker = BasedSequence.NULL;
-    
-    public MathFormulaInLineNode() {
+    /**
+     * Classification:
+     * <p>
+     * $$...$$(DisplayMode)-> Not inline formula
+     * <p>
+     * $...$ -> Inline formula
+     */
+    private  Boolean isDisplayMode;
+
+    public MathFormulaNode() {
     }
 
-    public MathFormulaInLineNode(BasedSequence chars) {
+    public MathFormulaNode(BasedSequence chars) {
         super(chars);
     }
 
-    public MathFormulaInLineNode(BasedSequence openingMarker, BasedSequence text, BasedSequence closingMarker) {
+    public MathFormulaNode(BasedSequence openingMarker, BasedSequence text, BasedSequence closingMarker, Boolean isDisplayMode) {
         super(openingMarker.baseSubSequence(openingMarker.getStartOffset(), closingMarker.getEndOffset()));
         this.openingMarker = openingMarker;
         this.text = text;
         this.closingMarker = closingMarker;
+        this.isDisplayMode = isDisplayMode;
     }
-    
+
+    public boolean isDisplayMode() {
+        return isDisplayMode;
+    }
+
     @Override
     public @NotNull BasedSequence[] getSegments() {
         return new BasedSequence[] { openingMarker, text, closingMarker };

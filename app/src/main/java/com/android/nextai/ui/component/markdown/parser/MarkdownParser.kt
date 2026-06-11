@@ -3,7 +3,7 @@ package com.android.nextai.ui.component.markdown.parser
 import android.util.Log
 import com.android.nextai.ui.component.markdown.MarkdownNode
 import com.android.nextai.ui.component.markdown.parser.ext.math.MathExtension
-import com.android.nextai.ui.component.markdown.parser.ext.math.node.MathFormulaInLineNode
+import com.android.nextai.ui.component.markdown.parser.ext.math.node.MathFormulaNode
 import com.vladsch.flexmark.ast.BlockQuote
 import com.vladsch.flexmark.ast.BulletList
 import com.vladsch.flexmark.ast.Code
@@ -61,6 +61,7 @@ object MarkdownParser {
     }
 
     fun parseNode(node: Node): MarkdownNode? {
+//        Log.d(TAG, "${node.nodeName}:${node.chars}")
         return when (node) {
             // Block
             is Paragraph -> MarkdownNode.Paragraph(parseChildren(node))
@@ -98,7 +99,10 @@ object MarkdownParser {
             is Code -> MarkdownNode.InlineCode(node.text.toString())
             is Link -> MarkdownNode.Link(url = node.url.toString(), children = parseChildren(node))
             is ThematicBreak -> MarkdownNode.ThematicBreak
-            is MathFormulaInLineNode -> MarkdownNode.InlineMath(node.text.toString())
+            is MathFormulaNode -> MarkdownNode.MathFormula(
+                formula = node.text.toString(),
+                isDisplayMode = node.isDisplayMode
+            )
 
             // Table
             is TableBlock -> MarkdownNode.TableBlock(children = parseChildren(node))
@@ -119,7 +123,7 @@ object MarkdownParser {
     }
 
     /**
-     * Problems with Markdown:
+     * Process with original Markdown:
      *
      * 1. In some model outputs, mathematical formulas are replaced with \(...\) instead of $...$
      * and \[...\] instead of $$...$$, which does not comply with the LaTex specification and
@@ -127,12 +131,17 @@ object MarkdownParser {
      *
      * 2. The determination format for the Table column is |..|, which conflicts with absolute value
      * symbols in mathematical formulas, so escape processing is required.
+     *
+     * 3. Some llm model models often add line breaks internally when outputting mathematical
+     * formulas for the \[...\] wrap, which makes parsing complicated because \n is the identifier
+     * for paragraph node parsing. To facilitate parsing, after replacing \[and \] with $$,
+     * unnecessary newlines or spaces must be removed from the contents of the envelope in $$...$$.
      */
     fun replaceLatexDelimiters(md: String): String {
         var processed = md
 
-        // 1. 限制：只有成对出现的 \[ ... \] 和 \( ... \) 才进行替换
-        val blockSlashRegex = """\\\[([\s\S]*?)\\\]""".toRegex()
+        // 1. Limitation: Only pairs of \[ ... \] and \( ... \) are replaced.
+        val blockSlashRegex = """\\\[([\s\S]*?)\\]""".toRegex()
         processed = blockSlashRegex.replace(processed) { matchResult ->
             val content = matchResult.groupValues[1]
             "$$\n$content\n$$" // 替换为成对的 $$
@@ -141,17 +150,17 @@ object MarkdownParser {
         val inlineSlashRegex = """\\\(([\s\S]*?)\\\)""".toRegex()
         processed = inlineSlashRegex.replace(processed) { matchResult ->
             val content = matchResult.groupValues[1]
-            "$$content$" // 替换为成对的 $
+            "$$content$"
         }
 
-        // 2. 核心转义：匹配 $$ ... $$ 块级公式，并转义内部的 |
+        // 2. Core modification: Match $$ ... $$ and remove blank characters before and after the internal text.
         val blockDollarRegex = """\$\$([\s\S]*?)\$\$""".toRegex()
         processed = blockDollarRegex.replace(processed) { matchResult ->
-            val content = matchResult.groupValues[1]
-            "$$\n${content.replace("|", "\\|")}\n$$"
+            val content = matchResult.groupValues[1].trim()
+            "$$${content.replace("|", "\\|")}$$"
         }
 
-        // 3. 核心转义：匹配 $ ... $ 行内公式，并转义内部的 |
+        // 3. Core escaping: matches the $... $ inline formula and escapes the internal |.
         val inlineDollarRegex = """\$(?!\s)([^$\n]+?)(?<!\s)\$""".toRegex()
         processed = inlineDollarRegex.replace(processed) { matchResult ->
             val content = matchResult.groupValues[1]

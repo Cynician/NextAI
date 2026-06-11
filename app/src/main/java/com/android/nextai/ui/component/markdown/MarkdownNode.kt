@@ -27,7 +27,7 @@ sealed class MarkdownNode {
     data class InlineCode(val code: String) : MarkdownNode()
     data class Link(val url: String, val children: List<MarkdownNode>) : MarkdownNode()
     data object ThematicBreak : MarkdownNode()
-    data class InlineMath(val formula: String) : MarkdownNode()    // latex
+    data class MathFormula(val formula: String, val isDisplayMode: Boolean) : MarkdownNode()    // latex
 
     // table
     data class TableBlock(val children: List<MarkdownNode>) : MarkdownNode()
