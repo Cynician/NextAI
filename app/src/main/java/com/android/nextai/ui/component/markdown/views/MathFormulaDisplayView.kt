@@ -3,7 +3,9 @@ package com.android.nextai.ui.component.markdown.views
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.LocalTextStyle
@@ -11,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.hrm.latex.renderer.Latex
@@ -22,10 +25,13 @@ fun MathBlockView(
     formula: String,
     style: TextStyle = LocalTextStyle.current,
 ) {
+    val density = LocalDensity.current
     val latexMeasurer = rememberLatexMeasurer()
     val dimensions = latexMeasurer.measure(latex = formula, config = LatexConfig(fontSize = style.fontSize))
 
     if (dimensions != null) {
+        val exactWidthDp = with(density) { dimensions.widthPx.toDp() }
+        val exactHeightDp = with(density) { dimensions.heightPx.toDp() }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -34,7 +40,8 @@ fun MathBlockView(
         ) {
             Box(
                 modifier = Modifier
-                    .wrapContentSize()
+                    .width(exactWidthDp)
+                    .height(exactHeightDp)
                     .horizontalScroll(rememberScrollState()),
                 contentAlignment = Alignment.Center
             ) {
