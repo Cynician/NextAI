@@ -141,10 +141,11 @@ object MarkdownParser {
         var processed = md
 
         // 1. Limitation: Only pairs of \[ ... \] and \( ... \) are replaced.
+
         val blockSlashRegex = """\\\[([\s\S]*?)\\]""".toRegex()
         processed = blockSlashRegex.replace(processed) { matchResult ->
             val content = matchResult.groupValues[1]
-            "$$\n$content\n$$" // 替换为成对的 $$
+            "$$${content.trim()}$$"// Remove blank characters before and after the internal text.
         }
 
         val inlineSlashRegex = """\\\(([\s\S]*?)\\\)""".toRegex()
@@ -153,18 +154,12 @@ object MarkdownParser {
             "$$content$"
         }
 
-        // 2. Core modification: Match $$ ... $$ and remove blank characters before and after the internal text.
-        val blockDollarRegex = """\$\$([\s\S]*?)\$\$""".toRegex()
-        processed = blockDollarRegex.replace(processed) { matchResult ->
-            val content = matchResult.groupValues[1].trim()
-            "$$${content.replace("|", "\\|")}$$"
-        }
-
-        // 3. Core escaping: matches the $... $ inline formula and escapes the internal |.
+        // 2. Core escaping: matches the $... $ inline formula and escapes the internal |.
         val inlineDollarRegex = """\$(?!\s)([^$\n]+?)(?<!\s)\$""".toRegex()
         processed = inlineDollarRegex.replace(processed) { matchResult ->
             val content = matchResult.groupValues[1]
-            "$${content.replace("|", "\\|")}$"
+            val replacedContent = content.replace("|", "\\|")
+            "$$replacedContent$"
         }
 
         return processed
