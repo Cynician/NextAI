@@ -65,11 +65,11 @@ fun HomeScreen(
                     },
                     onSessionItemClick = {
                         if (isBatchSelectMode) {
-                            chatViewModel.sessionHolder.toggleItemSelect(it)
+                            chatViewModel.sessionHolder.onToggleSessionSelectState(it)
                         } else {
                             scope.launch {
                                 drawerState.close()
-                                chatViewModel.loadFirstPageMessages(sessionId = it)
+                                chatViewModel.onChangingSession(sessionId = it)
                             }
                         }
                     },

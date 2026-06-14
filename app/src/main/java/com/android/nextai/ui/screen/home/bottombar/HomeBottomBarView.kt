@@ -43,11 +43,13 @@ internal fun HomeBottomBar(
 
     val provider by providerViewModel.defaultProvider.collectAsState(null)
 
+    val currentSessionId by chatViewModel.sessionHolder.curSessionId.collectAsState()
+
     var query by remember { mutableStateOf("") }
 
     val canSend = query.isNotBlank()
                 && provider != null
-                && chatViewModel.generationJob?.isActive != true
+                && chatViewModel.generationJobs[currentSessionId]?.isActive != true
     Box(
         Modifier
             .fillMaxWidth()

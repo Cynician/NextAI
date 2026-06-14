@@ -22,8 +22,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.visible
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -53,13 +53,14 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.android.nextai.R
+import com.android.nextai.domain.model.Role
 import com.android.nextai.ui.component.loading.LoadingOverlayView
 import com.android.nextai.ui.component.loading.SequentialJumpingDots
 import com.android.nextai.ui.screen.home.body.views.AssistantBubbleView
 import com.android.nextai.ui.screen.home.body.views.UserBubbleView
 import com.android.nextai.ui.theme.Animation
 import com.android.nextai.viewmodel.chat.ChatViewModel
-import com.android.nextai.domain.model.Role
+import com.android.nextai.viewmodel.chat.state.ChatSessionState
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.collectLatest
@@ -75,20 +76,27 @@ fun HomeBodyView(
 ) {
     val focusManager = LocalFocusManager.current
 
-    /** Get the current stream generation status **/
-    val isGenerating by chatViewModel.messageHolder.isGenerating.collectAsState(initial = false)
+    /** Get the current active Session ID **/
+    val currentSessionId by chatViewModel.sessionHolder.curSessionId.collectAsState()
 
-    /**
-     * To optimize performance, data is loaded in a paginated manner,loading data when the user
-     * swipes to the last two messages, Loading a messages for the first time means the session
-     * is being switched.
-     */
-    val isChangingSession by chatViewModel.messageHolder.isLoadingFirst.collectAsState()
+    val allSessionStates by chatViewModel.sessionHolder.sessionStates.collectAsState()
+
+    val currentSessionState = allSessionStates[currentSessionId]
+        ?: ChatSessionState(sessionId = currentSessionId)
+
+    val messageList = currentSessionState.messageList
+    val isGenerating = currentSessionState.isGenerating
+    val isChangingSession by chatViewModel.sessionHolder.isLoadingFirst.collectAsState()
 
     /** The core message list **/
-    val messageList by chatViewModel.messageHolder.messageList.collectAsState()
+    val listState = remember(currentSessionId) {
+        val initialIndex = if (messageList.isNotEmpty()) messageList.lastIndex else 0
+        LazyListState(
+            firstVisibleItemIndex = initialIndex,
+            firstVisibleItemScrollOffset = Int.MAX_VALUE
+        )
+    }
 
-    val listState = rememberLazyListState()
 
     /** Get the current interface's "screen density" and "font scaling ratio." **/
     val density = LocalDensity.current
@@ -156,7 +164,7 @@ fun HomeBodyView(
     }
 
     // Before the keyboard rises, it records the status of the "wasBottomVisible" variable
-    LaunchedEffect(listState, imeInsets) {
+    LaunchedEffect(listState, imeInsets, currentSessionId) {
         snapshotFlow {
             isLastItemBottomVisible()
         }.collect {
@@ -166,7 +174,7 @@ fun HomeBodyView(
 
     // Paginated loading: During upward scrolling, if conditions are met, the next page's message
     // is loaded.
-    LaunchedEffect(listState) {
+    LaunchedEffect(listState, messageList) {
         snapshotFlow {
             val layoutInfo = listState.layoutInfo
             val firstVisible = layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0
@@ -181,14 +189,15 @@ fun HomeBodyView(
     }
 
     // Used to position the latest message at the end of the list after switching session.
-    LaunchedEffect(Unit) {
+    LaunchedEffect(listState,currentSessionId) {
         chatViewModel
-            .messageHolder
+            .sessionHolder
             .scrollToLatestMessageEvent
-            .collectLatest {
-                if (messageList.isEmpty()) {
-                    return@collectLatest
+            .collectLatest {targetSessionId ->
+                if (targetSessionId != currentSessionId || messageList.isEmpty()) {
+                        return@collectLatest
                 }
+
                 listState.requestScrollToItem(messageList.lastIndex, Int.MAX_VALUE)
                 if (isGenerating) followBottom = true
             }
@@ -197,7 +206,7 @@ fun HomeBodyView(
     // Monitor two metrics: whether it is currently being generated, and whether the last one
     // is visible. If it is generating and the user swipes down to make the bottom visible again,
     // the tracking status will automatically reset.
-    LaunchedEffect(listState) {
+    LaunchedEffect(listState, isGenerating) {
         snapshotFlow {
             isGenerating to isLastItemBottomVisible(tolerance = 48.dp)
         }
@@ -212,7 +221,7 @@ fun HomeBodyView(
     }
 
     // When the condition is met, keep following the bottom of the list.
-    LaunchedEffect(followBottom, isChangingSession) {
+    LaunchedEffect(followBottom, isChangingSession, currentSessionId) {
         if (isChangingSession) return@LaunchedEffect
         // TODO Consider set the sliding speed as a custom parameter.
         // Scrolling Speed

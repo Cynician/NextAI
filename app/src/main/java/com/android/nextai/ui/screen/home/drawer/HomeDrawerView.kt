@@ -44,7 +44,7 @@ fun HomeDrawerView(
 ) {
     val focusManager = LocalFocusManager.current
 
-    val isSessionLoading by chatViewModel.sessionHolder.isLoading.collectAsState()
+    val isSessionLoading by chatViewModel.sessionHolder.isLoadingSessions.collectAsState()
     val groupedSessions by chatViewModel.sessionHolder.groupedSessions.collectAsState()
     val isBatchSelectMode by chatViewModel.sessionHolder.isBatchSelectMode.collectAsState()
     val batchSelectedIdSet by chatViewModel.sessionHolder.batchSelectedIdSet.collectAsState()
@@ -58,7 +58,7 @@ fun HomeDrawerView(
     }
 
     BackHandler(isBatchSelectMode) {
-        chatViewModel.sessionHolder.exitBatchSelectMode()
+        chatViewModel.sessionHolder.onExitBatchSelectMode()
     }
 
     Scaffold(
@@ -107,7 +107,7 @@ fun HomeDrawerView(
                                 isExpand = isExpand,
                                 onToggleExpand = { expandedMap[group] = !isExpand },
                                 onSelectGroup = { isCheck ->
-                                    chatViewModel.sessionHolder.toggleGroupSelect(
+                                    chatViewModel.sessionHolder.onToggleGroupSelectState(
                                         sessions = sessionList,
                                         isCheck = isCheck
                                     )
@@ -127,7 +127,7 @@ fun HomeDrawerView(
                                         onSessionItemClick(session.id)
                                     },
                                     onLongClick = {
-                                        chatViewModel.sessionHolder.enterBatchSelectMode(session.id)
+                                        chatViewModel.sessionHolder.onEnterBatchSelectMode(session.id)
                                     },
                                     onUnpinClick = {
                                         chatViewModel.batchUnpinSessions(listOf(session.id))
@@ -145,7 +145,7 @@ fun HomeDrawerView(
                     onDelete = { chatViewModel.batchDeleteSessions(batchSelectedIdSet.toList()) },
                     onPin = { chatViewModel.batchPinSessions(batchSelectedIdSet.toList()) },
                     onUnpin = { chatViewModel.batchUnpinSessions(batchSelectedIdSet.toList()) },
-                    onCancel = { chatViewModel.sessionHolder.exitBatchSelectMode() },
+                    onCancel = { chatViewModel.sessionHolder.onExitBatchSelectMode() },
                 )
             }
         }
