@@ -65,7 +65,6 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.yield
 
 
 @OptIn(ExperimentalSharedTransitionApi::class, FlowPreview::class)
@@ -174,7 +173,7 @@ fun HomeBodyView(
 
     // Paginated loading: During upward scrolling, if conditions are met, the next page's message
     // is loaded.
-    LaunchedEffect(listState, messageList) {
+    LaunchedEffect(listState, messageList, currentSessionId) {
         snapshotFlow {
             val layoutInfo = listState.layoutInfo
             val firstVisible = layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0
@@ -206,7 +205,7 @@ fun HomeBodyView(
     // Monitor two metrics: whether it is currently being generated, and whether the last one
     // is visible. If it is generating and the user swipes down to make the bottom visible again,
     // the tracking status will automatically reset.
-    LaunchedEffect(listState, isGenerating) {
+    LaunchedEffect(listState, isGenerating, currentSessionId) {
         snapshotFlow {
             isGenerating to isLastItemBottomVisible(tolerance = 48.dp)
         }
@@ -236,24 +235,28 @@ fun HomeBodyView(
         }
     }
 
+    var isKeyboardOpening by remember { mutableStateOf(false) }
+
     // When the last message is visible, the keyboard rises, the bottom of the list paddings
     // increases, and need to drag the bottom content to the visible area.
-    LaunchedEffect(Unit) {
+    LaunchedEffect(currentSessionId) {
         var lastRecordedHeight = 0
         snapshotFlow { imeInsets.getBottom(density) }
             .collect { latestHeight ->
-                //Keyboard event detected, bottom followers are prohibited
-                followBottom = false
-                when {
-                    // keyboard rise
-                    latestHeight > lastRecordedHeight && wasBottomVisible -> {
-                        awaitFrame()
-                        listState.animateScrollToItem(messageList.lastIndex, Int.MAX_VALUE)
-                    }
-                    // keyboard decline
-                    else -> {
-                        yield()
-                    }
+                if(currentSessionId!= currentSessionState.sessionId) return@collect
+
+                if (latestHeight > 0 && lastRecordedHeight == 0 && !isKeyboardOpening) {
+                    //Keyboard event detected, bottom followers are prohibited
+                    followBottom = false
+                    if (wasBottomVisible) { isKeyboardOpening = true }
+                }
+
+                if (isKeyboardOpening  && wasBottomVisible) {
+                    listState.requestScrollToItem(messageList.lastIndex, Int.MAX_VALUE)
+                }
+
+                if (latestHeight > 0 && latestHeight == lastRecordedHeight) {
+                    isKeyboardOpening = false
                 }
                 lastRecordedHeight = latestHeight
             }
