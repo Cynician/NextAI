@@ -7,13 +7,20 @@ import com.android.nextai.data.datebase.datastore.entity.ProviderEntity
 import com.android.nextai.data.datebase.room.entity.MessageEntity
 import com.android.nextai.data.remote.ApiType
 import com.android.nextai.domain.model.GenerationEvent
+import com.android.nextai.domain.model.Role
 import com.android.nextai.repository.ChatDatabaseRepository
 import com.android.nextai.repository.ChatRemoteRepository
-import com.android.nextai.domain.model.Role
 import com.android.nextai.viewmodel.chat.holder.ChatSessionHolder
 import com.android.nextai.viewmodel.chat.holder.MarkdownCacheHolder
+import com.android.nextai.viewmodel.chat.state.ChatSessionState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import java.util.concurrent.ConcurrentHashMap
@@ -42,6 +49,13 @@ class ChatViewModel @Inject constructor(
             }
         }
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val currentSessionState: StateFlow<ChatSessionState?> = sessionHolder.curSessionId
+        .flatMapLatest { id ->
+            sessionHolder.sessionStates.map { allStates -> allStates[id] }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     /**
      * Get ai response

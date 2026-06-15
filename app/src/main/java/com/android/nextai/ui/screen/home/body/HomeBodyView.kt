@@ -1,5 +1,6 @@
 package com.android.nextai.ui.screen.home.body
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.fadeIn
@@ -31,9 +32,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -50,6 +52,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.android.nextai.R
@@ -78,13 +81,11 @@ fun HomeBodyView(
     /** Get the current active Session ID **/
     val currentSessionId by chatViewModel.sessionHolder.curSessionId.collectAsState()
 
-    val allSessionStates by chatViewModel.sessionHolder.sessionStates.collectAsState()
+    val currentSessionState by chatViewModel.currentSessionState.collectAsState()
 
-    val currentSessionState = allSessionStates[currentSessionId]
-        ?: ChatSessionState(sessionId = currentSessionId)
-
-    val messageList = currentSessionState.messageList
-    val isGenerating = currentSessionState.isGenerating
+    val state = currentSessionState ?: ChatSessionState(sessionId = currentSessionId)
+    val messageList = state.messageList
+    val isGenerating = state.isGenerating
     val isChangingSession by chatViewModel.sessionHolder.isLoadingFirst.collectAsState()
 
     /** The core message list **/
@@ -104,15 +105,14 @@ fun HomeBodyView(
      * This variable is the core of the list scrolling logic, used to record whether the variable
      * should automatically follow the bottom scroll.
      */
-    var followBottom by rememberSaveable { mutableStateOf(true) }
-
+    var followBottom by remember(currentSessionId) { mutableStateOf(isGenerating) }
 
     /** Used to record whether the user is actively dragging the list of variables **/
-    var isUserDragging by remember { mutableStateOf(false) }
+    var isUserDragging by remember(currentSessionId) { mutableStateOf(false) }
 
     /** Triggered when the user's physical finger is just about to swipe across the screen,
      * but the list has not yet experienced any actual scrolling offset (Delta). **/
-    val nestedScrollConnection = remember {
+    val nestedScrollConnection = remember(currentSessionId) {
         object : NestedScrollConnection {
             override fun onPreScroll(
                 available: Offset,
@@ -143,23 +143,13 @@ fun HomeBodyView(
      * always be "false". Therefore, need to cache whether the keyboard is at the bottom of the
      * list before the keyboard is raised.
      * */
-    var wasBottomVisible by remember { mutableStateOf(false) }
-
-    /**
-     * Get visibility info of the last message
-     *
-     * tolerance: Tolerance value. Bottom conditions can sometimes be too harsh to trigger, so a
-     * tolerable pixel range can be granted.
-     */
-    fun isLastItemBottomVisible(tolerance: Dp = 96.dp): Boolean {
-        val layoutInfo = listState.layoutInfo
-        val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull() ?: return false
-        val lastIndex = messageList.lastIndex
-        if (lastVisibleItem.index != lastIndex) {
-            return false
-        }
-        val tolerance = with(density) { tolerance.toPx() }.toInt()
-        return (lastVisibleItem.offset + lastVisibleItem.size - tolerance) <= layoutInfo.viewportEndOffset
+    var wasBottomVisible by remember(currentSessionId) {
+        mutableStateOf(
+            isLastItemBottomVisible(
+                listState = listState,
+                density = density,
+            )
+        )
     }
 
     // Paginated loading: During upward scrolling, if conditions are met, the next page's message
@@ -179,17 +169,32 @@ fun HomeBodyView(
     }
 
     // Used to position the latest message at the end of the list after switching session.
-    LaunchedEffect(listState,currentSessionId) {
+    LaunchedEffect(listState,currentSessionId, followBottom, isGenerating) {
         chatViewModel
             .sessionHolder
             .scrollToLatestMessageEvent
             .collectLatest {targetSessionId ->
+                // Prevents cross-session pollution.
                 if (targetSessionId != currentSessionId || messageList.isEmpty()) {
-                        return@collectLatest
+                    return@collectLatest
+                }
+                if (followBottom && isGenerating) {
+                    Log.d("AUTO_SCROLL", "tracking scrolling is ready, skip scrolling to the latest msg")
+                    return@collectLatest
+                }
+                try {
+                    Log.d("AUTO_SCROLL", "scrolling to the latest msg, isGenerating = $isGenerating")
+                    listState.requestScrollToItem(messageList.lastIndex, Int.MAX_VALUE)
+
+                    // Activate tracking scrolling status.
+                    if (isGenerating) {
+                        followBottom = true
+                        isUserDragging = false
+                    }
+                } catch (e: Exception) {
+                    Log.d("AUTO_SCROLL", "scrolling to bottom failed: ${e.message}")
                 }
 
-                listState.requestScrollToItem(messageList.lastIndex, Int.MAX_VALUE)
-                if (isGenerating) followBottom = true
             }
     }
 
@@ -198,11 +203,10 @@ fun HomeBodyView(
     // the tracking status will automatically reset.
     LaunchedEffect(listState, isGenerating, currentSessionId) {
         snapshotFlow {
-            isGenerating to isLastItemBottomVisible(tolerance = 48.dp)
+            isGenerating to isLastItemBottomVisible(listState = listState, density = density, tolerance = 48.dp)
         }
             .distinctUntilChanged()
             .collect { (generating, lastVisible) ->
-
                 if (generating && lastVisible) {
                     followBottom = true
                     isUserDragging = false
@@ -210,47 +214,70 @@ fun HomeBodyView(
             }
     }
 
+    /**
+     * This allows the running while loop to "real-time" see the latest values from external `followBottom`
+     * and `isUserDragging` without restarting the entire coroutine.
+     */
+    val currentFollowBottomState = rememberUpdatedState(followBottom)
+    val currentUserDraggingState = rememberUpdatedState(isUserDragging)
+
     // When the condition is met, keep following the bottom of the list.
-    LaunchedEffect(followBottom, isChangingSession, currentSessionId) {
-        if (isChangingSession) return@LaunchedEffect
-        // TODO Consider set the sliding speed as a custom parameter.
-        // Scrolling Speed
+    LaunchedEffect(currentSessionId, listState, followBottom, isUserDragging) {
+        if (isChangingSession || messageList.isEmpty()) return@LaunchedEffect
+
+        Log.d("AUTO_SCROLL", "rolling engine inspection -> followBottom = $followBottom, isUserDragging = $isUserDragging")
+        if (!followBottom || isUserDragging) return@LaunchedEffect
+
         val scrollingSpeed = 20f
-        while (followBottom && !isUserDragging) {
-            listState.scroll(scrollPriority = MutatePriority.Default) {
-                while (followBottom && !isUserDragging) {
-                    awaitFrame()
-                    scrollBy(scrollingSpeed)
+        while (currentFollowBottomState.value && !currentUserDraggingState.value) {
+            try {
+                listState.scroll(scrollPriority = MutatePriority.Default) {
+                    while (currentFollowBottomState.value && !currentUserDraggingState.value) {
+                        awaitFrame()
+                        scrollBy(scrollingSpeed)
+                    }
                 }
+            } catch (e: Exception) {
+                awaitFrame()
+                Log.d("AUTO_SCROLL", "tracking scroll was interrupted: ${e.message}")
             }
         }
+
     }
 
     // When the last message is visible, the keyboard rises, the bottom of the list paddings
     // increases, and need to drag the bottom content to the visible area.
+    var lastObservedKeyboardHeight by remember(currentSessionId) { mutableIntStateOf(0) }
     LaunchedEffect(currentSessionId, listState, isGenerating) {
         snapshotFlow {
-            val currentBottomVisible = isLastItemBottomVisible()
+            val currentBottomVisible = isLastItemBottomVisible(listState=listState, density=density)
             Triple(
                 imeInsets.getBottom(density),
                 messageList.size,
                 currentBottomVisible
             )
-        }
+        }   .distinctUntilChanged()
             .collect { (latestHeight, listSize, currentBottomVisible) ->
                 if (latestHeight == 0) {
                     wasBottomVisible = currentBottomVisible
                 }
-                if(currentSessionId!= currentSessionState.sessionId || listSize == 0) return@collect
+                if(isChangingSession || currentSessionId!= currentSessionState?.sessionId || listSize == 0) return@collect
 
-                if (latestHeight > 0 && followBottom) {
+                if (latestHeight > lastObservedKeyboardHeight && followBottom) {
                     //Keyboard event detected, bottom followers are prohibited
                     followBottom = false
+                }else if (latestHeight < lastObservedKeyboardHeight && latestHeight == 0 && !isUserDragging) {
+                    followBottom = true
                 }
 
                 if (listSize > 0 && wasBottomVisible && latestHeight > 0) {
-                    listState.requestScrollToItem(messageList.lastIndex, Int.MAX_VALUE)
+                    try {
+                        listState.requestScrollToItem(messageList.lastIndex, Int.MAX_VALUE)
+                    } catch (e: Exception) {
+                        Log.d("AUTO_SCROLL", "fail to drag the content up, e: ${e.message}")
+                    }
                 }
+                lastObservedKeyboardHeight = latestHeight
             }
     }
 
@@ -365,4 +392,17 @@ internal fun MaskView() {
             )
         }
     }
+}
+
+/**
+ * Get visibility info of the last message
+ *
+ * tolerance: Tolerance value. Bottom conditions can sometimes be too harsh to trigger, so a
+ * tolerable pixel range can be granted.
+ */
+fun isLastItemBottomVisible(listState: LazyListState, density: Density, tolerance: Dp = 96.dp): Boolean {
+    val layoutInfo = listState.layoutInfo
+    val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull() ?: return false
+    val tolerance = with(density) { tolerance.toPx() }.toInt()
+    return (lastVisibleItem.offset + lastVisibleItem.size - tolerance) <= layoutInfo.viewportEndOffset
 }
