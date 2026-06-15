@@ -162,15 +162,6 @@ fun HomeBodyView(
         return (lastVisibleItem.offset + lastVisibleItem.size - tolerance) <= layoutInfo.viewportEndOffset
     }
 
-    // Before the keyboard rises, it records the status of the "wasBottomVisible" variable
-    LaunchedEffect(listState, imeInsets, currentSessionId) {
-        snapshotFlow {
-            isLastItemBottomVisible()
-        }.collect {
-            wasBottomVisible = it
-        }
-    }
-
     // Paginated loading: During upward scrolling, if conditions are met, the next page's message
     // is loaded.
     LaunchedEffect(listState, messageList, currentSessionId) {
@@ -235,30 +226,31 @@ fun HomeBodyView(
         }
     }
 
-    var isKeyboardOpening by remember { mutableStateOf(false) }
-
     // When the last message is visible, the keyboard rises, the bottom of the list paddings
     // increases, and need to drag the bottom content to the visible area.
-    LaunchedEffect(currentSessionId) {
-        var lastRecordedHeight = 0
-        snapshotFlow { imeInsets.getBottom(density) }
-            .collect { latestHeight ->
-                if(currentSessionId!= currentSessionState.sessionId) return@collect
+    LaunchedEffect(currentSessionId, listState, isGenerating) {
+        snapshotFlow {
+            val currentBottomVisible = isLastItemBottomVisible()
+            Triple(
+                imeInsets.getBottom(density),
+                messageList.size,
+                currentBottomVisible
+            )
+        }
+            .collect { (latestHeight, listSize, currentBottomVisible) ->
+                if (latestHeight == 0) {
+                    wasBottomVisible = currentBottomVisible
+                }
+                if(currentSessionId!= currentSessionState.sessionId || listSize == 0) return@collect
 
-                if (latestHeight > 0 && lastRecordedHeight == 0 && !isKeyboardOpening) {
+                if (latestHeight > 0 && followBottom) {
                     //Keyboard event detected, bottom followers are prohibited
                     followBottom = false
-                    if (wasBottomVisible) { isKeyboardOpening = true }
                 }
 
-                if (isKeyboardOpening  && wasBottomVisible) {
+                if (listSize > 0 && wasBottomVisible && latestHeight > 0) {
                     listState.requestScrollToItem(messageList.lastIndex, Int.MAX_VALUE)
                 }
-
-                if (latestHeight > 0 && latestHeight == lastRecordedHeight) {
-                    isKeyboardOpening = false
-                }
-                lastRecordedHeight = latestHeight
             }
     }
 
