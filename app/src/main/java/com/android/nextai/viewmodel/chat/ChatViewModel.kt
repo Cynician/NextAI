@@ -176,6 +176,42 @@ class ChatViewModel @Inject constructor(
     }
 
     /**
+     * Stop the generation task for the current session.
+     * Cancels the coroutine, saves partial response to database, and updates state.
+     */
+    fun stopStreamingGen(sessionId: Long) {
+        viewModelScope.launch {
+            try {
+                val job = generationJobs[sessionId] ?: return@launch
+                if (!job.isActive) return@launch
+
+                // Cancel the streaming coroutine
+                job.cancel()
+
+                // Save the partially generated response to database
+                val state = sessionHolder.getState(sessionId)
+                val messageList = state.messageList
+                if (messageList.isNotEmpty() && state.curResponse.isNotEmpty()) {
+                    val lastMessage = messageList.last()
+                    if (lastMessage.role == Role.Assistant.name) {
+                        chatDatabaseRepository.updateMessageContent(
+                            sessionId = sessionId,
+                            msgId = lastMessage.id,
+                            content = state.curResponse
+                        )
+                    }
+                }
+
+                // Update streaming state
+                sessionHolder.updateIsTextStreaming(sessionId, false)
+                generationJobs.remove(sessionId)
+            } catch (e: Exception) {
+                Log.e(TAG, "stopGeneration# error: ", e)
+            }
+        }
+    }
+
+    /**
      * Session init
      */
     fun initSession() {
