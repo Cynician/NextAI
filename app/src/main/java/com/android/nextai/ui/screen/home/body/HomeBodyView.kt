@@ -76,7 +76,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 private data class BottomInsetState(
     val imeHeight: Int,
     val listSize: Int,
-    val bottomVisible: Boolean,
     val barHeight: Dp,
 )
 
@@ -261,33 +260,74 @@ fun HomeBodyView(
      * increases, and need to drag the bottom content to the visible area.
      * Also watches `bottomBarHeight` so that when the floating bar grows (e.g. multi-line
      * input) and wasBottomVisible holds, the list re-scrolls to keep the last message visible.
+     *
+     * IMPORTANT: This effect must react to genuine keyboard / bar-height changes (so the list
+     * re-anchors when the bottom inset grows), but must NOT react to pure scroll-driven
+     * `bottomVisible` fluctuations (otherwise dragging near the bottom causes an unwanted
+     * jump-to-bottom with long assistant messages).
+     *
+     * Strategy:
+     *  - `wasBottomVisible` is continuously refreshed by a SEPARATE lightweight flow that only
+     *    runs while the keyboard is fully hidden (imeHeight == 0). This captures the "bottom
+     *    state before the keyboard appears" without being polluted by the keyboard-raising
+     *    animation frames.
      */
     var lastObservedKeyboardHeight by remember(currentSessionId) { mutableIntStateOf(0) }
-    LaunchedEffect(currentSessionId, listState, isGenerating, bottomBarHeight) {
+    var lastObservedBarHeight by remember(currentSessionId) { mutableStateOf(bottomBarHeight) }
+    val updatedBottomBarHeight by rememberUpdatedState(bottomBarHeight)
+
+    // Continuously cache "is the last item's bottom visible" while no keyboard is shown.
+    // This is the pre-keyboard bottom state, refreshed on every frame the user is just
+    // scrolling with the keyboard closed. It is NOT updated while the keyboard is animating
+    // up/down, so it faithfully represents the moment right before the keyboard appeared.
+    LaunchedEffect(currentSessionId, listState, isGenerating) {
         snapshotFlow {
-            val currentBottomVisible = isLastItemBottomVisible(listState=listState, density=density, tolerance = 32.dp)
+            imeInsets.getBottom(density) to isLastItemBottomVisible(
+                listState = listState,
+                density = density,
+                tolerance = 32.dp,
+            )
+        }
+            .distinctUntilChanged()
+            .collect { (imeHeight, bottomVisible) ->
+                if (imeHeight == 0) {
+                    wasBottomVisible = bottomVisible
+                }
+            }
+    }
+
+    LaunchedEffect(currentSessionId, listState, isGenerating) {
+        snapshotFlow {
             BottomInsetState(
                 imeHeight = imeInsets.getBottom(density),
                 listSize = messageList.size,
-                bottomVisible = currentBottomVisible,
-                barHeight = bottomBarHeight
+                barHeight = updatedBottomBarHeight
             )
-        }   .distinctUntilChanged()
+        }
+            .distinctUntilChanged()
             .collect { state ->
-                val (latestHeight, listSize, currentBottomVisible, barHeight) = state
-                if (latestHeight == 0) {
-                    wasBottomVisible = currentBottomVisible
+                val (latestHeight, listSize, barHeight) = state
+                if(isChangingSession || currentSessionId != currentSessionState?.sessionId || listSize == 0) {
+                    lastObservedKeyboardHeight = latestHeight
+                    lastObservedBarHeight = barHeight
+                    return@collect
                 }
-                if(isChangingSession || currentSessionId!= currentSessionState?.sessionId || listSize == 0) return@collect
 
-                if (latestHeight > lastObservedKeyboardHeight && followBottom) {
+                val keyboardOpening = latestHeight > lastObservedKeyboardHeight
+                val keyboardClosing = latestHeight < lastObservedKeyboardHeight
+                val barGrew = barHeight > lastObservedBarHeight
+
+                if (keyboardOpening && followBottom) {
                     //Keyboard event detected, bottom followers are prohibited
                     followBottom = false
-                }else if (latestHeight < lastObservedKeyboardHeight && latestHeight == 0 && !isUserDragging) {
+                } else if (keyboardClosing && latestHeight == 0 && !isUserDragging) {
                     followBottom = true
                 }
 
-                if (listSize > 0 && wasBottomVisible && (latestHeight > 0 || barHeight > 0.dp)) {
+                // Re-anchor the last message into the visible area only when the bottom inset
+                // actually grew (keyboard rising or bar growing) AND the list was at the bottom
+                // just before that change.
+                if (listSize > 0 && wasBottomVisible && (keyboardOpening || barGrew)) {
                     try {
                         listState.requestScrollToItem(messageList.lastIndex, Int.MAX_VALUE)
                     } catch (e: Exception) {
@@ -295,6 +335,7 @@ fun HomeBodyView(
                     }
                 }
                 lastObservedKeyboardHeight = latestHeight
+                lastObservedBarHeight = barHeight
             }
     }
 
