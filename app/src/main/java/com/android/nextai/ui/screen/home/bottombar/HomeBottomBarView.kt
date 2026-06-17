@@ -11,25 +11,25 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.visible
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -38,10 +38,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.android.nextai.ui.icon.HomeIcon
 import com.android.nextai.viewmodel.chat.ChatViewModel
@@ -53,6 +57,8 @@ import com.android.nextai.viewmodel.provider.ProviderViewModel
 internal fun HomeBottomBar(
     chatViewModel: ChatViewModel,
     providerViewModel: ProviderViewModel,
+    modifier: Modifier = Modifier,
+    onHeightChanged: (Dp) -> Unit = {},
 ) {
     val focusManager = LocalFocusManager.current
     val provider by providerViewModel.defaultProvider.collectAsState(null)
@@ -65,64 +71,89 @@ internal fun HomeBottomBar(
     val canSend = query.isNotBlank()
                 && provider != null
                 && chatViewModel.generationJobs[currentSessionId]?.isActive != true
+    val density = LocalDensity.current
+    // Floating capsule bar (ChatGPT-style), modeled after BatchActionBar.
+    //
+    // This composable is rendered as an overlay inside the Scaffold content (see
+    // HomeScreen), aligned to BottomCenter. The outer container only adds
+    // navigationBarsPadding + horizontal/bottom spacing and draws NO background, so
+    // the area around the capsule is fully transparent and the body shows through.
+    //
+    // Its measured height (including nav inset) is reported via onHeightChanged so the
+    // body can reserve a matching bottom content padding dynamically — this keeps the
+    // last message visible even when the bar grows due to multi-line text input.
     Box(
-        Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .background(
-                MaterialTheme.colorScheme.primary.copy(0.04f)
-                    .compositeOver(MaterialTheme.colorScheme.background)
-            )
+            .navigationBarsPadding()
+            .padding(horizontal = 12.dp)
+            .padding(bottom = 8.dp)
+            .onGloballyPositioned { coordinates ->
+                with(density) {
+                    onHeightChanged(coordinates.size.height.toDp())
+                }
+            },
+        contentAlignment = Alignment.BottomCenter
     ) {
-        Column(
-            Modifier
+
+        Box(
+            modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
-                .imePadding()
-                .padding(horizontal = 8.dp)
-                .padding(top = 8.dp, bottom = 10.dp)
+                .heightIn(min = 44.dp, max = 200.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .padding(horizontal = 6.dp, vertical = 6.dp)
         ) {
-            Box(
-                Modifier
+            BasicTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 200.dp)
-            ) {
-                TextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(end = 56.dp),
-                    placeholder = { Text(text = "问问 NextAI") },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = MaterialTheme.colorScheme.primary
-                    )
-                )
-                ActionProgressButton(
-                    modifier = Modifier
-                        .padding(bottom = 2.dp)
-                        .align(Alignment.BottomEnd),
-                    isGenerating = isGenerating,
-                    onClickListener = {
-                        if (isGenerating) {
-                            val sid = currentSessionId
-                            if (sid != -1L) {
-                                chatViewModel.stopStreamingGen(sid)
-                            }
-                            return@ActionProgressButton
+                    .align(Alignment.TopStart)
+                    .padding(end = 44.dp)
+                    .padding(vertical = 6.dp),
+                enabled = true,
+                singleLine = false,
+                textStyle = (LocalTextStyle.current).merge(
+                    TextStyle(color = MaterialTheme.colorScheme.onSurface)
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                interactionSource = remember { MutableInteractionSource() },
+                decorationBox = { innerTextField ->
+                    Box(
+                        contentAlignment = Alignment.CenterStart,
+                        modifier = Modifier.padding(start = 12.dp)
+                    ) {
+                        if (query.isEmpty()) {
+                            Text(
+                                text = "问问 NextAI",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
                         }
-                        val currentProvider = provider ?: return@ActionProgressButton
-                        if (!canSend) return@ActionProgressButton
-                        focusManager.clearFocus()
-                        chatViewModel.sendUserQuery(query.trim(), currentProvider)
-                        query = ""
-                    },
-                )
-            }
+                        innerTextField()
+                    }
+                }
+            )
+            ActionProgressButton(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd),
+                isGenerating = isGenerating,
+                onClickListener = {
+                    if (isGenerating) {
+                        val sid = currentSessionId
+                        if (sid != -1L) {
+                            chatViewModel.stopStreamingGen(sid)
+                        }
+                        return@ActionProgressButton
+                    }
+                    val currentProvider = provider ?: return@ActionProgressButton
+                    if (!canSend) return@ActionProgressButton
+                    focusManager.clearFocus()
+                    chatViewModel.sendUserQuery(query.trim(), currentProvider)
+                    query = ""
+                },
+            )
         }
     }
 }

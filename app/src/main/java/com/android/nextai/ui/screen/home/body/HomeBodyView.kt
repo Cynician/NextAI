@@ -70,11 +70,22 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 
+/**
+ * Snapshot state for the bottom-inset / bar-height scroll watcher.
+ */
+private data class BottomInsetState(
+    val imeHeight: Int,
+    val listSize: Int,
+    val bottomVisible: Boolean,
+    val barHeight: Dp,
+)
+
 @OptIn(ExperimentalSharedTransitionApi::class, FlowPreview::class)
 @Composable
 fun HomeBodyView(
     paddingValues: PaddingValues,
     chatViewModel: ChatViewModel,
+    bottomBarHeight: Dp = 96.dp,
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -245,19 +256,25 @@ fun HomeBodyView(
 
     }
 
-    // When the last message is visible, the keyboard rises, the bottom of the list paddings
-    // increases, and need to drag the bottom content to the visible area.
+    /**
+     * When the last message is visible, the keyboard rises, the bottom of the list paddings
+     * increases, and need to drag the bottom content to the visible area.
+     * Also watches `bottomBarHeight` so that when the floating bar grows (e.g. multi-line
+     * input) and wasBottomVisible holds, the list re-scrolls to keep the last message visible.
+     */
     var lastObservedKeyboardHeight by remember(currentSessionId) { mutableIntStateOf(0) }
-    LaunchedEffect(currentSessionId, listState, isGenerating) {
+    LaunchedEffect(currentSessionId, listState, isGenerating, bottomBarHeight) {
         snapshotFlow {
-            val currentBottomVisible = isLastItemBottomVisible(listState=listState, density=density)
-            Triple(
-                imeInsets.getBottom(density),
-                messageList.size,
-                currentBottomVisible
+            val currentBottomVisible = isLastItemBottomVisible(listState=listState, density=density, tolerance = 32.dp)
+            BottomInsetState(
+                imeHeight = imeInsets.getBottom(density),
+                listSize = messageList.size,
+                bottomVisible = currentBottomVisible,
+                barHeight = bottomBarHeight
             )
         }   .distinctUntilChanged()
-            .collect { (latestHeight, listSize, currentBottomVisible) ->
+            .collect { state ->
+                val (latestHeight, listSize, currentBottomVisible, barHeight) = state
                 if (latestHeight == 0) {
                     wasBottomVisible = currentBottomVisible
                 }
@@ -270,7 +287,7 @@ fun HomeBodyView(
                     followBottom = true
                 }
 
-                if (listSize > 0 && wasBottomVisible && latestHeight > 0) {
+                if (listSize > 0 && wasBottomVisible && (latestHeight > 0 || barHeight > 0.dp)) {
                     try {
                         listState.requestScrollToItem(messageList.lastIndex, Int.MAX_VALUE)
                     } catch (e: Exception) {
@@ -306,8 +323,10 @@ fun HomeBodyView(
                 .fillMaxWidth()
                 .nestedScroll(nestedScrollConnection)
                 .padding(horizontal = 12.dp)
-                .padding(bottom = 16.dp)
                 .visible(messageList.isNotEmpty()),
+            // Reserve bottom space equal to the floating bar's real height so the last
+            // message is never covered — even when the bar grows with multi-line input.
+            contentPadding = PaddingValues(bottom = bottomBarHeight),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             itemsIndexed(
@@ -393,6 +412,7 @@ internal fun MaskView() {
         }
     }
 }
+
 
 /**
  * Get visibility info of the last message
