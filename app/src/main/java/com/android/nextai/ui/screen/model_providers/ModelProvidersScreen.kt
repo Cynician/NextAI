@@ -83,6 +83,8 @@ fun ModelProvidersScreen(
 
                 val icon = when(provider.type){
                     ProviderType.QWEN -> SettingsIcon.Qianwen
+                    ProviderType.CLAUDE -> SettingsIcon.Claude
+                    ProviderType.OPENAI -> SettingsIcon.OpenAI
                     else -> SettingsIcon.Settings
                 }
 
