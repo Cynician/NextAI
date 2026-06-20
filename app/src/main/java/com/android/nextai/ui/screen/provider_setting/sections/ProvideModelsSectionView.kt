@@ -66,7 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.android.nextai.data.datebase.datastore.entity.ModelEntity
+import com.android.nextai.domain.model.provider.Model
 import com.android.nextai.ui.component.loading.PageLoadingStateView
 import com.android.nextai.ui.component.other.SectionHeader
 import com.android.nextai.ui.icon.SettingsIcon
@@ -336,7 +336,7 @@ fun SlidingTabRow(
 
 @Composable
 private fun ModelItem(
-    model: ModelEntity,
+    model: Model,
     selected: Boolean,
     itemHeight: Dp = 50.dp,
     onClick: () -> Unit,
@@ -400,8 +400,8 @@ private fun ModelListPager(
     currentTab: ModelTab,
     pageSize: Int = 10,
     pagerState: PagerState,
-    currentModelList: List<ModelEntity>,
-    selectedModels: List<ModelEntity>,
+    currentModelList: List<Model>,
+    selectedModels: List<Model>,
 
     ) {
     val focusManager = LocalFocusManager.current

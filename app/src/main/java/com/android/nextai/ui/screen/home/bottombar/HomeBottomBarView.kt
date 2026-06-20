@@ -141,9 +141,8 @@ internal fun HomeBottomBar(
                 isGenerating = isGenerating,
                 onClickListener = {
                     if (isGenerating) {
-                        val sid = currentSessionId
-                        if (sid != -1L) {
-                            chatViewModel.stopStreamingGen(sid)
+                        if (currentSessionId != -1L) {
+                            chatViewModel.stopStreamingGen(currentSessionId)
                         }
                         return@ActionProgressButton
                     }

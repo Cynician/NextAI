@@ -2,9 +2,10 @@ package com.android.nextai.module
 
 import android.content.Context
 import androidx.room.Room
-import com.android.nextai.data.datebase.room.ChatDatabase
-import com.android.nextai.data.datebase.room.dao.MessageDao
-import com.android.nextai.data.datebase.room.dao.SessionDao
+import com.android.nextai.data.datasource.datebase.room.ChatDatabase
+import com.android.nextai.data.datasource.datebase.room.dao.MessageDao
+import com.android.nextai.data.datasource.datebase.room.dao.ModelParamsDao
+import com.android.nextai.data.datasource.datebase.room.dao.SessionDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,9 +22,7 @@ object DatabaseModule {
         @ApplicationContext context: Context,
     ): ChatDatabase {
         return Room.databaseBuilder(
-            context,
-            ChatDatabase::class.java,
-            "chat.db"
+            context, ChatDatabase::class.java, "chat.db"
         ).fallbackToDestructiveMigration(true) // develop stage
             .build()
     }
@@ -36,5 +35,10 @@ object DatabaseModule {
     @Provides
     fun provideMessageDao(db: ChatDatabase): MessageDao {
         return db.messageDao()
+    }
+
+    @Provides
+    fun provideModelParamsDao(db: ChatDatabase): ModelParamsDao {
+        return db.modelParamsDao()
     }
 }

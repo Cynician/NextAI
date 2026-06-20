@@ -1,9 +1,11 @@
 package com.android.nextai.viewmodel.chat.holder
 
-import com.android.nextai.data.datebase.room.entity.MessageEntity
-import com.android.nextai.data.datebase.room.entity.SessionEntity
-import com.android.nextai.domain.model.SessionGroup
-import com.android.nextai.repository.ChatDatabaseRepository
+import com.android.nextai.domain.model.chat.Message
+import com.android.nextai.domain.model.chat.Session
+import com.android.nextai.domain.usecase.chat.BatchDeleteSessionsUseCase
+import com.android.nextai.domain.usecase.chat.BatchPinSessionsUseCase
+import com.android.nextai.domain.usecase.chat.GetBatchUnpinSessionsUseCase
+import com.android.nextai.domain.usecase.chat.GetGroupSessionsUseCase
 import com.android.nextai.viewmodel.chat.state.ChatSessionState
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -15,7 +17,10 @@ import javax.inject.Inject
 
 @ViewModelScoped
 class ChatSessionHolder @Inject constructor(
-    val chatDatabaseRepository: ChatDatabaseRepository,
+    private val getGetGroupSessionsUseCase: GetGroupSessionsUseCase,
+    private val batchDeleteSessionsUseCase: BatchDeleteSessionsUseCase,
+    private val batchPinSessionsUseCase: BatchPinSessionsUseCase,
+    private val getBatchUnpinSessionsUseCase: GetBatchUnpinSessionsUseCase,
 ) {
     // --- Session States & Messages Management ---
 
@@ -70,7 +75,7 @@ class ChatSessionHolder @Inject constructor(
      * Chat sessions grouped by time periods for history UI.
      */
     private val _groupedSessions =
-        MutableStateFlow<Map<SessionGroup, List<SessionEntity>>>(emptyMap())
+        MutableStateFlow<Map<Int, List<Session>>>(emptyMap())
     val groupedSessions = _groupedSessions.asStateFlow()
 
     /**
@@ -114,15 +119,15 @@ class ChatSessionHolder @Inject constructor(
     }
 
 
-    fun setMessages(sessionId: Long, messages: List<MessageEntity>) {
+    fun setMessages(sessionId: Long, messages: List<Message>) {
         updateState(sessionId) { it.copy(messageList = messages) }
     }
 
-    fun addMessage(sessionId: Long, newM: MessageEntity) {
+    fun addMessage(sessionId: Long, newM: Message) {
         updateState(sessionId) { it.copy(messageList = it.messageList + newM) }
     }
 
-    fun updateLastestMessage(sessionId: Long, newM: MessageEntity) {
+    fun updateLastestMessage(sessionId: Long, newM: Message) {
         updateState(sessionId) { state ->
             if (state.messageList.isEmpty()) state
             else state.copy(
@@ -130,7 +135,7 @@ class ChatSessionHolder @Inject constructor(
         }
     }
 
-    fun addMessagesToHead(sessionId: Long, newMessages: List<MessageEntity>) {
+    fun addMessagesToHead(sessionId: Long, newMessages: List<Message>) {
         updateState(sessionId) { it.copy(messageList = newMessages + it.messageList) }
     }
 
@@ -183,8 +188,7 @@ class ChatSessionHolder @Inject constructor(
 
     suspend fun loadingSessions() {
         _isLoadingSessions.value = true
-        val grouped = chatDatabaseRepository.getGroupSessions()
-        _groupedSessions.value = grouped
+        _groupedSessions.value = getGetGroupSessionsUseCase().getOrThrow()
         _isLoadingSessions.value = false
     }
 
@@ -206,27 +210,27 @@ class ChatSessionHolder @Inject constructor(
         _batchSelectedIdSet.value = emptySet()
     }
 
-    fun onToggleGroupSelectState(sessions: List<SessionEntity>, isCheck: Boolean) {
+    fun onToggleGroupSelectState(sessions: List<Session>, isCheck: Boolean) {
         val ids = sessions.map { it.id }
         _batchSelectedIdSet.update { current ->
             if (isCheck) current + ids else current - ids.toSet()
         }
     }
 
-    suspend fun onBatchDeleteSessions(idList: List<Long>) {
-        chatDatabaseRepository.sessionDao.batchSoftDeleteSessions(1, idList)
+    suspend fun onBatchDeleteSessions(isSoftDelete: Boolean = true, idList: List<Long>) {
+        batchDeleteSessionsUseCase(isSoftDelete, idList).getOrThrow()
         onExitBatchSelectMode()
         loadingSessions()
     }
 
     suspend fun onBatchPinSessions(idList: List<Long>) {
-        chatDatabaseRepository.sessionDao.batchPinSessions(1, idList)
+        batchPinSessionsUseCase(idList).getOrThrow()
         onExitBatchSelectMode()
         loadingSessions()
     }
 
     suspend fun onBatchUnpinSessions(idList: List<Long>) {
-        chatDatabaseRepository.sessionDao.batchUnpinSessions(0, idList)
+        getBatchUnpinSessionsUseCase(idList).getOrThrow()
         onExitBatchSelectMode()
         loadingSessions()
     }

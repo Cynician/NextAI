@@ -1,13 +1,13 @@
 package com.android.nextai.viewmodel.chat.state
 
-import com.android.nextai.data.datebase.room.entity.MessageEntity
+import com.android.nextai.domain.model.chat.Message
 
 /**
  * States of a single Session
  */
 data class ChatSessionState(
     val sessionId: Long,
-    val messageList: List<MessageEntity> = emptyList(),
+    val messageList: List<Message> = emptyList(),
     val isTextGenerating: Boolean = false,
     val isImageGenerating: Boolean = false,
     val curResponse: String = "",

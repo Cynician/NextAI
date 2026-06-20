@@ -18,9 +18,7 @@ internal fun AssistantBubbleView(
 
     SelectionContainer {
 
-        Column(
-            modifier = Modifier.padding(bottom = 16.dp)
-        ) {
+        Column{
 
             parser.stableNodes.forEach { node ->
                 AssistantBlockItem(node)

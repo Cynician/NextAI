@@ -56,10 +56,11 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.android.nextai.R
-import com.android.nextai.domain.model.Role
+import com.android.nextai.domain.model.chat.MessageType
 import com.android.nextai.ui.component.loading.LoadingOverlayView
 import com.android.nextai.ui.component.loading.SequentialJumpingDots
 import com.android.nextai.ui.screen.home.body.views.AssistantBubbleView
+import com.android.nextai.ui.screen.home.body.views.ErrorBubbleView
 import com.android.nextai.ui.screen.home.body.views.UserBubbleView
 import com.android.nextai.ui.theme.Animation
 import com.android.nextai.viewmodel.chat.ChatViewModel
@@ -173,7 +174,7 @@ fun HomeBodyView(
             .distinctUntilChanged()
             .collect { index ->
                 if (index <= 2) {
-                    chatViewModel.loadNextPageMessages()
+                    chatViewModel.loadLastPageMessages()
                 }
             }
     }
@@ -368,29 +369,40 @@ fun HomeBodyView(
             // Reserve bottom space equal to the floating bar's real height so the last
             // message is never covered — even when the bar grows with multi-line input.
             contentPadding = PaddingValues(bottom = bottomBarHeight),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             itemsIndexed(
                 items = messageList,
                 key = { _, item -> item.id }
             ) { index, message ->
-                when (message.role) {
-                    Role.User.name -> {
+                when (message.type) {
+
+                    MessageType.USER -> {
                         UserBubbleView(message.content)
                     }
 
-                    Role.Assistant.name -> {
+                    MessageType.ASSISTANT -> {
                         if (message.content.isEmpty()) return@itemsIndexed
                         AssistantBubbleView(
                             parser = chatViewModel.markdownCacheHolder.getOrCreate(message.id)
                         )
                     }
 
-                    Role.None.name -> {}
+                    MessageType.ERROR -> {
+                        ErrorBubbleView(message.content)
+                    }
+
+                    MessageType.NONE -> {}
                 }
             }
             if (isGenerating && messageList.last().content.isEmpty()) {
-                item { SequentialJumpingDots() }
+                item {
+                    SequentialJumpingDots()
+                }
+
+            }
+            item{
+                Spacer(modifier = Modifier.padding(bottom = 16.dp))
             }
         }
 

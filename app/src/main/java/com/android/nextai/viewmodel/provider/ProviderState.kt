@@ -1,6 +1,6 @@
 package com.android.nextai.viewmodel.provider
 
-import com.android.nextai.data.datebase.datastore.entity.ModelEntity
+import com.android.nextai.domain.model.provider.Model
 
 
 sealed interface ProviderState {
@@ -17,6 +17,6 @@ data class ProviderSettingState(
 )
 
 data class ProviderModelsState(
-    var availableModels: List<ModelEntity> = emptyList(),
-    val selectedModels: List<ModelEntity> = emptyList(),
+    var availableModels: List<Model> = emptyList(),
+    val selectedModels: List<Model> = emptyList(),
 )

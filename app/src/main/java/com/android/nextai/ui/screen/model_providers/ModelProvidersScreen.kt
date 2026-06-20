@@ -21,7 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.android.nextai.data.datebase.datastore.entity.ProviderType
+import com.android.nextai.domain.model.provider.ProviderType
 import com.android.nextai.ui.component.button.ActionButton
 import com.android.nextai.ui.component.button.ActionTextButton
 import com.android.nextai.ui.icon.SettingsIcon

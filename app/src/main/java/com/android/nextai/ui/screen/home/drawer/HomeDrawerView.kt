@@ -33,7 +33,7 @@ import com.android.nextai.ui.screen.home.drawer.views.SessionHeaderView
 import com.android.nextai.ui.screen.home.drawer.views.SessionItemView
 import com.android.nextai.ui.screen.home.drawer.views.StartNewSessionView
 import com.android.nextai.viewmodel.chat.ChatViewModel
-import com.android.nextai.domain.model.SessionGroup
+import com.android.nextai.domain.model.chat.GroupType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,9 +49,9 @@ fun HomeDrawerView(
     val isBatchSelectMode by chatViewModel.sessionHolder.isBatchSelectMode.collectAsState()
     val batchSelectedIdSet by chatViewModel.sessionHolder.batchSelectedIdSet.collectAsState()
     val currentSessionId = chatViewModel.sessionHolder.curSessionId.collectAsState()
-    val expandedMap = remember { mutableStateMapOf<SessionGroup, Boolean>() }
+    val expandedMap = remember { mutableStateMapOf<Int, Boolean>() }
     val pinIdSet = remember(groupedSessions) {
-        groupedSessions[SessionGroup.PIN]
+        groupedSessions[GroupType.PIN]
             ?.map { it.id }
             ?.toSet()
             ?: emptySet()
@@ -100,7 +100,7 @@ fun HomeDrawerView(
                         val isExpand = expandedMap[group] ?: true
                         item(key = group) {
                             SessionHeaderView(
-                                title = group.title,
+                                title = group.toTitle(),
                                 sessions = sessionList,
                                 selectedIdSet = batchSelectedIdSet,
                                 isBatchSelectMode = isBatchSelectMode,
@@ -120,7 +120,7 @@ fun HomeDrawerView(
                                 SessionItemView(
                                     session = session,
                                     isActive = currentSessionId.value == session.id,
-                                    isPin = group == SessionGroup.PIN,
+                                    isPin = group == GroupType.PIN,
                                     isSelectionMode = isBatchSelectMode,
                                     isSelected = batchSelectedIdSet.contains(session.id),
                                     onClick = {
@@ -149,5 +149,16 @@ fun HomeDrawerView(
                 )
             }
         }
+    }
+}
+
+private fun Int.toTitle(): String {
+    return when (this) {
+        GroupType.PIN -> "置顶"
+        GroupType.TODAY -> "今天"
+        GroupType.IN_WEEK -> "本周"
+        GroupType.IN_MONTH -> "本月"
+        GroupType.EARLIER -> "更早"
+        else -> "未知"
     }
 }

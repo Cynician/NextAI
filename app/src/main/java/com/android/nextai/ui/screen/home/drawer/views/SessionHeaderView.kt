@@ -25,14 +25,14 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.nextai.data.datebase.room.entity.SessionEntity
+import com.android.nextai.domain.model.chat.Session
 import com.android.nextai.ui.component.checkbox.CircleCheckbox
 import com.android.nextai.ui.icon.HomeIcon
 
 @Composable
 fun SessionHeaderView(
     title: String,
-    sessions: List<SessionEntity>,
+    sessions: List<Session>,
     selectedIdSet: Set<Long>,
     isBatchSelectMode: Boolean,
     isExpand: Boolean,

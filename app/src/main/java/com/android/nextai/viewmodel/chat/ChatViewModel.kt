@@ -3,35 +3,45 @@ package com.android.nextai.viewmodel.chat
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.nextai.data.datebase.datastore.entity.ProviderEntity
-import com.android.nextai.data.datebase.room.entity.MessageEntity
-import com.android.nextai.data.remote.ApiType
-import com.android.nextai.domain.model.GenerationEvent
-import com.android.nextai.domain.model.Role
-import com.android.nextai.repository.ChatDatabaseRepository
-import com.android.nextai.repository.ChatRemoteRepository
+import com.android.nextai.data.datasource.remote.ApiType
+import com.android.nextai.domain.model.chat.Message
+import com.android.nextai.domain.model.remote.GenerationEvent
+import com.android.nextai.domain.model.chat.MessageType
+import com.android.nextai.domain.model.provider.Provider
+import com.android.nextai.domain.usecase.chat.CreateMessageUseCase
+import com.android.nextai.domain.usecase.chat.CreateSessionWithUserMessageUseCase
+import com.android.nextai.domain.usecase.chat.GetLastPageMessagesUseCase
+import com.android.nextai.domain.usecase.chat.StreamingGenUseCase
+import com.android.nextai.domain.usecase.chat.UpdateMessageUseCase
 import com.android.nextai.viewmodel.chat.holder.ChatSessionHolder
 import com.android.nextai.viewmodel.chat.holder.MarkdownCacheHolder
 import com.android.nextai.viewmodel.chat.state.ChatSessionState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
+import kotlin.collections.isNotEmpty
+import kotlin.coroutines.cancellation.CancellationException
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     val sessionHolder: ChatSessionHolder,
     val markdownCacheHolder: MarkdownCacheHolder,
-    val chatRemoteRepository: ChatRemoteRepository,
-    val chatDatabaseRepository: ChatDatabaseRepository,
+    private val createSessionWithUserMessageUseCase: CreateSessionWithUserMessageUseCase,
+    private val createMessageUseCase: CreateMessageUseCase,
+    private val streamingGenUseCase: StreamingGenUseCase,
+    private val updateMessageUseCase: UpdateMessageUseCase,
+    private val getLastPageMessagesUseCase: GetLastPageMessagesUseCase,
 ) : ViewModel() {
     companion object {
         private const val TAG = "ChatViewModel"
@@ -62,56 +72,86 @@ class ChatViewModel @Inject constructor(
      */
     fun sendUserQuery(
         query: String,
-        provider: ProviderEntity,
+        provider: Provider,
     ) {
         val isSportStreamingGen = true
         val isInSession = sessionHolder.isInSession
         val activeSessionId = sessionHolder.getCurSessionId()
+        var targetSessionId = activeSessionId
+        val modelId = provider.models.first().id
+        if (isInSession) {
+            generationJobs[activeSessionId]?.cancel()
+        }
 
-        viewModelScope.launch {
+        // 1. Starts a separate backend job pipeline for this session.
+        val job = viewModelScope.launch {
             try {
-                var targetSessionId = activeSessionId
-                var userMessage: MessageEntity
+                var userMessage: Message
 
-                // 1. Preprocessing: If not in a Session, it means a new session needs to be created.
+                // 2. Preprocessing: If not in a Session, it means a new session needs to be created.
                 if (!isInSession) {
                     Log.d(TAG, "create session with query :$query")
-                    val (_, tmpMessage) = chatDatabaseRepository.createSessionWithUserMessage(query)
-                    userMessage = tmpMessage.copy()
+                    userMessage =
+                        createSessionWithUserMessageUseCase(
+                            query,
+                            provider,
+                            modelId
+                        ).getOrThrow().second
+
+                    // Get true session id then update
                     targetSessionId = userMessage.sessionId
+                    generationJobs[targetSessionId] = coroutineContext[Job]!!
+
                     // Set the new session to the current global active state.
                     sessionHolder.updateIsInSession(true)
                     sessionHolder.updateCurSessionId(targetSessionId)
                     sessionHolder.updateCurMessagesMinId(targetSessionId, userMessage.id)
                 } else {
-                    // 2. Already in the session, append the message under this targetSessionId.
-                    userMessage = chatDatabaseRepository.createMessage(
-                        sessionId = targetSessionId, content = query, role = Role.User
-                    )
+                    // 3. Already in the session, append the message under this targetSessionId.
+                    userMessage = createMessageUseCase(
+                        sessionId = targetSessionId,
+                        providerName = provider.name,
+                        modelId = modelId,
+                        content = query,
+                        messageType = MessageType.USER
+                    ).getOrThrow()
                 }
 
-                generationJobs[targetSessionId]?.cancel()
+                sessionHolder.clearCurrentResponse(targetSessionId)
+                sessionHolder.loadingSessions()
+                sessionHolder.addMessage(targetSessionId, userMessage)
 
-                // 3. Starts a separate backend job pipeline for this session.
-                generationJobs[targetSessionId] = viewModelScope.launch {
-                    sessionHolder.clearCurrentResponse(targetSessionId)
-                    sessionHolder.loadingSessions()
-                    sessionHolder.addMessage(targetSessionId, userMessage)
-
-                    // Only when the target session matches the global selected session.
-                    if (targetSessionId == sessionHolder.getCurSessionId()) {
-                        sessionHolder.emitScrollToLatestMessageEvent(targetSessionId)
-                    }
-
-                    // 4. Start streaming generation in the background.
-                    if (isSportStreamingGen) {
-                        startStreamingGen(targetSessionId, provider)
-                    }
+                // Only when the target session matches the global selected session.
+                if (targetSessionId == sessionHolder.getCurSessionId()) {
+                    sessionHolder.emitScrollToLatestMessageEvent(targetSessionId)
                 }
+
+                // 5. Start streaming generation in the background.
+                if (isSportStreamingGen) {
+                    startStreamingGen(targetSessionId, provider, modelId)
+                }
+            } catch (e: CancellationException) {
+                Log.e(TAG, "job cancel", e)
             } catch (e: Exception) {
-                Log.e(TAG, "error: ", e)
+                Log.e(TAG, "${e.message}: ", e)
+                withContext(NonCancellable) {
+                    try {
+                        val errorMessage = createMessageUseCase(
+                            sessionId = targetSessionId,
+                            content = e.message.toString(),
+                            messageType = MessageType.ERROR
+                        ).getOrThrow()
+
+                        sessionHolder.clearCurrentResponse(targetSessionId)
+                        sessionHolder.loadingSessions()
+                        sessionHolder.addMessage(targetSessionId, errorMessage)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "create error message failed: $e")
+                    }
+                }
             }
         }
+        generationJobs[activeSessionId] = job
     }
 
     /**
@@ -119,16 +159,19 @@ class ChatViewModel @Inject constructor(
      */
     private suspend fun startStreamingGen(
         sessionId: Long,
-        provider: ProviderEntity,
+        provider: Provider,
+        modelId: String,
     ) {
         Log.d(TAG, "startStreamingGen# session: $sessionId")
         sessionHolder.updateIsTextStreaming(sessionId, true)
 
-        val assistantMessage = chatDatabaseRepository.createMessage(
+        val assistantMessage = createMessageUseCase(
             sessionId = sessionId,
-            content = sessionHolder.getState(sessionId).curResponse,
-            role = Role.Assistant
-        )
+            providerName = provider.name,
+            modelId = modelId,
+            content = "",
+            messageType = MessageType.ASSISTANT
+        ).getOrThrow()
         val parser = markdownCacheHolder.getOrCreate(assistantMessage.id)
         sessionHolder.addMessage(sessionId, assistantMessage)
 
@@ -137,13 +180,14 @@ class ChatViewModel @Inject constructor(
         }
 
         // Passing the full context from the session's dedicated memory cache to the large model.
-        chatRemoteRepository.streamingGen(
+        streamingGenUseCase(
             apiType = ApiType.OPENAI,
             messageList = sessionHolder.getState(sessionId).messageList,
-            provider,
-        ).collect { event ->
+            provider = provider,
+            modelId = modelId
+        ).getOrThrow().collect { event ->
             when (event) {
-                is GenerationEvent.Word -> {
+                is GenerationEvent.Chunk -> {
                     sessionHolder.updateCurResponse(sessionId, event.content)
                     val content = sessionHolder.getState(sessionId).curResponse
                     parser.appendDelta(event.content)
@@ -157,11 +201,11 @@ class ChatViewModel @Inject constructor(
 
                 is GenerationEvent.Done -> {
                     parser.complete()
-                    chatDatabaseRepository.updateMessageContent(
+                    updateMessageUseCase(
+                        id = assistantMessage.id,
                         sessionId = sessionId,
-                        msgId = assistantMessage.id,
                         content = sessionHolder.getState(sessionId).curResponse
-                    )
+                    ).getOrThrow()
                     sessionHolder.updateIsTextStreaming(sessionId, false)
                     sessionHolder.loadingSessions()
                     generationJobs.remove(sessionId) // Task completes normally, removing the Job reference.
@@ -182,6 +226,7 @@ class ChatViewModel @Inject constructor(
     fun stopStreamingGen(sessionId: Long) {
         viewModelScope.launch {
             try {
+                Log.d(TAG, "stopStreamingGen#, stop streaming generating, sessionId: $sessionId")
                 val job = generationJobs[sessionId] ?: return@launch
                 if (!job.isActive) return@launch
 
@@ -193,10 +238,10 @@ class ChatViewModel @Inject constructor(
                 val messageList = state.messageList
                 if (messageList.isNotEmpty() && state.curResponse.isNotEmpty()) {
                     val lastMessage = messageList.last()
-                    if (lastMessage.role == Role.Assistant.name) {
-                        chatDatabaseRepository.updateMessageContent(
+                    if (lastMessage.type == MessageType.ASSISTANT) {
+                        updateMessageUseCase(
+                            id = lastMessage.id,
                             sessionId = sessionId,
-                            msgId = lastMessage.id,
                             content = state.curResponse
                         )
                     }
@@ -223,32 +268,45 @@ class ChatViewModel @Inject constructor(
      */
     fun batchDeleteSessions(idList: List<Long>) {
         viewModelScope.launch {
-            if (idList.contains(sessionHolder.getCurSessionId())) {
-                initSession()
-            }
-            sessionHolder.onBatchDeleteSessions(idList)
-            idList.forEach { id ->
-                sessionHolder.removeSession(id)
+            try {
+                if (idList.contains(sessionHolder.getCurSessionId())) {
+                    initSession()
+                }
+                sessionHolder.onBatchDeleteSessions(true, idList)
+                idList.forEach { id ->
+                    sessionHolder.removeSession(id)
 
-                // 3. Should cut off their streaming or load messages jobs that might still
-                // be looping in the background.
-                generationJobs[id]?.cancel()
-                generationJobs.remove(id)
-                loadMessagesJobs[id]?.cancel()
-                loadMessagesJobs.remove(id)
+                    // 3. Should cut off their streaming or load messages jobs that might still
+                    // be looping in the background.
+                    generationJobs[id]?.cancel()
+                    generationJobs.remove(id)
+                    loadMessagesJobs[id]?.cancel()
+                    loadMessagesJobs.remove(id)
+                }
+            } catch (e: Exception) {
+                Log.d(TAG, "${e.message}", e)
             }
+
         }
     }
 
     fun batchPinSessions(idList: List<Long>) {
         viewModelScope.launch {
-            sessionHolder.onBatchPinSessions(idList)
+            try {
+                sessionHolder.onBatchPinSessions(idList)
+            } catch (e: Exception) {
+                Log.d(TAG, "${e.message}", e)
+            }
         }
     }
 
     fun batchUnpinSessions(idList: List<Long>) {
         viewModelScope.launch {
-            sessionHolder.onBatchUnpinSessions(idList)
+            try {
+                sessionHolder.onBatchUnpinSessions(idList)
+            } catch (e: Exception) {
+                Log.d(TAG, "${e.message}", e)
+            }
         }
     }
 
@@ -263,15 +321,18 @@ class ChatViewModel @Inject constructor(
         loadMessagesJobs[sessionId]?.cancel()
         loadMessagesJobs[sessionId] = viewModelScope.launch {
             try {
-                val sessionStates = sessionHolder.getState(sessionId)
-                val messageList = chatDatabaseRepository.getPageBefore(
-                    sessionId = sessionId, minMsgId = sessionStates.curMessagesMinId
-                ).reversed()
+
+                val sessionState = sessionHolder.getState(sessionId)
+
+                val messageList = getLastPageMessagesUseCase(
+                    sessionId = sessionId,
+                    minMsgId = sessionState.curMessagesMinId
+                ).getOrThrow()
 
                 if (messageList.isNotEmpty()) {
                     yield()
                     messageList.forEach { message ->
-                        if (message.role == Role.Assistant.name) {
+                        if (message.type == MessageType.ASSISTANT) {
                             val cached = markdownCacheHolder.get(message.id)
                             if (cached == null) {
                                 val parser = markdownCacheHolder.getOrCreate(message.id)
@@ -325,21 +386,21 @@ class ChatViewModel @Inject constructor(
     /**
      * Swipe up to the top to load the next page.
      */
-    fun loadNextPageMessages() {
+    fun loadLastPageMessages() {
         val currentSessionId = sessionHolder.getCurSessionId()
         val sessionState = sessionHolder.getState(currentSessionId)
 
         if (sessionState.canLoadingMore || !sessionHolder.isInSession) {
-            Log.d(TAG, "loadNextPageMessages# skip to load messages")
+            Log.d(TAG, "loadLastPageMessages# skip to load messages")
             return
         }
 
-        Log.d(TAG, "loadNextPageMessages# load next page for $currentSessionId")
+        Log.d(TAG, "loadLastPageMessages# load next page for $currentSessionId")
         loadMessages(
             sessionId = currentSessionId,
             isLoadingFirst = false,
             callBack = {
-                Log.d(TAG, "loadNextPageMessages# success")
+                Log.d(TAG, "loadLastPageMessages# success")
             }
         )
     }

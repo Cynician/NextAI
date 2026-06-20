@@ -5,14 +5,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
-import com.android.nextai.data.datebase.datastore.entity.ProviderEntity
+import com.android.nextai.domain.model.provider.Provider
 import com.android.nextai.ui.component.button.ActionNavigateButton
 import com.android.nextai.ui.component.other.SectionHeader
 
 @Composable
 fun ModelConfigSectionView(
     sectionTitle: String,
-    defaultProvider: ProviderEntity?,
+    defaultProvider: Provider?,
     onNavigateToModelProviders: () -> Unit,
 ) {
     Column {

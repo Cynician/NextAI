@@ -23,14 +23,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.android.nextai.data.datebase.datastore.entity.ProviderEntity
+import com.android.nextai.domain.model.provider.Provider
 import com.android.nextai.ui.component.other.SuccessTipLabel
 import com.android.nextai.ui.icon.SettingsIcon
 
 
 @Composable
 fun ModelProviderItem(
-    provider: ProviderEntity,
+    provider: Provider,
     icon: ImageVector = SettingsIcon.Settings,
     onClick: () -> Unit,
 ) {
@@ -96,7 +96,7 @@ fun ModelProviderItem(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = provider.desc,
+                    text = provider.desc.ifEmpty { "${provider.name} 大模型系列" },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
