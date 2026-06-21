@@ -149,9 +149,20 @@ class ChatViewModel @Inject constructor(
                         Log.e(TAG, "create error message failed: $e")
                     }
                 }
+            } finally {
+                // Always clear the job reference for the real target session so a stale
+                // entry never blocks subsequent sends (e.g. after "new session" the
+                // activeSessionId was -1L, which previously polluted generationJobs[-1L]
+                // and made the bottom bar think a generation was still active).
+                generationJobs.remove(targetSessionId)
             }
         }
-        generationJobs[activeSessionId] = job
+        // Register the job under the REAL target session id. Previously this used
+        // `activeSessionId`, which for a brand-new session was -1L and polluted the
+        // map with a -1L -> job entry.
+        if (isInSession) {
+            generationJobs[targetSessionId] = job
+        }
     }
 
     /**
@@ -260,6 +271,11 @@ class ChatViewModel @Inject constructor(
      * Session init
      */
     fun initSession() {
+        // Clear any stale job reference keyed by the "no session" id (-1L).
+        // sendUserQuery previously registered its job under activeSessionId which could
+        // be -1L for a brand-new session, leaving a ghost entry that made the bottom
+        // bar believe a generation was still running on the empty/new-session screen.
+        generationJobs.remove(-1L)
         sessionHolder.initSession()
     }
 

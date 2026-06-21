@@ -68,9 +68,12 @@ internal fun HomeBottomBar(
     val currentSessionId = state.sessionId
     var query by remember { mutableStateOf("") }
 
+    /**
+     * `sessionId` == -1L means a new session
+     */
     val canSend = query.isNotBlank()
                 && provider != null
-                && chatViewModel.generationJobs[currentSessionId]?.isActive != true
+                && (currentSessionId == -1L || chatViewModel.generationJobs[currentSessionId]?.isActive != true)
     val density = LocalDensity.current
     // Floating capsule bar (ChatGPT-style), modeled after BatchActionBar.
     //
