@@ -16,6 +16,7 @@ interface ChatRepository {
         messageList: List<Message>,
         provider: Provider,
         modelId: String,
+        onCancel: (String) -> Unit
     ): Flow<GenerationEvent>
 
     suspend fun getAllSessions(): List<Session>

@@ -13,6 +13,7 @@ import com.android.nextai.domain.usecase.chat.CreateSessionWithUserMessageUseCas
 import com.android.nextai.domain.usecase.chat.GetLastPageMessagesUseCase
 import com.android.nextai.domain.usecase.chat.StreamingGenUseCase
 import com.android.nextai.domain.usecase.chat.UpdateMessageUseCase
+import com.android.nextai.ui.component.markdown.parser.MarkdownIncrementalParser
 import com.android.nextai.viewmodel.chat.holder.ChatSessionHolder
 import com.android.nextai.viewmodel.chat.holder.MarkdownCacheHolder
 import com.android.nextai.viewmodel.chat.state.ChatSessionState
@@ -190,43 +191,90 @@ class ChatViewModel @Inject constructor(
             sessionHolder.emitScrollToLatestMessageEvent(sessionId)
         }
 
-        // Passing the full context from the session's dedicated memory cache to the large model.
         streamingGenUseCase(
             apiType = ApiType.OPENAI,
             messageList = sessionHolder.getState(sessionId).messageList,
             provider = provider,
-            modelId = modelId
-        ).getOrThrow().collect { event ->
-            when (event) {
-                is GenerationEvent.Chunk -> {
-                    sessionHolder.updateCurResponse(sessionId, event.content)
-                    val content = sessionHolder.getState(sessionId).curResponse
-                    parser.appendDelta(event.content)
-                    // Refresh the last message in the dedicated memory map of the session in real
-                    // time. If the user switches back to the session, the UI will see text ticking
-                    // in real time.
-                    sessionHolder.updateLastestMessage(
-                        sessionId, assistantMessage.copy(content = content)
+            modelId = modelId,
+            onCancel = { streamingCache ->
+                viewModelScope.launch {
+                    onStreamingCancelCallBack(
+                        streamingCache = streamingCache,
+                        assistantMessage = assistantMessage,
+                        parser = parser
                     )
                 }
+            }
+        ).getOrThrow().collect { event ->
+            withContext(NonCancellable){
+                when (event) {
+                    is GenerationEvent.Chunk -> {
+                        onStreamingReceiveChunk(assistantMessage, parser, event.content)
+                    }
 
-                is GenerationEvent.Done -> {
-                    parser.complete()
-                    updateMessageUseCase(
-                        id = assistantMessage.id,
-                        sessionId = sessionId,
-                        content = sessionHolder.getState(sessionId).curResponse
-                    ).getOrThrow()
-                    sessionHolder.updateIsTextStreaming(sessionId, false)
-                    sessionHolder.loadingSessions()
-                    generationJobs.remove(sessionId) // Task completes normally, removing the Job reference.
-                }
+                    is GenerationEvent.Done -> {
+                        onStreamingDone(parser, assistantMessage)
+                    }
 
-                is GenerationEvent.Error -> {
-                    sessionHolder.updateIsTextStreaming(sessionId, false)
-                    generationJobs.remove(sessionId)
+                    is GenerationEvent.Error -> {
+                        sessionHolder.updateIsTextStreaming(sessionId, false)
+                        generationJobs.remove(sessionId)
+                    }
                 }
             }
+
+        }
+    }
+
+    private fun onStreamingReceiveChunk(assistantMessage:Message, parser: MarkdownIncrementalParser, chunk: String){
+        val sessionId = assistantMessage.sessionId
+        sessionHolder.updateCurResponse(sessionId, chunk)
+        val content = sessionHolder.getState(sessionId).curResponse
+        parser.appendDelta(chunk)
+        // Refresh the last message in the dedicated memory map of the session in real
+        // time. If the user switches back to the session, the UI will see text ticking
+        // in real time.
+        sessionHolder.updateLastestMessage(
+            sessionId, assistantMessage.copy(content = content)
+        )
+    }
+
+    private suspend fun onStreamingDone(parser: MarkdownIncrementalParser, assistantMessage:Message){
+        parser.complete()
+        val sessionId = assistantMessage.sessionId
+        updateMessageUseCase(
+            id = assistantMessage.id,
+            sessionId = sessionId,
+            content = sessionHolder.getState(sessionId).curResponse
+        ).getOrThrow()
+        sessionHolder.updateIsTextStreaming(sessionId, false)
+        sessionHolder.loadingSessions()
+        generationJobs.remove(sessionId) // Task completes normally, removing the Job reference.
+    }
+
+    private suspend fun onStreamingCancelCallBack(
+        streamingCache: String,
+        assistantMessage: Message,
+        parser: MarkdownIncrementalParser,
+    ){
+        Log.d(TAG, "onStreamingCancelCallBack# cache size: ${streamingCache.length}")
+        val sessionId = assistantMessage.sessionId
+        val currentUiText = sessionHolder.getState(sessionId).curResponse
+        if (streamingCache.length > currentUiText.length && streamingCache.startsWith(currentUiText)) {
+            val deltaText = streamingCache.substring(currentUiText.length)
+            parser.appendDelta(deltaText)
+            parser.complete()
+            sessionHolder.updateCurResponse(sessionId, deltaText)
+        }
+        sessionHolder.updateLastestMessage(
+            sessionId, assistantMessage.copy(content = streamingCache)
+        )
+        updateMessageUseCase(
+            id = assistantMessage.id,
+            sessionId = sessionId,
+            content = streamingCache
+        ).onFailure {
+            Log.d(TAG,it.message, it)
         }
     }
 

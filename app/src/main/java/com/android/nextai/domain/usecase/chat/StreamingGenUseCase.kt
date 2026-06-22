@@ -19,12 +19,14 @@ class StreamingGenUseCase @Inject constructor(
         messageList: List<Message>,
         provider: Provider,
         modelId: String,
+        onCancel: (String) -> Unit
     ): Result<Flow<GenerationEvent>> = execute {
         chatRepository.streamingGen(
             apiType = apiType,
             messageList = messageList,
             provider = provider,
             modelId = modelId,
+            onCancel = onCancel
         )
     }
 

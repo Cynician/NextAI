@@ -28,8 +28,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 
 class ChatRepositoryImpl @Inject constructor(
@@ -48,12 +50,18 @@ class ChatRepositoryImpl @Inject constructor(
         messageList: List<Message>,
         provider: Provider,
         modelId: String,
-    ): Flow<GenerationEvent> =
-        callbackFlow {
+        onCancel: (String) -> Unit
+    ): Flow<GenerationEvent>{
+
+        val escapeCapsuleBuffer = StringBuilder()
+
+        return callbackFlow {
             val mdBuffer = StreamBuffer()
             val callback: (GenerationEvent) -> Unit = { event ->
                 when (event) {
                     is GenerationEvent.Chunk -> {
+                        escapeCapsuleBuffer.append(event.content)
+                        Log.d(TAG, "streamingGen# receive chunk: ${event.content}")
                         for (char in event.content) {
                             val out = mdBuffer.process(char)
                             if (out != null) {
@@ -75,7 +83,7 @@ class ChatRepositoryImpl @Inject constructor(
                 }
             }
             try {
-                Log.d(TAG, "[streamingGen] start to streaming...")
+                Log.d(TAG, "[streamingGen] onStart...")
                 AIDataSourceFactory.createDataSource(apiType).getAIStreamingAnswer(
                     messageList = messageList,
                     provider = provider,
@@ -87,11 +95,20 @@ class ChatRepositoryImpl @Inject constructor(
                 close()
             }
             awaitClose {
-                Log.d(TAG, "[streamingGen] close...")
+                Log.d(TAG, "[streamingGen] onClose...")
+                trySend(GenerationEvent.Chunk(mdBuffer.holdBuffer.toString()))
             }
-        }.buffer(Channel.UNLIMITED)
+        }
+            .buffer(Channel.UNLIMITED)
             .onEach { delay(3) }
             .flowOn(Dispatchers.IO)
+            .onCompletion {cause ->
+                if (cause is CancellationException) {
+                    Log.w(TAG, "[streamingGen] onCancel...")
+                    onCancel(escapeCapsuleBuffer.toString())
+                }
+            }
+    }
 
     /**
      * Get all sessions

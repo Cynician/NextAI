@@ -69,17 +69,12 @@ object OpenAIRemoteDataSource : AIDataSource {
 
             val params = paramsBuilder.build()
 
-
             // 1. get Flow<ChatCompletionChunk> by createStreaming
             val streamFlow = openAIClient.chat().completions().createStreaming(params)
 
             // 2. collect flow and send to callback
             streamFlow.use { flow ->
                 for (chunk in flow.stream().iterator()) {
-
-                    // External coroutine terminates and cancels this task.
-                    currentCoroutineContext().ensureActive()
-
                     Log.d(TAG, "chunk=$chunk")
                     chunk.choices().firstOrNull()?.also { choice ->
                         choice.delta()
@@ -92,12 +87,15 @@ object OpenAIRemoteDataSource : AIDataSource {
                             generationCallback(GenerationEvent.Done)
                         }
                     }
+
+                    // External coroutine terminates and cancels this task.
+                    currentCoroutineContext().ensureActive()
+
                 }
             }
             Log.d(TAG, "getAIStreamingAnswer# streaming finished")
         } catch (e: Exception) {
             Log.e(TAG, "getAIStreamingAnswer# ${e.message}", e)
-            generationCallback(GenerationEvent.Error(e.message.toString()))
         }
     }
 }
