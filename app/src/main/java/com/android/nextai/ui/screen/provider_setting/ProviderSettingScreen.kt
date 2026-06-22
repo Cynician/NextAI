@@ -114,8 +114,8 @@ fun ProviderSettingScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues = padding)
-                    .padding(Standard.screenContainerPadding),
-                verticalArrangement = Arrangement.spacedBy(Standard.screenSectionSpacing)
+                    .padding(Standard.SCREEN_CONTAINER_PADDING),
+                verticalArrangement = Arrangement.spacedBy(Standard.SCREEN_SECTION_SPACING)
             ) {
 
                 item{

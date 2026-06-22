@@ -76,7 +76,7 @@ fun HeadingView(node: MarkdownNode.Heading, colors: InlineColors, style: TextSty
                 fontSize = textStyle.fontSize,
                 fontWeight = textStyle.fontWeight,
                 color = textStyle.color,
-                modifier = Modifier.padding(top = 16.dp, bottom = 2.dp)
+                modifier = Modifier.padding(vertical = 4.dp)
             )
         }
     }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.visible
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -30,6 +31,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.android.nextai.domain.model.chat.Session
+import com.android.nextai.ui.Standard
 import com.android.nextai.ui.component.checkbox.CircleCheckbox
 import com.android.nextai.ui.icon.HomeIcon
 
@@ -40,6 +42,7 @@ fun SessionItemView(
     isPin: Boolean,
     isSelectionMode: Boolean,
     isSelected: Boolean,
+    isGenerating: Boolean = false,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onUnpinClick: () -> Unit,
@@ -98,7 +101,7 @@ fun SessionItemView(
 
             Row(
                 modifier = Modifier
-                    .heightIn(min = 52.dp)
+                    .heightIn(min = 46.dp)
                     .fillMaxWidth()
                     .padding(start = 14.dp, end = 28.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -117,7 +120,7 @@ fun SessionItemView(
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .padding(end = 14.dp)
+                .padding( horizontal = 12.dp)
         ) {
 
             // =========================
@@ -129,7 +132,8 @@ fun SessionItemView(
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
                 modifier = Modifier
-                    .size(18.dp)
+//                    .padding(6.dp)
+                    .size(Standard.SESSION_ITEM_ICON_SIZE)
                     .graphicsLayer {
                         // Slide down
                         translationY = transitionProgress * 24f
@@ -143,7 +147,26 @@ fun SessionItemView(
                     ) {
                         onUnpinClick()
                     }
-                    .visible(isPin)
+                    .visible(isPin && !isSelectionMode && !isGenerating)
+            )
+
+            // =========================
+            // Generating progress indicator
+            // =========================
+            val strokeWidth = 2.dp
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(Standard.SESSION_ITEM_ICON_SIZE - strokeWidth)
+                    .graphicsLayer {
+                        // Slide down (same animation as Pin icon)
+                        translationY = transitionProgress * 24f
+                        // Fade out
+                        alpha = 1f - transitionProgress
+                    }
+                    .visible(isGenerating && !isSelectionMode),
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = strokeWidth,
+                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
             )
 
             // =========================
@@ -159,7 +182,7 @@ fun SessionItemView(
                     }
             ) {
                 CircleCheckbox(
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(Standard.SESSION_ITEM_ICON_SIZE),
                     checked = isSelected,
                     onCheckedChange = {
                         onClick()

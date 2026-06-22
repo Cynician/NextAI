@@ -102,7 +102,7 @@ object HomeIcon {
         )
     }
 
-    val ArrowUp by lazy {
+    val Send by lazy {
         filledIcon(
             paths = arrayOf(
                 SvgPath(

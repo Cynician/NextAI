@@ -123,6 +123,7 @@ fun HomeDrawerView(
                                     isPin = group == GroupType.PIN,
                                     isSelectionMode = isBatchSelectMode,
                                     isSelected = batchSelectedIdSet.contains(session.id),
+                                    isGenerating = chatViewModel.generationJobs[session.id]?.isActive == true,
                                     onClick = {
                                         onSessionItemClick(session.id)
                                     },

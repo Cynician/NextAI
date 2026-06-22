@@ -18,11 +18,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.visible
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonColors
@@ -47,6 +45,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.times
+import com.android.nextai.ui.Standard
 import com.android.nextai.ui.icon.HomeIcon
 import com.android.nextai.viewmodel.chat.ChatViewModel
 import com.android.nextai.viewmodel.chat.state.ChatSessionState
@@ -102,19 +102,19 @@ internal fun HomeBottomBar(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 44.dp, max = 200.dp)
+                .heightIn(min = Standard.SEND_ICON_SIZE, max = 200.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                .padding(horizontal = 6.dp, vertical = 6.dp)
+                .padding(4.dp)
         ) {
             BasicTextField(
                 value = query,
                 onValueChange = { query = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .align(Alignment.TopStart)
-                    .padding(end = 44.dp)
-                    .padding(vertical = 6.dp),
+                    .padding(end = 2 * Standard.SEND_ICON_SIZE + 2.dp)
+                    .padding(vertical = 4.dp)
+                    .align(Alignment.CenterStart),
                 enabled = true,
                 singleLine = false,
                 textStyle = (LocalTextStyle.current).merge(
@@ -125,13 +125,14 @@ internal fun HomeBottomBar(
                 decorationBox = { innerTextField ->
                     Box(
                         contentAlignment = Alignment.CenterStart,
-                        modifier = Modifier.padding(start = 12.dp)
+                        modifier = Modifier
+                            .padding(start = 12.dp)
                     ) {
                         if (query.isEmpty()) {
                             Text(
                                 text = "问问 NextAI",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.bodyMedium
                             )
                         }
                         innerTextField()
@@ -172,27 +173,17 @@ private fun ActionProgressButton(
         contentColor = MaterialTheme.colorScheme.primary
     )
 ) {
-    val icon = if (!isGenerating) HomeIcon.ArrowUp else HomeIcon.Stop
+    val icon = if (!isGenerating) HomeIcon.Send else HomeIcon.Stop
     val contentDescription = if (isGenerating) "Generating" else "Stop"
-
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
     ) {
-        CircularProgressIndicator(
-            modifier = Modifier
-                .size(40.dp)
-                .visible(isGenerating),
-            color = MaterialTheme.colorScheme.primary,
-            strokeWidth = 2.dp,
-            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-        )
 
         FilledIconButton(
             onClick = { onClickListener() },
             colors = colors,
             shape = shape,
-            modifier = Modifier.size(36.dp)
         ) {
             AnimatedContent(
                 targetState = icon,
@@ -219,8 +210,7 @@ private fun ActionProgressButton(
                     imageVector = targetIcon,
                     contentDescription = contentDescription,
                     modifier = Modifier
-                        .size(28.dp)
-                        .padding(4.dp)
+                        .size(Standard.SEND_ICON_SIZE)
                 )
             }
         }
