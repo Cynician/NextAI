@@ -17,8 +17,8 @@ android {
         applicationId = "com.android.nextai"
         minSdk = 31
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.12"
+        versionCode = 2
+        versionName = "1.0.13"
         ndk {
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
