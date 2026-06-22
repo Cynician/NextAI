@@ -245,7 +245,9 @@ class ChatViewModel @Inject constructor(
             id = assistantMessage.id,
             sessionId = sessionId,
             content = sessionHolder.getState(sessionId).curResponse
-        ).getOrThrow()
+        ).onFailure {
+            Log.d(TAG,it.message, it)
+        }
         sessionHolder.updateIsTextStreaming(sessionId, false)
         sessionHolder.loadingSessions()
         generationJobs.remove(sessionId) // Task completes normally, removing the Job reference.
@@ -262,19 +264,13 @@ class ChatViewModel @Inject constructor(
         if (streamingCache.length > currentUiText.length && streamingCache.startsWith(currentUiText)) {
             val deltaText = streamingCache.substring(currentUiText.length)
             parser.appendDelta(deltaText)
-            parser.complete()
             sessionHolder.updateCurResponse(sessionId, deltaText)
         }
         sessionHolder.updateLastestMessage(
             sessionId, assistantMessage.copy(content = streamingCache)
         )
-        updateMessageUseCase(
-            id = assistantMessage.id,
-            sessionId = sessionId,
-            content = streamingCache
-        ).onFailure {
-            Log.d(TAG,it.message, it)
-        }
+
+       onStreamingDone(parser = parser, assistantMessage = assistantMessage)
     }
 
     /**
