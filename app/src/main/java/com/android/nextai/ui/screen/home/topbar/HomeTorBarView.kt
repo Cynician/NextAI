@@ -22,7 +22,7 @@ internal fun HomeTopBarView(
     onMenuClick: () -> Unit,
     onTitleClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    onStoreButtonClicked: () -> Unit,
+    onModelParamsSettingClick: () -> Unit,
 ) {
 
     val focusManager = LocalFocusManager.current
@@ -63,9 +63,9 @@ internal fun HomeTopBarView(
                 )
                 ActionButton(
                     modifier = Modifier.padding(end = 6.dp),
-                    icon = HomeIcon.Download,
+                    icon = HomeIcon.ModelParamsSetting,
                     onClickListener = {
-                        onStoreButtonClicked()
+                        onModelParamsSettingClick()
                     },
                 )
             }

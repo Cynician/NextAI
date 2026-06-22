@@ -108,7 +108,7 @@ fun HomeScreen(
                     onMenuClick = { scope.launch { drawerState.open() } },
                     onTitleClick = { true },
                     onSettingsClick = { onNavigateToSettings() },
-                    onStoreButtonClicked = { null },
+                    onModelParamsSettingClick = { null },
                 )
             }
         ) { paddingValues ->
