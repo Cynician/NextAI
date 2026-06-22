@@ -41,7 +41,7 @@ internal fun LoadingOverlayView(
                 modifier = Modifier
                     .align(Alignment.Center)
                     .size(32.dp),
-                strokeWidth = 3.dp
+                strokeWidth = 2.dp
             )
         }
     }

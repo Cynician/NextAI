@@ -357,8 +357,6 @@ fun HomeBodyView(
             },
     ) {
 
-        LoadingOverlayView(visible = isChangingSession)
-
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -410,6 +408,8 @@ fun HomeBodyView(
             visible = messageList.isEmpty()
         )
     }
+
+    LoadingOverlayView(visible = isChangingSession)
 
     MaskView()
 }

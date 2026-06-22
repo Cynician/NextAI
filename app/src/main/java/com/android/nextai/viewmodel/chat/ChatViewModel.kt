@@ -5,9 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.nextai.data.datasource.remote.ApiType
 import com.android.nextai.domain.model.chat.Message
-import com.android.nextai.domain.model.remote.GenerationEvent
 import com.android.nextai.domain.model.chat.MessageType
 import com.android.nextai.domain.model.provider.Provider
+import com.android.nextai.domain.model.remote.GenerationEvent
 import com.android.nextai.domain.usecase.chat.CreateMessageUseCase
 import com.android.nextai.domain.usecase.chat.CreateSessionWithUserMessageUseCase
 import com.android.nextai.domain.usecase.chat.GetLastPageMessagesUseCase
@@ -21,6 +21,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -28,10 +29,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.yield
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
-import kotlin.collections.isNotEmpty
 import kotlin.coroutines.cancellation.CancellationException
 
 @HiltViewModel
@@ -385,7 +384,9 @@ class ChatViewModel @Inject constructor(
         loadMessagesJobs[sessionId]?.cancel()
         loadMessagesJobs[sessionId] = viewModelScope.launch {
             try {
-
+                // Wait for a few frames to render loading UI before update loading state, other wise,
+                // the state changed instantly, the loading UI have no time to render.
+                if(isLoadingFirst) repeat(6){awaitFrame()}
                 val sessionState = sessionHolder.getState(sessionId)
 
                 val messageList = getLastPageMessagesUseCase(
@@ -394,7 +395,6 @@ class ChatViewModel @Inject constructor(
                 ).getOrThrow()
 
                 if (messageList.isNotEmpty()) {
-                    yield()
                     messageList.forEach { message ->
                         if (message.type == MessageType.ASSISTANT) {
                             val cached = markdownCacheHolder.get(message.id)
@@ -420,8 +420,8 @@ class ChatViewModel @Inject constructor(
                 }
                 if (callBack != null) callBack()
             } finally {
-                sessionHolder.updateIsLoadingFirst(false)
                 loadMessagesJobs.remove(sessionId)
+                if(isLoadingFirst) sessionHolder.updateIsLoadingFirst(false)
             }
         }
     }
@@ -431,10 +431,18 @@ class ChatViewModel @Inject constructor(
      * and loading paginated messages。
      */
     fun onChangingSession(sessionId: Long) {
-        val cachedMessages = sessionHolder.getState(sessionId).messageList
+
         sessionHolder.updateIsLoadingFirst(true)
+        val cachedMessages = sessionHolder.getState(sessionId).messageList
+
         if (cachedMessages.isNotEmpty()) {
-            sessionHolder.onLoadMessagesSuccess(sessionId)
+            viewModelScope.launch {
+                // Wait for a few frames to render loading UI before update loading state, other wise,
+                // the state changed instantly, the loading UI have no time to render.
+                repeat(6) { awaitFrame() }
+                sessionHolder.updateIsLoadingFirst(false)
+                sessionHolder.onLoadMessagesSuccess(sessionId)
+            }
         } else {
             loadMessages(
                 sessionId = sessionId,
@@ -444,7 +452,6 @@ class ChatViewModel @Inject constructor(
                 }
             )
         }
-        sessionHolder.updateIsLoadingFirst(false)
     }
 
     /**
