@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Android API](https://img.shields.io/badge/Android%20API-31%2B-brightgreen.svg)](https://android-arsenal.com/api?level=31)
 
-NextAI is a lightweight AI chat client developed based on Kotlin, focusing on providing a flexible and interactive AI conversation experience.
+NextAI is a lightweight AI chat client developed based on Compose, focusing on providing a flexible and interactive AI conversation experience.
 
 [中文版本](./README_zh.md)
 
@@ -33,4 +33,4 @@ NextAI is a lightweight AI chat client developed based on Kotlin, focusing on pr
 - More functional settings, such as on/off streaming generation and adjusting scroll speed during streaming generation.
 
 ## Demo Preview
-[![Video]()](https://github.com/user-attachments/assets/e334fe56-8c06-41c8-bf14-b56aae77c5db)
+[![Video]()](https://github.com/user-attachments/assets/0201b00d-a69f-4acc-b07b-e7bb5524ee01)
