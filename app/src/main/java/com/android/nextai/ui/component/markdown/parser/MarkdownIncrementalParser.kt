@@ -128,6 +128,11 @@ class MarkdownIncrementalParser {
     }
 
     /**
+     * Get the raw full text content.
+     */
+    fun getRawContent(): String = rawFullTextBuffer.toString()
+
+    /**
      * Reset all states.
      */
     fun reset() {

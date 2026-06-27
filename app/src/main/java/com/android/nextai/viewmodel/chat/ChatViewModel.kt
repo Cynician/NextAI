@@ -10,6 +10,7 @@ import com.android.nextai.domain.model.provider.Provider
 import com.android.nextai.domain.model.remote.GenerationEvent
 import com.android.nextai.domain.usecase.chat.CreateMessageUseCase
 import com.android.nextai.domain.usecase.chat.CreateSessionWithUserMessageUseCase
+import com.android.nextai.domain.usecase.chat.DeleteTailMessagesUseCase
 import com.android.nextai.domain.usecase.chat.GetLastPageMessagesUseCase
 import com.android.nextai.domain.usecase.chat.StreamingGenUseCase
 import com.android.nextai.domain.usecase.chat.UpdateMessageUseCase
@@ -42,6 +43,7 @@ class ChatViewModel @Inject constructor(
     private val streamingGenUseCase: StreamingGenUseCase,
     private val updateMessageUseCase: UpdateMessageUseCase,
     private val getLastPageMessagesUseCase: GetLastPageMessagesUseCase,
+    private val deleteTailMessagesUseCase: DeleteTailMessagesUseCase,
 ) : ViewModel() {
     companion object {
         private const val TAG = "ChatViewModel"
@@ -73,6 +75,7 @@ class ChatViewModel @Inject constructor(
     fun sendUserQuery(
         query: String,
         provider: Provider,
+        isRetry:Boolean = false,
     ) {
         val isSportStreamingGen = true
         val isInSession = sessionHolder.isInSession
@@ -86,12 +89,10 @@ class ChatViewModel @Inject constructor(
         // 1. Starts a separate backend job pipeline for this session.
         val job = viewModelScope.launch {
             try {
-                var userMessage: Message
-
-                // 2. Preprocessing: If not in a Session, it means a new session needs to be created.
+                // 2. Preprocessing: If not in session, it means a new session needs to be created.
                 if (!isInSession) {
                     Log.d(TAG, "create session with query :$query")
-                    userMessage =
+                    val userMessage =
                         createSessionWithUserMessageUseCase(
                             query,
                             provider,
@@ -106,20 +107,23 @@ class ChatViewModel @Inject constructor(
                     sessionHolder.updateIsInSession(true)
                     sessionHolder.updateCurSessionId(targetSessionId)
                     sessionHolder.updateCurMessagesMinId(targetSessionId, userMessage.id)
+                    sessionHolder.addMessage(targetSessionId, userMessage)
                 } else {
-                    // 3. Already in the session, append the message under this targetSessionId.
-                    userMessage = createMessageUseCase(
-                        sessionId = targetSessionId,
-                        providerName = provider.name,
-                        modelId = modelId,
-                        content = query,
-                        messageType = MessageType.USER
-                    ).getOrThrow()
+                    // 3. Already in the session,append the message under this targetSessionId.
+                    if(!isRetry){
+                        val userMessage = createMessageUseCase(
+                            sessionId = targetSessionId,
+                            providerName = provider.name,
+                            modelId = modelId,
+                            content = query,
+                            messageType = MessageType.USER
+                        ).getOrThrow()
+                        sessionHolder.addMessage(targetSessionId, userMessage)
+                    }
                 }
 
                 sessionHolder.clearCurrentResponse(targetSessionId)
                 sessionHolder.loadingSessions()
-                sessionHolder.addMessage(targetSessionId, userMessage)
 
                 // Only when the target session matches the global selected session.
                 if (targetSessionId == sessionHolder.getCurSessionId()) {
@@ -365,6 +369,69 @@ class ChatViewModel @Inject constructor(
                 sessionHolder.onBatchUnpinSessions(idList)
             } catch (e: Exception) {
                 Log.d(TAG, "${e.message}", e)
+            }
+        }
+    }
+
+    /**
+     * Delete a single message by id.
+     */
+    fun deleteMessage(messageId: Long, sessionId: Long) {
+        viewModelScope.launch {
+            try {
+                // Cancel any ongoing generation for this session
+                generationJobs[sessionId]?.cancel()
+                generationJobs.remove(sessionId)
+                sessionHolder.updateIsTextStreaming(sessionId, false)
+
+                // Delete from database
+                deleteTailMessagesUseCase(messageId, sessionId)
+
+                // Remove from in-memory state
+                sessionHolder.removeTailMessage(sessionId, messageId)
+
+                // Refresh session list
+                sessionHolder.loadingSessions()
+            } catch (e: Exception) {
+                Log.e(TAG, "deleteMessage# error: ", e)
+            }
+        }
+    }
+
+    /**
+     * Retry assistant generation: removes the assistant message and resends
+     * the preceding user query.
+     */
+    fun retryAssistant(assistantMessageId: Long, sessionId: Long, provider: Provider) {
+        viewModelScope.launch {
+            try {
+                val state = sessionHolder.getState(sessionId)
+                val messageList = state.messageList
+
+                // Find the index of the assistant message
+                val assistantIndex = messageList.indexOfFirst { it.id == assistantMessageId }
+                if (assistantIndex <= 0) return@launch
+
+                // Find the preceding user message
+                messageList.getOrNull(assistantIndex - 1)
+                    ?.takeIf { it.type == MessageType.USER }
+                    ?: return@launch
+
+                // Cancel any ongoing generation
+                generationJobs[sessionId]?.cancel()
+                generationJobs.remove(sessionId)
+                sessionHolder.updateIsTextStreaming(sessionId, false)
+
+                // Delete the assistant message from database
+                deleteTailMessagesUseCase(assistantMessageId, sessionId)
+
+                // Remove the assistant message from state
+                sessionHolder.removeTailMessage(sessionId, assistantMessageId)
+
+                // Retry to get response
+                sendUserQuery("", provider, true)
+            } catch (e: Exception) {
+                Log.e(TAG, "retryAssistant# error: ", e)
             }
         }
     }

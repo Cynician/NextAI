@@ -70,6 +70,8 @@ interface ChatRepository {
 
     suspend fun updateMessageContent(sessionId: Long, msgId: Long, content: String)
 
+    suspend fun deleteTailMessages(msgId: Long, sessionId: Long)
+
     suspend fun getLastPageMessages(
         sessionId: Long,
         minMsgId: Long,

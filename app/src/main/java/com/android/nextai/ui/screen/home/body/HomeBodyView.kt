@@ -65,6 +65,7 @@ import com.android.nextai.ui.screen.home.body.views.UserBubbleView
 import com.android.nextai.ui.theme.Animation
 import com.android.nextai.viewmodel.chat.ChatViewModel
 import com.android.nextai.viewmodel.chat.state.ChatSessionState
+import com.android.nextai.viewmodel.provider.ProviderViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.collectLatest
@@ -85,9 +86,13 @@ private data class BottomInsetState(
 fun HomeBodyView(
     paddingValues: PaddingValues,
     chatViewModel: ChatViewModel,
+    providerViewModel: ProviderViewModel,
     bottomBarHeight: Dp = 96.dp,
 ) {
     val focusManager = LocalFocusManager.current
+
+    /** Get current provider for retry functionality **/
+    val provider by providerViewModel.defaultProvider.collectAsState(null)
 
     /** Get the current active Session ID **/
     val currentSessionId by chatViewModel.sessionHolder.curSessionId.collectAsState()
@@ -382,7 +387,19 @@ fun HomeBodyView(
                     MessageType.ASSISTANT -> {
                         if (message.content.isEmpty()) return@itemsIndexed
                         AssistantBubbleView(
-                            parser = chatViewModel.markdownCacheHolder.getOrCreate(message.id)
+                            parser = chatViewModel.markdownCacheHolder.getOrCreate(message.id),
+                            messageId = message.id,
+                            sessionId = message.sessionId,
+                            isGenerating = isGenerating,
+                            isLastMessage = messageList.last().id == message.id,
+                            onDelete = { msgId, sessionId ->
+                                chatViewModel.deleteMessage(msgId, sessionId)
+                            },
+                            onRetry = { msgId, sessionId ->
+                                provider?.let { p ->
+                                    chatViewModel.retryAssistant(msgId, sessionId, p)
+                                }
+                            }
                         )
                     }
 

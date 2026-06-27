@@ -32,10 +32,10 @@ interface MessageDao {
 
 
     /**
-     * Delete message
+     * Delete tail messages by id(include), especially for retry response.
      */
-    @Query("DELETE FROM message WHERE id = :id")
-    suspend fun delete(id: Long)
+    @Query("DELETE FROM message WHERE session_id = :sessionId AND id >= :id")
+    suspend fun deleteTail(id: Long, sessionId:Long)
 
     @Query("""
     UPDATE message

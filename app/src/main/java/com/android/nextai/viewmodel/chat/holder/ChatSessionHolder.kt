@@ -139,6 +139,12 @@ class ChatSessionHolder @Inject constructor(
         updateState(sessionId) { it.copy(messageList = newMessages + it.messageList) }
     }
 
+    fun removeTailMessage(sessionId: Long, messageId: Long) {
+        updateState(sessionId) { state ->
+            state.copy(messageList = state.messageList.filter { it.id < messageId })
+        }
+    }
+
     fun updateIsTextStreaming(sessionId: Long, state: Boolean) {
         updateState(sessionId) { it.copy(isTextGenerating = state) }
     }

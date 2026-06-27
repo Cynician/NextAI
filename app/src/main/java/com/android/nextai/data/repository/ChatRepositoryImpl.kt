@@ -263,6 +263,10 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun deleteTailMessages(msgId: Long, sessionId: Long) {
+        messageDao.deleteTail(sessionId = sessionId, id = msgId)
+    }
+
     override suspend fun getLastPageMessages(
         sessionId: Long,
         minMsgId: Long,

@@ -169,6 +169,11 @@ object HomeIcon {
             "M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1"
         )
     }
+
+    val Refresh by lazy {
+        SettingsIcon.Refresh
+    }
+
     val Code by lazy { tabler("M7 8l-4 4l4 4", "M17 8l4 4l-4 4") }
     val ChevronDown by lazy { tabler("M6 9l6 6l6 -6") }
     val ChevronUp by lazy { tabler("M6 15l6 -6l6 6") }

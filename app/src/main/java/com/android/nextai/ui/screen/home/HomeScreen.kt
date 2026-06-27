@@ -118,6 +118,7 @@ fun HomeScreen(
                 HomeBodyView(
                     paddingValues = paddingValues,
                     chatViewModel = chatViewModel,
+                    providerViewModel = providerViewModel,
                     bottomBarHeight = bottomBarHeight,
                 )
 
