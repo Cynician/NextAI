@@ -14,7 +14,7 @@ import com.openai.models.chat.completions.ChatCompletionStreamOptions
 import com.openai.models.chat.completions.ChatCompletionSystemMessageParam
 import com.openai.models.chat.completions.ChatCompletionUserMessageParam
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 
 
 object OpenAIRemoteDataSource : AIDataSource {
@@ -75,6 +75,15 @@ object OpenAIRemoteDataSource : AIDataSource {
             // 2. collect flow and send to callback
             streamFlow.use { flow ->
                 for (chunk in flow.stream().iterator()) {
+                    // Check if the coroutine was explicitly cancelled (e.g. user
+                    // pressed stop). Using isActive instead of ensureActive() avoids
+                    // throwing CancellationException inside the streaming loop, which
+                    // can interfere with proper cleanup in the callback-based pipeline.
+                    if (!currentCoroutineContext().isActive) {
+                        Log.w(TAG, "Coroutine cancelled, stopping stream collection")
+                        break
+                    }
+
                     Log.d(TAG, "chunk=$chunk")
                     chunk.choices().firstOrNull()?.also { choice ->
                         choice.delta()
@@ -87,15 +96,12 @@ object OpenAIRemoteDataSource : AIDataSource {
                             generationCallback(GenerationEvent.Done)
                         }
                     }
-
-                    // External coroutine terminates and cancels this task.
-                    currentCoroutineContext().ensureActive()
-
                 }
             }
             Log.d(TAG, "getAIStreamingAnswer# streaming finished")
         } catch (e: Exception) {
             Log.e(TAG, "getAIStreamingAnswer# ${e.message}", e)
+            generationCallback(GenerationEvent.Error(e.message.toString()))
         }
     }
 }

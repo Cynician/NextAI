@@ -1,8 +1,10 @@
 package com.android.nextai.viewmodel.chat
 
+import android.app.Application
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.nextai.NextAIApplication
 import com.android.nextai.data.datasource.remote.ApiType
 import com.android.nextai.domain.model.chat.Message
 import com.android.nextai.domain.model.chat.MessageType
@@ -14,11 +16,13 @@ import com.android.nextai.domain.usecase.chat.DeleteTailMessagesUseCase
 import com.android.nextai.domain.usecase.chat.GetLastPageMessagesUseCase
 import com.android.nextai.domain.usecase.chat.StreamingGenUseCase
 import com.android.nextai.domain.usecase.chat.UpdateMessageUseCase
+import com.android.nextai.service.GenerationForegroundService
 import com.android.nextai.ui.component.markdown.parser.MarkdownIncrementalParser
 import com.android.nextai.viewmodel.chat.holder.ChatSessionHolder
 import com.android.nextai.viewmodel.chat.holder.MarkdownCacheHolder
 import com.android.nextai.viewmodel.chat.state.ChatSessionState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -36,6 +40,7 @@ import kotlin.coroutines.cancellation.CancellationException
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
+    private val application: Application,
     val sessionHolder: ChatSessionHolder,
     val markdownCacheHolder: MarkdownCacheHolder,
     private val createSessionWithUserMessageUseCase: CreateSessionWithUserMessageUseCase,
@@ -48,6 +53,10 @@ class ChatViewModel @Inject constructor(
     companion object {
         private const val TAG = "ChatViewModel"
     }
+
+    /** Application-level scope for tasks that must survive background transitions. */
+    private val applicationScope
+        get() = (application as NextAIApplication).applicationScope
 
     val generationJobs = ConcurrentHashMap<Long, Job>()
     private val loadMessagesJobs = ConcurrentHashMap<Long, Job>()
@@ -75,7 +84,7 @@ class ChatViewModel @Inject constructor(
     fun sendUserQuery(
         query: String,
         provider: Provider,
-        isRetry:Boolean = false,
+        isRetry: Boolean = false,
     ) {
         val isSportStreamingGen = true
         val isInSession = sessionHolder.isInSession
@@ -86,8 +95,11 @@ class ChatViewModel @Inject constructor(
             generationJobs[activeSessionId]?.cancel()
         }
 
+        // Start foreground service to keep process alive
+        GenerationForegroundService.start(application)
+
         // 1. Starts a separate backend job pipeline for this session.
-        val job = viewModelScope.launch {
+        val backendJob = applicationScope.launch(Dispatchers.IO) {
             try {
                 // 2. Preprocessing: If not in session, it means a new session needs to be created.
                 if (!isInSession) {
@@ -110,7 +122,7 @@ class ChatViewModel @Inject constructor(
                     sessionHolder.addMessage(targetSessionId, userMessage)
                 } else {
                     // 3. Already in the session,append the message under this targetSessionId.
-                    if(!isRetry){
+                    if (!isRetry) {
                         val userMessage = createMessageUseCase(
                             sessionId = targetSessionId,
                             providerName = provider.name,
@@ -130,7 +142,8 @@ class ChatViewModel @Inject constructor(
                     sessionHolder.emitScrollToLatestMessageEvent(targetSessionId)
                 }
 
-                // 5. Start streaming generation in the background.
+                // 5. Start streaming generation — delegate to applicationScope so the
+                //    network call survives background transitions.
                 if (isSportStreamingGen) {
                     startStreamingGen(targetSessionId, provider, modelId)
                 }
@@ -154,23 +167,23 @@ class ChatViewModel @Inject constructor(
                     }
                 }
             } finally {
-                // Always clear the job reference for the real target session so a stale
-                // entry never blocks subsequent sends (e.g. after "new session" the
-                // activeSessionId was -1L, which previously polluted generationJobs[-1L]
-                // and made the bottom bar think a generation was still active).
+                // Clear states.
                 generationJobs.remove(targetSessionId)
+                sessionHolder.updateIsTextStreaming(targetSessionId, false)
+                GenerationForegroundService.stop(application)
             }
         }
         // Register the job under the REAL target session id. Previously this used
         // `activeSessionId`, which for a brand-new session was -1L and polluted the
         // map with a -1L -> job entry.
         if (isInSession) {
-            generationJobs[targetSessionId] = job
+            generationJobs[targetSessionId] = backendJob
         }
     }
 
     /**
-     * Backend stream generation core function.
+     * Starts the streaming generation in the applicationScope so that the network
+     * connection stays alive even when the app is in the background.
      */
     private suspend fun startStreamingGen(
         sessionId: Long,
@@ -194,25 +207,28 @@ class ChatViewModel @Inject constructor(
             sessionHolder.emitScrollToLatestMessageEvent(sessionId)
         }
 
-        streamingGenUseCase(
-            apiType = ApiType.OPENAI,
-            messageList = sessionHolder.getState(sessionId).messageList,
-            provider = provider,
-            modelId = modelId,
-            onCancel = { streamingCache ->
-                viewModelScope.launch {
-                    onStreamingCancelCallBack(
-                        streamingCache = streamingCache,
-                        assistantMessage = assistantMessage,
-                        parser = parser
-                    )
+        try {
+            streamingGenUseCase(
+                apiType = ApiType.OPENAI,
+                messageList = sessionHolder.getState(sessionId).messageList,
+                provider = provider,
+                modelId = modelId,
+                onCancel = { streamingCache ->
+                    viewModelScope.launch {
+                        onStreamingCancelCallBack(
+                            streamingCache = streamingCache,
+                            assistantMessage = assistantMessage,
+                            parser = parser
+                        )
+                    }
                 }
-            }
-        ).getOrThrow().collect { event ->
-            withContext(NonCancellable){
+            ).getOrThrow().collect { event ->
+                // Bridge events back to viewModelScope for UI-safe updates
                 when (event) {
                     is GenerationEvent.Chunk -> {
-                        onStreamingReceiveChunk(assistantMessage, parser, event.content)
+                        viewModelScope.launch{
+                            onStreamingReceiveChunk(assistantMessage, parser, event.content)
+                        }
                     }
 
                     is GenerationEvent.Done -> {
@@ -222,14 +238,28 @@ class ChatViewModel @Inject constructor(
                     is GenerationEvent.Error -> {
                         sessionHolder.updateIsTextStreaming(sessionId, false)
                         generationJobs.remove(sessionId)
+                        throw Exception(event.content)
                     }
                 }
             }
-
+        } catch (e: CancellationException) {
+            // Cancellation is handled by onCancel callback above, just rethrow
+            throw e
+        } catch (e: Exception) {
+            // Network errors or other exceptions during streaming: ensure state is cleaned up.
+            // The outer sendUserQuery catch block will create an error message.
+            Log.e(TAG, "startStreamingGen# streaming error: ${e.message}")
+            sessionHolder.updateIsTextStreaming(sessionId, false)
+            generationJobs.remove(sessionId)
+            throw e
         }
     }
 
-    private fun onStreamingReceiveChunk(assistantMessage:Message, parser: MarkdownIncrementalParser, chunk: String){
+    private fun onStreamingReceiveChunk(
+        assistantMessage: Message,
+        parser: MarkdownIncrementalParser,
+        chunk: String,
+    ) {
         val sessionId = assistantMessage.sessionId
         sessionHolder.updateCurResponse(sessionId, chunk)
         val content = sessionHolder.getState(sessionId).curResponse
@@ -242,7 +272,10 @@ class ChatViewModel @Inject constructor(
         )
     }
 
-    private suspend fun onStreamingDone(parser: MarkdownIncrementalParser, assistantMessage:Message){
+    private suspend fun onStreamingDone(
+        parser: MarkdownIncrementalParser,
+        assistantMessage: Message,
+    ) {
         parser.complete()
         val sessionId = assistantMessage.sessionId
         updateMessageUseCase(
@@ -250,7 +283,7 @@ class ChatViewModel @Inject constructor(
             sessionId = sessionId,
             content = sessionHolder.getState(sessionId).curResponse
         ).onFailure {
-            Log.d(TAG,it.message, it)
+            Log.d(TAG, it.message, it)
         }
         sessionHolder.updateIsTextStreaming(sessionId, false)
         sessionHolder.loadingSessions()
@@ -261,7 +294,7 @@ class ChatViewModel @Inject constructor(
         streamingCache: String,
         assistantMessage: Message,
         parser: MarkdownIncrementalParser,
-    ){
+    ) {
         Log.d(TAG, "onStreamingCancelCallBack# cache size: ${streamingCache.length}")
         val sessionId = assistantMessage.sessionId
         val currentUiText = sessionHolder.getState(sessionId).curResponse
@@ -274,7 +307,7 @@ class ChatViewModel @Inject constructor(
             sessionId, assistantMessage.copy(content = streamingCache)
         )
 
-       onStreamingDone(parser = parser, assistantMessage = assistantMessage)
+        onStreamingDone(parser = parser, assistantMessage = assistantMessage)
     }
 
     /**
@@ -288,8 +321,11 @@ class ChatViewModel @Inject constructor(
                 val job = generationJobs[sessionId] ?: return@launch
                 if (!job.isActive) return@launch
 
-                // Cancel the streaming coroutine
+                // Cancel the streaming coroutine (may be in applicationScope)
                 job.cancel()
+
+                // Stop foreground service
+                GenerationForegroundService.stop(application)
 
                 // Save the partially generated response to database
                 val state = sessionHolder.getState(sessionId)
@@ -319,9 +355,6 @@ class ChatViewModel @Inject constructor(
      */
     fun initSession() {
         // Clear any stale job reference keyed by the "no session" id (-1L).
-        // sendUserQuery previously registered its job under activeSessionId which could
-        // be -1L for a brand-new session, leaving a ghost entry that made the bottom
-        // bar believe a generation was still running on the empty/new-session screen.
         generationJobs.remove(-1L)
         sessionHolder.initSession()
     }
@@ -402,7 +435,7 @@ class ChatViewModel @Inject constructor(
      * Retry assistant generation: removes the assistant message and resends
      * the preceding user query.
      */
-    fun retryAssistant(assistantMessageId: Long, sessionId: Long, provider: Provider) {
+    fun retryAssistantResponse(assistantMessageId: Long, sessionId: Long, provider: Provider) {
         viewModelScope.launch {
             try {
                 val state = sessionHolder.getState(sessionId)
@@ -420,7 +453,6 @@ class ChatViewModel @Inject constructor(
                 // Cancel any ongoing generation
                 generationJobs[sessionId]?.cancel()
                 generationJobs.remove(sessionId)
-                sessionHolder.updateIsTextStreaming(sessionId, false)
 
                 // Delete the assistant message from database
                 deleteTailMessagesUseCase(assistantMessageId, sessionId)
@@ -428,10 +460,22 @@ class ChatViewModel @Inject constructor(
                 // Remove the assistant message from state
                 sessionHolder.removeTailMessage(sessionId, assistantMessageId)
 
-                // Retry to get response
+                // Refresh sidebar so SessionItemView picks up generationJobs changes
+                sessionHolder.loadingSessions()
+
+                // Switch to the target session if user is currently viewing a different one
+                if (sessionHolder.getCurSessionId() != sessionId) {
+                    sessionHolder.onLoadMessagesSuccess(sessionId)
+                }
+
+                // Retry to get response — sendUserQuery will set isTextStreaming = true
+                // via startStreamingGen, so do NOT set it to false here.
                 sendUserQuery("", provider, true)
             } catch (e: Exception) {
-                Log.e(TAG, "retryAssistant# error: ", e)
+                Log.e(TAG, "retryAssistantResponse# error: ", e)
+                // Ensure generation state is cleaned up on failure
+                sessionHolder.updateIsTextStreaming(sessionId, false)
+                generationJobs.remove(sessionId)
             }
         }
     }
@@ -449,7 +493,7 @@ class ChatViewModel @Inject constructor(
             try {
                 // Wait for a few frames to render loading UI before update loading state, other wise,
                 // the state changed instantly, the loading UI have no time to render.
-                if(isLoadingFirst) repeat(6){awaitFrame()}
+                if (isLoadingFirst) repeat(6) { awaitFrame() }
                 val sessionState = sessionHolder.getState(sessionId)
 
                 val messageList = getLastPageMessagesUseCase(
@@ -484,7 +528,7 @@ class ChatViewModel @Inject constructor(
                 if (callBack != null) callBack()
             } finally {
                 loadMessagesJobs.remove(sessionId)
-                if(isLoadingFirst) sessionHolder.updateIsLoadingFirst(false)
+                if (isLoadingFirst) sessionHolder.updateIsLoadingFirst(false)
             }
         }
     }

@@ -397,7 +397,7 @@ fun HomeBodyView(
                             },
                             onRetry = { msgId, sessionId ->
                                 provider?.let { p ->
-                                    chatViewModel.retryAssistant(msgId, sessionId, p)
+                                    chatViewModel.retryAssistantResponse(msgId, sessionId, p)
                                 }
                             }
                         )
